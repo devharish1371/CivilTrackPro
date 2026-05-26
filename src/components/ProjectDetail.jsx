@@ -24,6 +24,7 @@ export default function ProjectDetail() {
   const now = new Date();
   const expiryDays = p.expiryDate ? Math.ceil((new Date(p.expiryDate) - now)/86400000) : null;
   const contractDays = p.dateOfCompletionContract && p.statusOfWork !== 'completed' ? Math.ceil((new Date(p.dateOfCompletionContract) - now)/86400000) : null;
+  const securityDays = p.securityDepositReleaseDate ? Math.ceil((new Date(p.securityDepositReleaseDate) - now)/86400000) : null;
 
   const handleDelete = () => { if (!p.isLocked && confirm('Delete?')) { dispatch({ type:'DELETE_PROJECT', payload:id }); navigate('/projects'); } };
   const handlePDF = () => savePDF(generateProjectDetailPDF(p), `${p.projectName.replace(/\s+/g,'_')}.pdf`);
@@ -79,6 +80,12 @@ export default function ProjectDetail() {
           <div className="alert-content"><h4>{contractDays<0?'Contract Expired!':'Contract Ending'}</h4><p>{contractDays<0?`${Math.abs(contractDays)}d overdue`:`${contractDays}d left`}</p></div>
         </div>
       )}
+      {securityDays !== null && securityDays <= 15 && (
+        <div className={`alert-item ${securityDays<0?'danger':'info'}`} style={{ marginBottom:12 }}>
+          <div className={`alert-icon ${securityDays<0?'danger':'info'}`}><AlertTriangle size={16} /></div>
+          <div className="alert-content"><h4>{securityDays<0?'Security Deposit Overdue!':'Security Deposit Due'}</h4><p>{securityDays<0?`${Math.abs(securityDays)}d overdue`:`${securityDays}d left`}</p></div>
+        </div>
+      )}
 
       {/* Progress */}
       <div className="card" style={{ marginBottom:16 }}>
@@ -93,6 +100,7 @@ export default function ProjectDetail() {
           <D label="Year of Sanction" value={p.yearOfSanction} />
           <D label="Constituency" value={p.constituency} />
           <D label="Scheme" value={p.scheme} />
+          <D label="Category" value={p.category} />
           <D label="GO Number" value={p.goNumber} />
           <D label="GO Date" value={fmtDate(p.goDate)} />
           <D label="Contractor" value={p.contractorName} />
@@ -131,6 +139,7 @@ export default function ProjectDetail() {
         <div className="detail-grid">
           <D label="UC Sent On" value={fmtDate(p.ucSentDate)} />
           <D label="Security Deposit Release" value={fmtDate(p.securityDepositReleaseDate)} />
+          <D label="Security Deducted On" value={fmtDate(p.securityDepositDeductedDate)} />
           <D label="Security Amount" value={fmt(p.securityAmount||0)} cls="amount" />
           <D label="M Book Number" value={p.mBookNumber} />
           <D label="Work Audit Register No" value={p.workAuditRegisterNo} />

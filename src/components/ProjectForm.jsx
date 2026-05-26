@@ -14,8 +14,8 @@ const empty = {
   expenditureIncurred:'', deductions:'',
   extensionOfTime:'', statusOfWork:'yet_to_start', progress:0,
   juniorEngineer:'', assistantEngineer:'',
-  ucSentDate:'', securityDepositReleaseDate:'', securityAmount:'',
-  mBookNumber:'', workAuditRegisterNo:'',
+  ucSentDate:'', securityDepositReleaseDate:'', securityDepositDeductedDate:'', securityAmount:'',
+  mBookNumber:'', workAuditRegisterNo:'', category:'',
   latitude:'', longitude:'', isLocked:false, lockHash:'', notes:''
 };
 
@@ -129,6 +129,17 @@ export default function ProjectForm() {
               </select><E f="scheme" />
             </div>
             <div className="form-group">
+              <label className="form-label">Category</label>
+              <input className="form-input" list="category-list" value={form.category} onChange={e => set('category', e.target.value)} placeholder="Road, Drain, Building..." />
+              <datalist id="category-list">
+                <option value="Road" />
+                <option value="Drain" />
+                <option value="Building" />
+                <option value="Bridge" />
+                <option value="Water Supply" />
+              </datalist>
+            </div>
+            <div className="form-group">
               <label className="form-label">GO Number</label>
               <input className="form-input" value={form.goNumber} onChange={e => set('goNumber', e.target.value)} placeholder="GO(Ms)No.xxx/2025/PWD" />
             </div>
@@ -236,6 +247,7 @@ export default function ProjectForm() {
             <div className="form-group"><label className="form-label">UC Sent On Date</label><input className="form-input" type="date" value={form.ucSentDate} onChange={e => set('ucSentDate', e.target.value)} /></div>
             <div className="form-group"><label className="form-label">Security Deposit Release Date</label><input className="form-input" type="date" value={form.securityDepositReleaseDate} onChange={e => set('securityDepositReleaseDate', e.target.value)} /></div>
             <div className="form-group"><label className="form-label">Security Amount (₹)</label><input className="form-input" type="number" value={form.securityAmount} onChange={e => set('securityAmount', e.target.value)} /></div>
+            <div className="form-group"><label className="form-label">Security Deposit Deducted Date</label><input className="form-input" type="date" value={form.securityDepositDeductedDate} onChange={e => set('securityDepositDeductedDate', e.target.value)} /></div>
             <div className="form-group"><label className="form-label">M Book Number</label><input className="form-input" value={form.mBookNumber} onChange={e => set('mBookNumber', e.target.value)} placeholder="MB-XXX-YYYY-NNN" /></div>
             <div className="form-group"><label className="form-label">Work Audit Register No.</label><input className="form-input" value={form.workAuditRegisterNo} onChange={e => set('workAuditRegisterNo', e.target.value)} placeholder="WAR/XXX/YYYY/NNN" /></div>
           </div>

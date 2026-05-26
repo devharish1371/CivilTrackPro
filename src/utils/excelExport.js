@@ -7,7 +7,7 @@ export function exportProjectsToExcel(projects, grants = [], filename = 'CivilTr
 
   // Sheet 1: All Projects
   const main = projects.map((p, i) => ({
-    'S.No': i+1, 'Project Name': p.projectName, 'Year': p.yearOfSanction,
+    'S.No': i+1, 'Project Name': p.projectName, 'Category': p.category||'', 'Year': p.yearOfSanction,
     'Constituency': p.constituency, 'Scheme': p.scheme,
     'GO Number': p.goNumber||'', 'GO Date': p.goDate||'',
     'Sanctioned (₹)': n(p.sanctionedAmount), 'Tendered Cost (₹)': n(p.tenderedCost),
@@ -21,7 +21,7 @@ export function exportProjectsToExcel(projects, grants = [], filename = 'CivilTr
     'Extension': p.extensionOfTime||'None',
     'Status': p.statusOfWork==='completed'?'Completed':p.statusOfWork==='in_progress'?'In Progress':'Yet to Start',
     'Progress (%)': p.progress, 'JE': p.juniorEngineer, 'AE': p.assistantEngineer,
-    'UC Sent': p.ucSentDate||'', 'Security Release': p.securityDepositReleaseDate||'',
+    'UC Sent': p.ucSentDate||'', 'Security Deducted': p.securityDepositDeductedDate||'', 'Security Release': p.securityDepositReleaseDate||'',
     'Security Amount (₹)': n(p.securityAmount),
     'M Book No': p.mBookNumber||'', 'Audit Register': p.workAuditRegisterNo||'',
     'Latitude': p.latitude||'', 'Longitude': p.longitude||'', 'Notes': p.notes||''

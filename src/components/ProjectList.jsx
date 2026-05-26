@@ -12,7 +12,7 @@ const fmt = (n) => new Intl.NumberFormat('en-IN', { style:'currency', currency:'
 export default function ProjectList() {
   const { projects, contractors, engineers, schemes, constituencies, grants, dispatch } = useProjects();
   const navigate = useNavigate();
-  const [filters, setFilters] = useState({ year:'', scheme:'', status:'', constituency:'', search:'', engineer:'', contractor:'' });
+  const [filters, setFilters] = useState({ year:'', scheme:'', category:'', status:'', constituency:'', search:'', engineer:'', contractor:'' });
   const [showFilters, setShowFilters] = useState(true);
   const [lockModal, setLockModal] = useState(null); // { projectId, action:'lock'|'unlock' }
   const [lockPw, setLockPw] = useState('');
@@ -21,18 +21,20 @@ export default function ProjectList() {
   const years = useMemo(() => [...new Set(projects.map(p => p.yearOfSanction))].sort((a,b) => b-a), [projects]);
   const uniqueEngineers = useMemo(() => [...new Set(projects.flatMap(p => [p.juniorEngineer, p.assistantEngineer]).filter(Boolean))].sort(), [projects]);
   const uniqueContractors = useMemo(() => [...new Set(projects.map(p => p.contractorName).filter(Boolean))].sort(), [projects]);
+  const uniqueCategories = useMemo(() => [...new Set(projects.map(p => p.category).filter(Boolean))].sort(), [projects]);
 
   const filtered = useMemo(() => {
     return projects.filter(p => {
       if (filters.year && p.yearOfSanction !== Number(filters.year)) return false;
       if (filters.scheme && p.scheme !== filters.scheme) return false;
+      if (filters.category && p.category !== filters.category) return false;
       if (filters.status && p.statusOfWork !== filters.status) return false;
       if (filters.constituency && p.constituency !== filters.constituency) return false;
       if (filters.engineer && p.juniorEngineer !== filters.engineer && p.assistantEngineer !== filters.engineer) return false;
       if (filters.contractor && p.contractorName !== filters.contractor) return false;
       if (filters.search) {
         const q = filters.search.toLowerCase();
-        return [p.projectName, p.contractorName, p.juniorEngineer, p.assistantEngineer, p.goNumber, p.mBookNumber, p.constituency, p.scheme]
+        return [p.projectName, p.contractorName, p.juniorEngineer, p.assistantEngineer, p.goNumber, p.mBookNumber, p.constituency, p.scheme, p.category]
           .some(f => (f||'').toLowerCase().includes(q));
       }
       return true;
@@ -60,7 +62,7 @@ export default function ProjectList() {
     }
   };
 
-  const clearFilters = () => setFilters({ year:'', scheme:'', status:'', constituency:'', search:'', engineer:'', contractor:'' });
+  const clearFilters = () => setFilters({ year:'', scheme:'', category:'', status:'', constituency:'', search:'', engineer:'', contractor:'' });
   const hasFilters = Object.values(filters).some(v => v);
 
   return (
@@ -99,6 +101,12 @@ export default function ProjectList() {
             </select>
           </div>
           <div className="form-group">
+            <label className="form-label">Category</label>
+            <select className="form-select" value={filters.category} onChange={e => setFilters(f => ({...f, category:e.target.value}))}>
+              <option value="">All</option>{uniqueCategories.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <div className="form-group">
             <label className="form-label">Status</label>
             <select className="form-select" value={filters.status} onChange={e => setFilters(f => ({...f, status:e.target.value}))}>
               <option value="">All</option>{statusOptions.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
@@ -130,7 +138,7 @@ export default function ProjectList() {
         <table className="data-table">
           <thead>
             <tr>
-              <th>#</th><th>Project</th><th>Year</th><th>Constituency</th><th>Scheme</th>
+              <th>#</th><th>Project</th><th>Category</th><th>Year</th><th>Constituency</th><th>Scheme</th>
               <th>Sanctioned</th><th>Expenditure</th><th>Balance</th><th>Progress</th>
               <th>Status</th><th>JE</th><th>AE</th><th>Actions</th>
             </tr>
@@ -145,7 +153,7 @@ export default function ProjectList() {
                   {p.isLocked && <Lock size={11} style={{ color:'var(--amber)', marginRight:4, verticalAlign:'middle' }} />}
                   {p.projectName}
                 </td>
-                <td>{p.yearOfSanction}</td><td>{p.constituency}</td><td>{p.scheme}</td>
+                <td>{p.category}</td><td>{p.yearOfSanction}</td><td>{p.constituency}</td><td>{p.scheme}</td>
                 <td style={{ textAlign:'right' }}>{fmt(p.sanctionedAmount)}</td>
                 <td style={{ textAlign:'right' }}>{fmt(p.expenditureIncurred)}</td>
                 <td style={{ textAlign:'right', color:(p.sanctionedAmount - p.expenditureIncurred) < 0 ? 'var(--rose)' : 'var(--emerald)' }}>{fmt(p.sanctionedAmount - p.expenditureIncurred)}</td>

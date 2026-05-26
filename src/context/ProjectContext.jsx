@@ -119,7 +119,8 @@ export function ProjectProvider({ children }) {
       }
       if (p.securityDepositReleaseDate) {
         const d = Math.ceil((new Date(p.securityDepositReleaseDate) - now) / 86400000);
-        if (d >= 0 && d <= 15) alerts.push({ id: p.id+'_sec', projectId: p.id, type:'info', title:'Security Deposit Release Due', message:`${p.projectName} — ${d} days`, date: p.securityDepositReleaseDate });
+        if (d < 0) alerts.push({ id: p.id+'_sec', projectId: p.id, type:'danger', title:'Security Deposit Overdue', message:`${p.projectName} — overdue ${Math.abs(d)} days`, date: p.securityDepositReleaseDate });
+        else if (d <= 15) alerts.push({ id: p.id+'_sec', projectId: p.id, type:'info', title:'Security Deposit Release Due', message:`${p.projectName} — ${d} days left`, date: p.securityDepositReleaseDate });
       }
     });
     return alerts.sort((a, b) => a.type === 'danger' ? -1 : b.type === 'danger' ? 1 : 0);

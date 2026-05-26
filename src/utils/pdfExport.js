@@ -31,7 +31,7 @@ export function generateProjectListPDF(projects, filters = {}) {
   const rows = projects.map((p, i) => {
     const utilised = (p.expenditureIncurred||0) + (p.deductions||0);
     return [
-      i+1, p.projectName, p.yearOfSanction, p.constituency, p.scheme,
+      i+1, p.projectName, p.category||'', p.yearOfSanction, p.constituency, p.scheme,
       p.goNumber||'', fmt(p.sanctionedAmount),
       fmt(p.expenditureIncurred), fmt(p.deductions||0), fmt(utilised),
       fmt(p.sanctionedAmount - utilised), `${p.progress}%`,
@@ -42,12 +42,12 @@ export function generateProjectListPDF(projects, filters = {}) {
 
   doc.autoTable({
     startY: 32,
-    head: [['#','Project','Year','Constituency','Scheme','GO No','Sanctioned','Expenditure','Deductions','Utilised','Balance','Progress','Status','JE','AE']],
+    head: [['#','Project','Category','Year','Constituency','Scheme','GO No','Sanctioned','Expenditure','Deductions','Utilised','Balance','Progress','Status','JE','AE']],
     body: rows,
     styles: { fontSize:6.5, cellPadding:2, textColor:[30,30,30] },
     headStyles: { fillColor:[10,15,30], textColor:[200,220,240], fontSize:6.5 },
     alternateRowStyles: { fillColor:[240,245,250] },
-    columnStyles: { 1:{ cellWidth:35 }, 6:{halign:'right'}, 7:{halign:'right'}, 8:{halign:'right'}, 9:{halign:'right'}, 10:{halign:'right'} },
+    columnStyles: { 1:{ cellWidth:30 }, 2:{ cellWidth:15 }, 7:{halign:'right'}, 8:{halign:'right'}, 9:{halign:'right'}, 10:{halign:'right'}, 11:{halign:'right'} },
   });
 
   const totalS = projects.reduce((s,p) => s+(p.sanctionedAmount||0), 0);
@@ -80,7 +80,7 @@ export function generateProjectDetailPDF(project) {
 
   const utilised = (p.expenditureIncurred||0) + (p.deductions||0);
   section('Project Information', [
-    ['Project Name', p.projectName], ['Year', p.yearOfSanction], ['Constituency', p.constituency],
+    ['Project Name', p.projectName], ['Category', p.category], ['Year', p.yearOfSanction], ['Constituency', p.constituency],
     ['Scheme', p.scheme], ['GO Number', p.goNumber], ['GO Date', fmtDate(p.goDate)],
     ['Contractor', p.contractorName], ['Status', p.statusOfWork], ['Progress', `${p.progress}%`],
   ]);
@@ -98,6 +98,7 @@ export function generateProjectDetailPDF(project) {
   ]);
   section('Physical Parameters', [
     ['UC Sent On', fmtDate(p.ucSentDate)], ['Security Release', fmtDate(p.securityDepositReleaseDate)],
+    ['Security Deducted On', fmtDate(p.securityDepositDeductedDate)],
     ['Security Amount', fmt(p.securityAmount||0)], ['M Book No', p.mBookNumber],
     ['Audit Register No', p.workAuditRegisterNo],
   ]);
