@@ -13,6 +13,15 @@ export const sampleSchemes = [
   { id: uuidv4(), name: 'Urban Infrastructure' }
 ];
 
+export const sampleCategories = [
+  { id: uuidv4(), name: 'Road' },
+  { id: uuidv4(), name: 'Drain' },
+  { id: uuidv4(), name: 'Building' },
+  { id: uuidv4(), name: 'Bridge' },
+  { id: uuidv4(), name: 'Water Supply' },
+  { id: uuidv4(), name: 'Others' }
+];
+
 export const sampleConstituencies = [
   { id: uuidv4(), name: 'Thiruvananthapuram' },
   { id: uuidv4(), name: 'Kollam' },

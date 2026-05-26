@@ -1,11 +1,11 @@
 import { createContext, useContext, useReducer, useEffect, useCallback, useState, useRef } from 'react';
-import { sampleProjects, sampleContractors, sampleEngineers, sampleSchemes, sampleConstituencies, sampleGrants } from '../data/sampleData';
+import { sampleProjects, sampleContractors, sampleEngineers, sampleSchemes, sampleConstituencies, sampleGrants, sampleCategories } from '../data/sampleData';
 import { pushToSheet, pullFromSheet } from '../utils/googleSheets';
 
 const ProjectContext = createContext();
 const KEYS = { 
   projects: 'ct_projects', contractors: 'ct_contractors', engineers: 'ct_engineers', 
-  schemes: 'ct_schemes', constituencies: 'ct_constituencies', grants: 'ct_grants',
+  schemes: 'ct_schemes', constituencies: 'ct_constituencies', grants: 'ct_grants', categories: 'ct_categories',
   gsheet: 'ct_gsheet' 
 };
 
@@ -24,7 +24,7 @@ function reducer(state, action) {
 
   const res = 
     manage('PROJECTS') || manage('CONTRACTORS') || manage('ENGINEERS') || 
-    manage('SCHEMES') || manage('CONSTITUENCIES') || manage('GRANTS');
+    manage('SCHEMES') || manage('CONSTITUENCIES') || manage('GRANTS') || manage('CATEGORIES');
     
   if (res) return res;
 
@@ -33,7 +33,7 @@ function reducer(state, action) {
   }
 
   if (type === 'RESET_ALL') {
-    return { projects: sampleProjects, contractors: sampleContractors, engineers: sampleEngineers, schemes: sampleSchemes, constituencies: sampleConstituencies, grants: sampleGrants };
+    return { projects: sampleProjects, contractors: sampleContractors, engineers: sampleEngineers, schemes: sampleSchemes, constituencies: sampleConstituencies, grants: sampleGrants, categories: sampleCategories };
   }
   return state;
 }
@@ -51,7 +51,8 @@ export function ProjectProvider({ children }) {
     engineers: load(KEYS.engineers, sampleEngineers),
     schemes: load(KEYS.schemes, sampleSchemes),
     constituencies: load(KEYS.constituencies, sampleConstituencies),
-    grants: load(KEYS.grants, sampleGrants)
+    grants: load(KEYS.grants, sampleGrants),
+    categories: load(KEYS.categories, sampleCategories)
   }));
   const [gsheetConfig, setGsheetConfig] = useState(() => load(KEYS.gsheet, { 
     clientId: '', 
@@ -66,6 +67,7 @@ export function ProjectProvider({ children }) {
   useEffect(() => { localStorage.setItem(KEYS.schemes, JSON.stringify(state.schemes)); }, [state.schemes]);
   useEffect(() => { localStorage.setItem(KEYS.constituencies, JSON.stringify(state.constituencies)); }, [state.constituencies]);
   useEffect(() => { localStorage.setItem(KEYS.grants, JSON.stringify(state.grants)); }, [state.grants]);
+  useEffect(() => { localStorage.setItem(KEYS.categories, JSON.stringify(state.categories)); }, [state.categories]);
   useEffect(() => { localStorage.setItem(KEYS.gsheet, JSON.stringify(gsheetConfig)); }, [gsheetConfig]);
 
   // Auto-sync Push to Google Sheets on data changes
@@ -96,6 +98,7 @@ export function ProjectProvider({ children }) {
             schemes: data.schemes.length ? data.schemes : state.schemes,
             constituencies: data.constituencies.length ? data.constituencies : state.constituencies,
             grants: data.grants.length ? data.grants : state.grants,
+            categories: state.categories, // Not synced to gsheet currently
           }});
         }).catch(e => console.error('Auto-sync pull failed:', e));
       }, 120000); // 2 minutes

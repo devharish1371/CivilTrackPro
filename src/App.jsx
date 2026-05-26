@@ -11,6 +11,7 @@ import EngineerManager from './components/EngineerManager'
 import SchemeManager from './components/SchemeManager'
 import ConstituencyManager from './components/ConstituencyManager'
 import GrantManager from './components/GrantManager'
+import CategoryManager from './components/CategoryManager'
 import Settings from './components/Settings'
 
 export default function App() {
@@ -29,6 +30,7 @@ export default function App() {
         <Route path="/schemes" element={<SchemeManager />} />
         <Route path="/constituencies" element={<ConstituencyManager />} />
         <Route path="/grants" element={<GrantManager />} />
+        <Route path="/categories" element={<CategoryManager />} />
         <Route path="/settings" element={<Settings />} />
       </Routes>
     </Layout>

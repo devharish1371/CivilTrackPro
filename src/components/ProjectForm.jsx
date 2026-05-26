@@ -24,7 +24,7 @@ const fmt = (n) => new Intl.NumberFormat('en-IN', { style:'currency', currency:'
 export default function ProjectForm() {
   const { id } = useParams();
   const isEdit = Boolean(id);
-  const { projects, contractors, engineers, schemes, constituencies, grants, dispatch } = useProjects();
+  const { projects, contractors, engineers, schemes, constituencies, grants, categories, dispatch } = useProjects();
   const navigate = useNavigate();
   const [form, setForm] = useState(empty);
   const [errors, setErrors] = useState({});
@@ -132,11 +132,7 @@ export default function ProjectForm() {
               <label className="form-label">Category</label>
               <input className="form-input" list="category-list" value={form.category} onChange={e => set('category', e.target.value)} placeholder="Road, Drain, Building..." />
               <datalist id="category-list">
-                <option value="Road" />
-                <option value="Drain" />
-                <option value="Building" />
-                <option value="Bridge" />
-                <option value="Water Supply" />
+                {categories.map(c => <option key={c.id} value={c.name} />)}
               </datalist>
             </div>
             <div className="form-group">

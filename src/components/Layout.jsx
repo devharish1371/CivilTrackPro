@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useProjects } from '../context/ProjectContext';
-import { LayoutDashboard, FolderKanban, PlusCircle, FileText, Bell, Menu, X, Building2, HardHat, Users, Settings, Cloud, Target, Map, Banknote } from 'lucide-react';
+import { LayoutDashboard, FolderKanban, PlusCircle, FileText, Bell, Menu, X, Building2, HardHat, Users, Settings, Cloud, Target, Map, Banknote, Tags } from 'lucide-react';
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -9,6 +9,7 @@ const navItems = [
   { path: '/projects/new', icon: PlusCircle, label: 'Add Project' },
   { path: '/grants', icon: Banknote, label: 'Grants' },
   { path: '/schemes', icon: Target, label: 'Schemes' },
+  { path: '/categories', icon: Tags, label: 'Categories' },
   { path: '/constituencies', icon: Map, label: 'Constituencies' },
   { path: '/contractors', icon: HardHat, label: 'Contractors' },
   { path: '/engineers', icon: Users, label: 'Engineers' },
@@ -21,7 +22,7 @@ const pageTitles = {
   '/':'Dashboard', '/projects':'Projects', '/projects/new':'Add Project',
   '/reports':'Reports', '/alerts':'Alerts', '/contractors':'Contractors',
   '/engineers':'Engineers', '/settings':'Settings', '/schemes':'Schemes',
-  '/constituencies':'Constituencies', '/grants':'Grants'
+  '/constituencies':'Constituencies', '/grants':'Grants', '/categories':'Categories'
 };
 
 export default function Layout({ children }) {
