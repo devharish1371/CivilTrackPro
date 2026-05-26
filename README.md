@@ -1,16 +1,76 @@
-# React + Vite
+# CivilTrack Pro
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+CivilTrack Pro is a comprehensive Civil Engineering Management Dashboard designed for administrators, project managers, and engineers to seamlessly track, manage, and report on infrastructure projects across various constituencies and schemes.
 
-Currently, two official plugins are available:
+**Live Demo / Deployment:** [https://devharish1371.github.io/CivilTrackPro/](https://devharish1371.github.io/CivilTrackPro/)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🚀 Features
 
-## React Compiler
+- **Comprehensive Data State Management:** Robust tracking for Schemes, Constituencies, and Grant allocations.
+- **Dynamic Financial Tracking:** Automatically calculate balances and utilization metrics against granted funds in real-time.
+- **Secure Editing:** Project-level edits and administrative actions are secured behind a master password. 
+- **Data Synchronization:** Built-in auto-sync engine and initialization utility for real-time synchronization with external Google Sheets to enable shared team collaboration.
+- **Advanced Export Capabilities:** Full reporting functionality supporting multiple formats:
+  - **PDF** and **Excel** for administrative and financial reporting.
+  - **KML** for geospatial mapping of projects.
+- **Rich Dashboard Analytics:** Visualize project status, fund utilization, and geographical spread through intuitive charts and metrics.
+- **Role Management:** Manage Contractors and Engineers associated with various projects.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🛠️ Tech Stack
 
-## Expanding the ESLint configuration
+- **Core Framework:** React 19 + Vite
+- **Styling:** Vanilla CSS (Tailwind-like structure in index.css)
+- **Icons:** Lucide React
+- **Charts:** Recharts
+- **Exporting/Reporting:** `jspdf`, `jspdf-autotable`, `xlsx`, `file-saver`
+- **Routing:** React Router DOM
+- **Date Manipulation:** `date-fns`
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 📦 Installation & Setup
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/devharish1371/CivilTrackPro.git
+   cd CivilTrackPro
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+3. **Start the development server:**
+   ```bash
+   npm run dev
+   ```
+
+4. **Build for production:**
+   ```bash
+   npm run build
+   ```
+
+## 🔐 Security & Access
+
+Certain administrative features and project editing capabilities require a master password. 
+- **Default Master Password:** `1970`
+
+## 🚀 Deployment (GitHub Pages)
+
+This project is configured to be deployed automatically to GitHub Pages.
+To deploy a new version:
+```bash
+npm run deploy
+```
+This will build the Vite project and push the `dist` folder to the `gh-pages` branch.
+
+## 📁 Project Structure
+
+- `src/components/` - Core UI components including Dashboards, Layout, and Managers (Contractors, Engineers, Constituencies, etc.)
+- `src/context/` - Global state management for projects and authentication.
+- `src/utils/` - Utility functions for PDF/Excel/KML exports and Google Sheets sync engine.
+- `src/data/` - Sample datasets.
+- `public/` - Static assets like SVGs and icons.
+
+## 📄 License
+
+This project is proprietary and intended for authorized civil engineering administrative use.
