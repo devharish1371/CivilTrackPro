@@ -61,10 +61,11 @@ export default function ContractorManager() {
               <label className="form-label">Class of Contractor</label>
               <select className="form-select" value={form.classOfContractor} onChange={e => set('classOfContractor', e.target.value)}>
                 <option value="">Select Class</option>
-                <option value="Class A">Class A</option>
-                <option value="Class B">Class B</option>
-                <option value="Class C">Class C</option>
-                <option value="Class D">Class D</option>
+                <option value="Class 1">Class 1</option>
+                <option value="Class 2">Class 2</option>
+                <option value="Class 3">Class 3</option>
+                <option value="Class 4">Class 4</option>
+                <option value="Class 5">Class 5</option>
               </select>
             </div>
             <div className="form-group"><label className="form-label">Date of Expiry of Licence</label><input className="form-input" type="date" value={form.licenceExpiryDate} onChange={e => set('licenceExpiryDate', e.target.value)} /></div>

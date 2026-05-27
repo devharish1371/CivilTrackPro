@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useProjects } from '../context/ProjectContext';
 import { statusOptions } from '../data/sampleData';
 import { v4 as uuidv4 } from 'uuid';
-import { Save, ArrowLeft, MapPin, IndianRupee, AlertTriangle } from 'lucide-react';
+import { Save, ArrowLeft, MapPin, IndianRupee, AlertTriangle, Calendar, Users, FileText } from 'lucide-react';
 
 const empty = {
   projectName:'', yearOfSanction:new Date().getFullYear(), constituency:'', scheme:'',
@@ -16,7 +16,7 @@ const empty = {
   juniorEngineer:'', assistantEngineer:'',
   ucSentDate:'', securityDepositReleaseDate:'', securityDepositDeductedDate:'', securityAmount:'',
   mBookNumber:'', workAuditRegisterNo:'', category:'',
-  latitude:'', longitude:'', isLocked:false, lockHash:'', notes:''
+  latitude:'', longitude:'', physicalParametersNotes:'', isLocked:false, lockHash:'', notes:''
 };
 
 const fmt = (n) => new Intl.NumberFormat('en-IN', { style:'currency', currency:'INR', maximumFractionDigits:0 }).format(n);
@@ -39,7 +39,7 @@ export default function ProjectForm() {
       const ex = projects.find(p => p.id === id);
       if (ex) {
         if (ex.isLocked) { navigate('/projects'); return; }
-        setForm({ ...ex });
+        setForm({ ...ex, physicalParametersNotes: ex.physicalParametersNotes || '' });
       } else navigate('/projects');
     }
   }, [id, isEdit]);
@@ -200,9 +200,9 @@ export default function ProjectForm() {
           </div>
         </div>
 
-        {/* 2. Contractor */}
+        {/* 2. Timeline (includes Contractor) */}
         <div className="card" style={{ marginBottom:16 }}>
-          <div className="card-header"><span className="card-title">Contractor</span></div>
+          <div className="card-header"><span className="card-title"><Calendar size={14} style={{ display:'inline', verticalAlign:'middle' }} /> Timeline</span></div>
           <div className="form-grid">
             <div className="form-group">
               <label className="form-label">Contractor *</label>
@@ -215,6 +215,11 @@ export default function ProjectForm() {
               <label className="form-label">Or Enter Contractor Name</label>
               <input className="form-input" value={form.contractorName} onChange={e => set('contractorName', e.target.value)} placeholder="M/s ..." />
             </div>
+            <div className="form-group"><label className="form-label">Work Order Date</label><input className="form-input" type="date" value={form.workOrderDate} onChange={e => set('workOrderDate', e.target.value)} /></div>
+            <div className="form-group"><label className="form-label">Start Date (Contract)</label><input className="form-input" type="date" value={form.dateOfStartContract} onChange={e => set('dateOfStartContract', e.target.value)} /></div>
+            <div className="form-group"><label className="form-label">Completion Date (Contract)</label><input className="form-input" type="date" value={form.dateOfCompletionContract} onChange={e => set('dateOfCompletionContract', e.target.value)} /></div>
+            <div className="form-group"><label className="form-label">Actual Start</label><input className="form-input" type="date" value={form.actualDateOfStart} onChange={e => set('actualDateOfStart', e.target.value)} /></div>
+            <div className="form-group"><label className="form-label">Actual Completion</label><input className="form-input" type="date" value={form.actualDateOfCompletion} onChange={e => set('actualDateOfCompletion', e.target.value)} /></div>
             <div className="form-group">
               <label className="form-label">Extension of Time</label>
               <input className="form-input" value={form.extensionOfTime} onChange={e => set('extensionOfTime', e.target.value)} placeholder="e.g. 3 months" />
@@ -222,9 +227,9 @@ export default function ProjectForm() {
           </div>
         </div>
 
-        {/* 3. Guarantee & Personnel (moved BEFORE Financial) */}
+        {/* 3. Guarantee & Personnel */}
         <div className="card" style={{ marginBottom:16 }}>
-          <div className="card-header"><span className="card-title">Guarantee & Personnel</span></div>
+          <div className="card-header"><span className="card-title"><Users size={14} style={{ display:'inline', verticalAlign:'middle' }} /> Guarantee & Personnel</span></div>
           <div className="form-grid">
             <div className="form-group"><label className="form-label">Performance Guarantee Date</label><input className="form-input" type="date" value={form.performanceGuaranteeDate} onChange={e => set('performanceGuaranteeDate', e.target.value)} /></div>
             <div className="form-group"><label className="form-label">Expiry Date</label><input className="form-input" type="date" value={form.expiryDate} onChange={e => set('expiryDate', e.target.value)} /></div>
@@ -243,9 +248,9 @@ export default function ProjectForm() {
           </div>
         </div>
 
-        {/* 4. Financial Details (with percentage visualisation) */}
+        {/* 4. Financial Details */}
         <div className="card" style={{ marginBottom:16 }}>
-          <div className="card-header"><span className="card-title">Financial Details</span></div>
+          <div className="card-header"><span className="card-title"><IndianRupee size={14} style={{ display:'inline', verticalAlign:'middle' }} /> Financial Details</span></div>
           
           {form.scheme && (
             <div className="alert-item info" style={{ marginBottom: 16 }}>
@@ -306,19 +311,7 @@ export default function ProjectForm() {
           )}
         </div>
 
-        {/* 5. Timeline */}
-        <div className="card" style={{ marginBottom:16 }}>
-          <div className="card-header"><span className="card-title">Timeline</span></div>
-          <div className="form-grid">
-            <div className="form-group"><label className="form-label">Work Order Date</label><input className="form-input" type="date" value={form.workOrderDate} onChange={e => set('workOrderDate', e.target.value)} /></div>
-            <div className="form-group"><label className="form-label">Start Date (Contract)</label><input className="form-input" type="date" value={form.dateOfStartContract} onChange={e => set('dateOfStartContract', e.target.value)} /></div>
-            <div className="form-group"><label className="form-label">Completion Date (Contract)</label><input className="form-input" type="date" value={form.dateOfCompletionContract} onChange={e => set('dateOfCompletionContract', e.target.value)} /></div>
-            <div className="form-group"><label className="form-label">Actual Start</label><input className="form-input" type="date" value={form.actualDateOfStart} onChange={e => set('actualDateOfStart', e.target.value)} /></div>
-            <div className="form-group"><label className="form-label">Actual Completion</label><input className="form-input" type="date" value={form.actualDateOfCompletion} onChange={e => set('actualDateOfCompletion', e.target.value)} /></div>
-          </div>
-        </div>
-
-        {/* 6. Status (moved AFTER Timeline) */}
+        {/* 5. Status */}
         <div className="card" style={{ marginBottom:16 }}>
           <div className="card-header"><span className="card-title">Status</span></div>
           <div className="form-grid">
@@ -340,7 +333,7 @@ export default function ProjectForm() {
           </div>
         </div>
 
-        {/* 7. Security Deposit (renamed from Physical Parameters) */}
+        {/* 6. Security Deposit */}
         <div className="card" style={{ marginBottom:16 }}>
           <div className="card-header"><span className="card-title">Security Deposit</span></div>
           <div className="form-grid">
@@ -350,6 +343,14 @@ export default function ProjectForm() {
             <div className="form-group"><label className="form-label">UC Sent On Date</label><input className="form-input" type="date" value={form.ucSentDate} onChange={e => set('ucSentDate', e.target.value)} /></div>
             <div className="form-group"><label className="form-label">M Book Number</label><input className="form-input" value={form.mBookNumber} onChange={e => set('mBookNumber', e.target.value)} placeholder="MB-XXX-YYYY-NNN" /></div>
             <div className="form-group"><label className="form-label">Work Audit Register No.</label><input className="form-input" value={form.workAuditRegisterNo} onChange={e => set('workAuditRegisterNo', e.target.value)} placeholder="WAR/XXX/YYYY/NNN" /></div>
+          </div>
+        </div>
+
+        {/* 7. Physical Parameters */}
+        <div className="card" style={{ marginBottom:16 }}>
+          <div className="card-header"><span className="card-title"><FileText size={14} style={{ display:'inline', verticalAlign:'middle' }} /> Physical Parameters</span></div>
+          <div className="form-group">
+            <textarea className="form-textarea" style={{ minHeight: '100px' }} value={form.physicalParametersNotes} onChange={e => set('physicalParametersNotes', e.target.value)} placeholder="Enter physical parameters and related notes..." />
           </div>
         </div>
 
@@ -372,7 +373,7 @@ export default function ProjectForm() {
           )}
         </div>
 
-        {/* 9. Notes */}
+        {/* 9. Notes/Remarks */}
         <div className="card" style={{ marginBottom:16 }}>
           <div className="form-group"><label className="form-label">Notes / Remarks</label><textarea className="form-textarea" value={form.notes} onChange={e => set('notes', e.target.value)} placeholder="Additional notes..." /></div>
         </div>

@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useProjects, hashPassword } from '../context/ProjectContext';
+import { useProjects } from '../context/ProjectContext';
 import { generateProjectDetailPDF, savePDF, sharePDF } from '../utils/pdfExport';
 import { downloadKML } from '../utils/kmlExport';
 import { ArrowLeft, Edit, Trash2, FileText, Share2, Calendar, IndianRupee, Users, AlertTriangle, Lock, Unlock, MapPin, ExternalLink } from 'lucide-react';
@@ -87,12 +87,6 @@ export default function ProjectDetail() {
         </div>
       )}
 
-      {/* Progress */}
-      <div className="card" style={{ marginBottom:16 }}>
-        <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}><span className="card-title">Progress</span><span style={{ fontSize:20, fontWeight:700 }}>{p.progress}%</span></div>
-        <div className="progress-bar" style={{ height:10 }}><div className={`progress-fill ${p.progress>=80?'green':p.progress>=40?'amber':'red'}`} style={{ width:`${p.progress}%` }} /></div>
-      </div>
-
       {/* Sanction & GO */}
       <div className="card" style={{ marginBottom:16 }}>
         <div className="card-header"><span className="card-title">Sanction & GO Details</span></div>
@@ -103,7 +97,19 @@ export default function ProjectDetail() {
           <D label="Category" value={p.category} />
           <D label="GO Number" value={p.goNumber} />
           <D label="GO Date" value={fmtDate(p.goDate)} />
+        </div>
+      </div>
+
+      {/* Timeline */}
+      <div className="card" style={{ marginBottom:16 }}>
+        <div className="card-header"><span className="card-title"><Calendar size={14} style={{ display:'inline', verticalAlign:'middle' }} /> Timeline</span></div>
+        <div className="detail-grid">
           <D label="Contractor" value={p.contractorName} />
+          <D label="Work Order Date" value={fmtDate(p.workOrderDate)} />
+          <D label="Start (Contract)" value={fmtDate(p.dateOfStartContract)} />
+          <D label="Completion (Contract)" value={fmtDate(p.dateOfCompletionContract)} />
+          <D label="Actual Start" value={fmtDate(p.actualDateOfStart)} />
+          <D label="Actual Completion" value={fmtDate(p.actualDateOfCompletion)} />
           <D label="Extension of Time" value={p.extensionOfTime || 'None'} />
         </div>
       </div>
@@ -152,19 +158,24 @@ export default function ProjectDetail() {
         })()}
       </div>
 
-      {/* Timeline */}
+      {/* Status */}
       <div className="card" style={{ marginBottom:16 }}>
-        <div className="card-header"><span className="card-title"><Calendar size={14} style={{ display:'inline', verticalAlign:'middle' }} /> Timeline</span></div>
+        <div className="card-header"><span className="card-title">Status</span></div>
         <div className="detail-grid">
-          <D label="Work Order Date" value={fmtDate(p.workOrderDate)} />
-          <D label="Start (Contract)" value={fmtDate(p.dateOfStartContract)} />
-          <D label="Completion (Contract)" value={fmtDate(p.dateOfCompletionContract)} />
-          <D label="Actual Start" value={fmtDate(p.actualDateOfStart)} />
-          <D label="Actual Completion" value={fmtDate(p.actualDateOfCompletion)} />
+          <D label="Status" value={p.statusOfWork==='completed'?'Completed':p.statusOfWork==='in_progress'?'In Progress':'Yet to Start'} />
+          <div className="detail-item">
+            <label>Progress</label>
+            <div className="value" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>{p.progress}%</span>
+              <div className="progress-bar" style={{ width: '100px', height: 8, display: 'inline-block' }}>
+                <div className={`progress-fill ${p.progress>=80?'green':p.progress>=40?'amber':'red'}`} style={{ width:`${p.progress}%` }} />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Security Deposit (formerly Physical Parameters) */}
+      {/* Security Deposit */}
       <div className="card" style={{ marginBottom:16 }}>
         <div className="card-header"><span className="card-title">Security Deposit</span></div>
         <div className="detail-grid">
@@ -177,10 +188,16 @@ export default function ProjectDetail() {
         </div>
       </div>
 
+      {/* Physical Parameters */}
+      <div className="card" style={{ marginBottom:16 }}>
+        <div className="card-header"><span className="card-title"><FileText size={14} style={{ display:'inline', verticalAlign:'middle' }} /> Physical Parameters</span></div>
+        <p style={{ color:'var(--text-secondary)', fontSize:13, lineHeight:1.6, whiteSpace:'pre-wrap' }}>{p.physicalParametersNotes || '—'}</p>
+      </div>
+
       {/* Geo */}
       {p.latitude && p.longitude && Number(p.latitude) !== 0 && (
         <div className="card" style={{ marginBottom:16 }}>
-          <div className="card-header"><span className="card-title"><MapPin size={14} style={{ display:'inline', verticalAlign:'middle' }} /> Location</span></div>
+          <div className="card-header"><span className="card-title"><MapPin size={14} style={{ display:'inline', verticalAlign:'middle' }} /> Geo-Tagging</span></div>
           <div className="detail-grid">
             <D label="Latitude" value={p.latitude} />
             <D label="Longitude" value={p.longitude} />
@@ -194,7 +211,12 @@ export default function ProjectDetail() {
         </div>
       )}
 
-      {p.notes && <div className="card" style={{ marginBottom:16 }}><div className="card-header"><span className="card-title">Notes</span></div><p style={{ color:'var(--text-secondary)', fontSize:13, lineHeight:1.6 }}>{p.notes}</p></div>}
+      {p.notes && (
+        <div className="card" style={{ marginBottom:16 }}>
+          <div className="card-header"><span className="card-title">Notes / Remarks</span></div>
+          <p style={{ color:'var(--text-secondary)', fontSize:13, lineHeight:1.6, whiteSpace:'pre-wrap' }}>{p.notes}</p>
+        </div>
+      )}
 
       {/* Lock Modal */}
       {lockModal && (

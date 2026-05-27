@@ -62,6 +62,7 @@ export async function importProjectsFromExcel(file, existingProjects) {
             workAuditRegisterNo: row['Audit Register'] || '',
             latitude: row['Latitude'] || '',
             longitude: row['Longitude'] || '',
+            physicalParametersNotes: row['Physical Parameters'] || '',
             notes: row['Notes'] || '',
             updatedAt: new Date().toISOString()
           };

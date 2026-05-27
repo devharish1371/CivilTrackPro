@@ -35,7 +35,8 @@ export function exportProjectsToExcel(projects, grants = [], filename = 'CivilTr
     'UC Sent': p.ucSentDate||'', 'Security Deducted': p.securityDepositDeductedDate||'', 'Security Release': p.securityDepositReleaseDate||'',
     'Security Amount (₹)': n(p.securityAmount),
     'M Book No': p.mBookNumber||'', 'Audit Register': p.workAuditRegisterNo||'',
-    'Latitude': p.latitude||'', 'Longitude': p.longitude||'', 'Notes': p.notes||''
+    'Latitude': p.latitude||'', 'Longitude': p.longitude||'',
+    'Physical Parameters': p.physicalParametersNotes||'', 'Notes': p.notes||''
   }));
   const ws1 = XLSX.utils.json_to_sheet(main);
   ws1['!cols'] = Array(34).fill({ wch:16 });
