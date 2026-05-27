@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useProjects } from '../context/ProjectContext';
 import { statusOptions } from '../data/sampleData';
 import { v4 as uuidv4 } from 'uuid';
-import { Save, ArrowLeft, MapPin, IndianRupee } from 'lucide-react';
+import { Save, ArrowLeft, MapPin, IndianRupee, AlertTriangle } from 'lucide-react';
 
 const empty = {
   projectName:'', yearOfSanction:new Date().getFullYear(), constituency:'', scheme:'',
@@ -29,6 +29,7 @@ export default function ProjectForm() {
   const [form, setForm] = useState(empty);
   const [errors, setErrors] = useState({});
   const [toast, setToast] = useState('');
+  const [dateWarnings, setDateWarnings] = useState([]);
 
   const jeList = engineers.filter(e => e.designation === 'Junior Engineer');
   const aeList = engineers.filter(e => e.designation === 'Assistant Engineer');
@@ -45,6 +46,41 @@ export default function ProjectForm() {
 
   const set = (f, v) => { setForm(x => ({...x, [f]:v})); if (errors[f]) setErrors(e => ({...e, [f]:''})); };
 
+  // Date validation
+  const validateDates = (formData) => {
+    const warnings = [];
+    const d = (key) => formData[key] ? new Date(formData[key]) : null;
+
+    const startContract = d('dateOfStartContract');
+    const completionContract = d('dateOfCompletionContract');
+    const actualStart = d('actualDateOfStart');
+    const actualCompletion = d('actualDateOfCompletion');
+    const workOrder = d('workOrderDate');
+    const goDate = d('goDate');
+
+    if (goDate && workOrder && workOrder < goDate) warnings.push('Work Order Date is before GO Date');
+    if (workOrder && startContract && startContract < workOrder) warnings.push('Contract Start Date is before Work Order Date');
+    if (startContract && completionContract && completionContract < startContract) warnings.push('Contract Completion Date is before Contract Start Date');
+    if (actualStart && actualCompletion && actualCompletion < actualStart) warnings.push('Actual Completion is before Actual Start Date');
+    if (startContract && actualStart && actualStart < startContract) warnings.push('Actual Start is before Contract Start Date');
+
+    const secDeducted = d('securityDepositDeductedDate');
+    const secRelease = d('securityDepositReleaseDate');
+    if (secDeducted && secRelease && secRelease < secDeducted) warnings.push('Security Release Date is before Deducted Date');
+
+    const perfGuarantee = d('performanceGuaranteeDate');
+    const expiry = d('expiryDate');
+    if (perfGuarantee && expiry && expiry < perfGuarantee) warnings.push('Expiry Date is before Performance Guarantee Date');
+
+    return warnings;
+  };
+
+  useEffect(() => {
+    setDateWarnings(validateDates(form));
+  }, [form.goDate, form.workOrderDate, form.dateOfStartContract, form.dateOfCompletionContract,
+      form.actualDateOfStart, form.actualDateOfCompletion, form.securityDepositDeductedDate,
+      form.securityDepositReleaseDate, form.performanceGuaranteeDate, form.expiryDate]);
+
   const validate = () => {
     const e = {};
     if (!form.projectName.trim()) e.projectName = 'Required';
@@ -59,6 +95,9 @@ export default function ProjectForm() {
   const handleSubmit = (ev) => {
     ev.preventDefault();
     if (!validate()) return;
+    if (dateWarnings.length > 0) {
+      if (!confirm(`Date warnings:\n\n${dateWarnings.map(w => '⚠ ' + w).join('\n')}\n\nDo you still want to save?`)) return;
+    }
     const data = { ...form, id: isEdit ? id : uuidv4(),
       sanctionedAmount:Number(form.sanctionedAmount)||0, tenderedCost:Number(form.tenderedCost)||0,
       expenditureIncurred:Number(form.expenditureIncurred)||0, progress:Number(form.progress)||0,
@@ -85,6 +124,7 @@ export default function ProjectForm() {
   const deductions = Number(form.deductions)||0;
   const utilised = expenditure + deductions;
   const balance = sanctioned - utilised;
+  const utilisationPct = sanctioned > 0 ? Math.round((utilised / sanctioned) * 100) : 0;
 
   const schemeGrantTotal = grants.filter(g => g.scheme === form.scheme).reduce((sum, g) => sum + (g.amount || 0), 0);
   const schemeProjectTotal = projects.filter(p => p.scheme === form.scheme && p.id !== id).reduce((sum, p) => sum + (p.sanctionedAmount || 0), 0);
@@ -100,8 +140,22 @@ export default function ProjectForm() {
           <div><h1>{isEdit ? 'Edit Project' : 'Add New Project'}</h1><p>{isEdit ? 'Update project details' : 'Fill in project information'}</p></div>
         </div>
       </div>
+
+      {/* Date Warnings */}
+      {dateWarnings.length > 0 && (
+        <div className="card" style={{ marginBottom:16, borderColor:'var(--amber)' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
+            <AlertTriangle size={16} style={{ color:'var(--amber)' }} />
+            <span style={{ fontWeight:600, color:'var(--amber)' }}>Date Warnings</span>
+          </div>
+          {dateWarnings.map((w, i) => (
+            <div key={i} style={{ fontSize:12, color:'var(--amber)', padding:'2px 0', paddingLeft:24 }}>⚠ {w}</div>
+          ))}
+        </div>
+      )}
+
       <form onSubmit={handleSubmit}>
-        {/* Sanction / GO Details */}
+        {/* 1. Sanction / GO Details */}
         <div className="card" style={{ marginBottom:16 }}>
           <div className="card-header"><span className="card-title">Sanction & GO Details</span></div>
           <div className="form-grid">
@@ -146,7 +200,50 @@ export default function ProjectForm() {
           </div>
         </div>
 
-        {/* Financial */}
+        {/* 2. Contractor */}
+        <div className="card" style={{ marginBottom:16 }}>
+          <div className="card-header"><span className="card-title">Contractor</span></div>
+          <div className="form-grid">
+            <div className="form-group">
+              <label className="form-label">Contractor *</label>
+              <select className="form-select" value={form.contractorName} onChange={e => set('contractorName', e.target.value)}>
+                <option value="">Select or type below</option>
+                {contractors.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+              </select><E f="contractorName" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Or Enter Contractor Name</label>
+              <input className="form-input" value={form.contractorName} onChange={e => set('contractorName', e.target.value)} placeholder="M/s ..." />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Extension of Time</label>
+              <input className="form-input" value={form.extensionOfTime} onChange={e => set('extensionOfTime', e.target.value)} placeholder="e.g. 3 months" />
+            </div>
+          </div>
+        </div>
+
+        {/* 3. Guarantee & Personnel (moved BEFORE Financial) */}
+        <div className="card" style={{ marginBottom:16 }}>
+          <div className="card-header"><span className="card-title">Guarantee & Personnel</span></div>
+          <div className="form-grid">
+            <div className="form-group"><label className="form-label">Performance Guarantee Date</label><input className="form-input" type="date" value={form.performanceGuaranteeDate} onChange={e => set('performanceGuaranteeDate', e.target.value)} /></div>
+            <div className="form-group"><label className="form-label">Expiry Date</label><input className="form-input" type="date" value={form.expiryDate} onChange={e => set('expiryDate', e.target.value)} /></div>
+            <div className="form-group">
+              <label className="form-label">Junior Engineer</label>
+              <select className="form-select" value={form.juniorEngineer} onChange={e => set('juniorEngineer', e.target.value)}>
+                <option value="">Select</option>{jeList.map(e => <option key={e.id} value={e.name}>{e.name} — {e.division}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Assistant Engineer</label>
+              <select className="form-select" value={form.assistantEngineer} onChange={e => set('assistantEngineer', e.target.value)}>
+                <option value="">Select</option>{aeList.map(e => <option key={e.id} value={e.name}>{e.name} — {e.division}</option>)}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* 4. Financial Details (with percentage visualisation) */}
         <div className="card" style={{ marginBottom:16 }}>
           <div className="card-header"><span className="card-title">Financial Details</span></div>
           
@@ -190,41 +287,26 @@ export default function ProjectForm() {
               <input className="form-input" readOnly value={balance.toLocaleString('en-IN')} style={{ opacity:0.7, color: balance < 0 ? 'var(--rose)' : 'var(--emerald)' }} />
             </div>
           </div>
+
+          {/* Financial Percentage Visualisation */}
+          {sanctioned > 0 && (
+            <div style={{ marginTop:16 }}>
+              <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
+                <span style={{ fontSize:12, color:'var(--text-secondary)' }}>Utilisation: <strong style={{ color:'var(--cyan)' }}>{utilisationPct}%</strong></span>
+                <span style={{ fontSize:12, color:'var(--text-secondary)' }}>Balance: <strong style={{ color: balance < 0 ? 'var(--rose)' : 'var(--emerald)' }}>{100 - utilisationPct}%</strong></span>
+              </div>
+              <div style={{ display:'flex', height:12, borderRadius:6, overflow:'hidden', background:'rgba(255,255,255,0.08)' }}>
+                <div style={{ width:`${Math.min(utilisationPct, 100)}%`, background: utilisationPct > 100 ? 'var(--rose)' : 'linear-gradient(90deg, var(--cyan), var(--blue))', borderRadius:'6px 0 0 6px', transition:'width 0.4s ease' }} />
+                <div style={{ flex:1, background: balance < 0 ? 'rgba(244,63,94,0.2)' : 'rgba(16,185,129,0.15)', borderRadius:'0 6px 6px 0' }} />
+              </div>
+              {utilisationPct > 100 && (
+                <div style={{ fontSize:11, color:'var(--rose)', marginTop:4 }}>⚠ Expenditure exceeds sanctioned amount by {fmt(Math.abs(balance))}</div>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* Contractor & Status */}
-        <div className="card" style={{ marginBottom:16 }}>
-          <div className="card-header"><span className="card-title">Contractor & Status</span></div>
-          <div className="form-grid">
-            <div className="form-group">
-              <label className="form-label">Contractor *</label>
-              <select className="form-select" value={form.contractorName} onChange={e => set('contractorName', e.target.value)}>
-                <option value="">Select or type below</option>
-                {contractors.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
-              </select><E f="contractorName" />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Or Enter Contractor Name</label>
-              <input className="form-input" value={form.contractorName} onChange={e => set('contractorName', e.target.value)} placeholder="M/s ..." />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Status</label>
-              <select className="form-select" value={form.statusOfWork} onChange={e => set('statusOfWork', e.target.value)}>
-                {statusOptions.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-              </select>
-            </div>
-            <div className="form-group">
-              <label className="form-label">Progress (%)</label>
-              <input className="form-input" type="number" min="0" max="100" value={form.progress} onChange={e => set('progress', e.target.value)} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Extension of Time</label>
-              <input className="form-input" value={form.extensionOfTime} onChange={e => set('extensionOfTime', e.target.value)} placeholder="e.g. 3 months" />
-            </div>
-          </div>
-        </div>
-
-        {/* Timeline */}
+        {/* 5. Timeline */}
         <div className="card" style={{ marginBottom:16 }}>
           <div className="card-header"><span className="card-title">Timeline</span></div>
           <div className="form-grid">
@@ -236,41 +318,42 @@ export default function ProjectForm() {
           </div>
         </div>
 
-        {/* Physical Parameters */}
+        {/* 6. Status (moved AFTER Timeline) */}
         <div className="card" style={{ marginBottom:16 }}>
-          <div className="card-header"><span className="card-title">Physical Parameters</span></div>
+          <div className="card-header"><span className="card-title">Status</span></div>
           <div className="form-grid">
-            <div className="form-group"><label className="form-label">UC Sent On Date</label><input className="form-input" type="date" value={form.ucSentDate} onChange={e => set('ucSentDate', e.target.value)} /></div>
-            <div className="form-group"><label className="form-label">Security Deposit Release Date</label><input className="form-input" type="date" value={form.securityDepositReleaseDate} onChange={e => set('securityDepositReleaseDate', e.target.value)} /></div>
+            <div className="form-group">
+              <label className="form-label">Status</label>
+              <select className="form-select" value={form.statusOfWork} onChange={e => set('statusOfWork', e.target.value)}>
+                {statusOptions.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Progress (%)</label>
+              <input className="form-input" type="number" min="0" max="100" value={form.progress} onChange={e => set('progress', e.target.value)} />
+              {Number(form.progress) > 0 && (
+                <div className="progress-bar" style={{ marginTop:6, height:8 }}>
+                  <div className={`progress-fill ${Number(form.progress)>=80?'green':Number(form.progress)>=40?'amber':'red'}`} style={{ width:`${form.progress}%` }} />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* 7. Security Deposit (renamed from Physical Parameters) */}
+        <div className="card" style={{ marginBottom:16 }}>
+          <div className="card-header"><span className="card-title">Security Deposit</span></div>
+          <div className="form-grid">
             <div className="form-group"><label className="form-label">Security Amount (₹)</label><input className="form-input" type="number" value={form.securityAmount} onChange={e => set('securityAmount', e.target.value)} /></div>
             <div className="form-group"><label className="form-label">Security Deposit Deducted Date</label><input className="form-input" type="date" value={form.securityDepositDeductedDate} onChange={e => set('securityDepositDeductedDate', e.target.value)} /></div>
+            <div className="form-group"><label className="form-label">Security Deposit Release Date</label><input className="form-input" type="date" value={form.securityDepositReleaseDate} onChange={e => set('securityDepositReleaseDate', e.target.value)} /></div>
+            <div className="form-group"><label className="form-label">UC Sent On Date</label><input className="form-input" type="date" value={form.ucSentDate} onChange={e => set('ucSentDate', e.target.value)} /></div>
             <div className="form-group"><label className="form-label">M Book Number</label><input className="form-input" value={form.mBookNumber} onChange={e => set('mBookNumber', e.target.value)} placeholder="MB-XXX-YYYY-NNN" /></div>
             <div className="form-group"><label className="form-label">Work Audit Register No.</label><input className="form-input" value={form.workAuditRegisterNo} onChange={e => set('workAuditRegisterNo', e.target.value)} placeholder="WAR/XXX/YYYY/NNN" /></div>
           </div>
         </div>
 
-        {/* Guarantee & Personnel */}
-        <div className="card" style={{ marginBottom:16 }}>
-          <div className="card-header"><span className="card-title">Guarantee & Personnel</span></div>
-          <div className="form-grid">
-            <div className="form-group"><label className="form-label">Performance Guarantee Date</label><input className="form-input" type="date" value={form.performanceGuaranteeDate} onChange={e => set('performanceGuaranteeDate', e.target.value)} /></div>
-            <div className="form-group"><label className="form-label">Expiry Date</label><input className="form-input" type="date" value={form.expiryDate} onChange={e => set('expiryDate', e.target.value)} /></div>
-            <div className="form-group">
-              <label className="form-label">Junior Engineer</label>
-              <select className="form-select" value={form.juniorEngineer} onChange={e => set('juniorEngineer', e.target.value)}>
-                <option value="">Select</option>{jeList.map(e => <option key={e.id} value={e.name}>{e.name} — {e.division}</option>)}
-              </select>
-            </div>
-            <div className="form-group">
-              <label className="form-label">Assistant Engineer</label>
-              <select className="form-select" value={form.assistantEngineer} onChange={e => set('assistantEngineer', e.target.value)}>
-                <option value="">Select</option>{aeList.map(e => <option key={e.id} value={e.name}>{e.name} — {e.division}</option>)}
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* Geo-Tagging */}
+        {/* 8. Geo-Tagging */}
         <div className="card" style={{ marginBottom:16 }}>
           <div className="card-header">
             <span className="card-title"><MapPin size={14} style={{ display:'inline', verticalAlign:'middle' }} /> Geo-Tagging</span>
@@ -289,7 +372,7 @@ export default function ProjectForm() {
           )}
         </div>
 
-        {/* Notes */}
+        {/* 9. Notes */}
         <div className="card" style={{ marginBottom:16 }}>
           <div className="form-group"><label className="form-label">Notes / Remarks</label><textarea className="form-textarea" value={form.notes} onChange={e => set('notes', e.target.value)} placeholder="Additional notes..." /></div>
         </div>

@@ -15,18 +15,19 @@ function load(key, fallback) {
 
 function reducer(state, action) {
   const { type, payload } = action;
-  const manage = (key) => {
-    if (type === `SET_${key}`) return { ...state, [key.toLowerCase()]: payload };
-    if (type === `ADD_${key.slice(0,-1)}`) return { ...state, [key.toLowerCase()]: [...state[key.toLowerCase()], payload] };
-    if (type === `UPDATE_${key.slice(0,-1)}`) return { ...state, [key.toLowerCase()]: state[key.toLowerCase()].map(i => i.id === payload.id ? payload : i) };
-    if (type === `DELETE_${key.slice(0,-1)}`) return { ...state, [key.toLowerCase()]: state[key.toLowerCase()].filter(i => i.id !== payload) };
+  // Map of plural key -> singular action suffix
+  const entities = {
+    PROJECTS: 'PROJECT', CONTRACTORS: 'CONTRACTOR', ENGINEERS: 'ENGINEER',
+    SCHEMES: 'SCHEME', CONSTITUENCIES: 'CONSTITUENCY', GRANTS: 'GRANT', CATEGORIES: 'CATEGORY'
   };
+  for (const [plural, singular] of Object.entries(entities)) {
+    const stateKey = plural.toLowerCase();
+    if (type === `SET_${plural}`) return { ...state, [stateKey]: payload };
+    if (type === `ADD_${singular}`) return { ...state, [stateKey]: [...state[stateKey], payload] };
+    if (type === `UPDATE_${singular}`) return { ...state, [stateKey]: state[stateKey].map(i => i.id === payload.id ? payload : i) };
+    if (type === `DELETE_${singular}`) return { ...state, [stateKey]: state[stateKey].filter(i => i.id !== payload) };
+  }
 
-  const res = 
-    manage('PROJECTS') || manage('CONTRACTORS') || manage('ENGINEERS') || 
-    manage('SCHEMES') || manage('CONSTITUENCIES') || manage('GRANTS') || manage('CATEGORIES');
-    
-  if (res) return res;
 
   if (type === 'SET_ALL') {
     return { ...state, ...payload };

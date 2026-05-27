@@ -1,23 +1,23 @@
 import { useState } from 'react';
 import { useProjects } from '../context/ProjectContext';
 import { v4 as uuidv4 } from 'uuid';
-import { Plus, Edit, Trash2, X, Save, HardHat } from 'lucide-react';
+import { Plus, Edit, Trash2, X, Save } from 'lucide-react';
 
-const empty = { name:'', phone:'', email:'', address:'', registrationNo:'', category:'A' };
+const empty = { name:'', classOfContractor:'', licenceExpiryDate:'' };
 
 export default function ContractorManager() {
   const { contractors, dispatch } = useProjects();
-  const [editing, setEditing] = useState(null); // null | 'new' | contractor id
+  const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(empty);
   const [search, setSearch] = useState('');
 
   const filtered = contractors.filter(c => {
     if (!search) return true;
     const q = search.toLowerCase();
-    return c.name.toLowerCase().includes(q) || c.registrationNo.toLowerCase().includes(q) || c.category.toLowerCase().includes(q);
+    return c.name.toLowerCase().includes(q) || (c.classOfContractor||'').toLowerCase().includes(q);
   });
 
-  const startEdit = (c) => { setEditing(c.id); setForm({ name:c.name, phone:c.phone, email:c.email, address:c.address, registrationNo:c.registrationNo, category:c.category }); };
+  const startEdit = (c) => { setEditing(c.id); setForm({ name:c.name, classOfContractor:c.classOfContractor||'', licenceExpiryDate:c.licenceExpiryDate||'' }); };
   const startNew = () => { setEditing('new'); setForm(empty); };
   const cancel = () => { setEditing(null); setForm(empty); };
 
@@ -34,6 +34,9 @@ export default function ContractorManager() {
   const remove = (id, name) => { if (confirm(`Delete contractor "${name}"?`)) dispatch({ type:'DELETE_CONTRACTOR', payload:id }); };
   const set = (f, v) => setForm(x => ({...x, [f]:v}));
 
+  const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }) : '—';
+  const now = new Date();
+
   return (
     <div>
       <div className="page-header">
@@ -44,7 +47,7 @@ export default function ContractorManager() {
       <div className="filter-bar" style={{ marginBottom:16 }}>
         <div className="form-group" style={{ minWidth:250 }}>
           <label className="form-label">Search</label>
-          <input className="form-input" placeholder="Name, registration..." value={search} onChange={e => setSearch(e.target.value)} />
+          <input className="form-input" placeholder="Name, class..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
       </div>
 
@@ -53,17 +56,18 @@ export default function ContractorManager() {
         <div className="card" style={{ marginBottom:16 }}>
           <div className="card-header"><span className="card-title">{editing==='new' ? 'New Contractor' : 'Edit Contractor'}</span></div>
           <div className="form-grid">
-            <div className="form-group"><label className="form-label">Name *</label><input className="form-input" value={form.name} onChange={e => set('name', e.target.value)} /></div>
-            <div className="form-group"><label className="form-label">Phone</label><input className="form-input" value={form.phone} onChange={e => set('phone', e.target.value)} /></div>
-            <div className="form-group"><label className="form-label">Email</label><input className="form-input" value={form.email} onChange={e => set('email', e.target.value)} /></div>
-            <div className="form-group"><label className="form-label">Address</label><input className="form-input" value={form.address} onChange={e => set('address', e.target.value)} /></div>
-            <div className="form-group"><label className="form-label">Registration No.</label><input className="form-input" value={form.registrationNo} onChange={e => set('registrationNo', e.target.value)} /></div>
+            <div className="form-group"><label className="form-label">Contractor Name *</label><input className="form-input" value={form.name} onChange={e => set('name', e.target.value)} placeholder="M/s ..." /></div>
             <div className="form-group">
-              <label className="form-label">Category</label>
-              <select className="form-select" value={form.category} onChange={e => set('category', e.target.value)}>
-                <option value="A">Category A</option><option value="B">Category B</option><option value="C">Category C</option><option value="D">Category D</option>
+              <label className="form-label">Class of Contractor</label>
+              <select className="form-select" value={form.classOfContractor} onChange={e => set('classOfContractor', e.target.value)}>
+                <option value="">Select Class</option>
+                <option value="Class A">Class A</option>
+                <option value="Class B">Class B</option>
+                <option value="Class C">Class C</option>
+                <option value="Class D">Class D</option>
               </select>
             </div>
+            <div className="form-group"><label className="form-label">Date of Expiry of Licence</label><input className="form-input" type="date" value={form.licenceExpiryDate} onChange={e => set('licenceExpiryDate', e.target.value)} /></div>
           </div>
           <div className="btn-group" style={{ marginTop:16, justifyContent:'flex-end' }}>
             <button className="btn btn-secondary btn-sm" onClick={cancel}><X size={14} /> Cancel</button>
@@ -74,22 +78,31 @@ export default function ContractorManager() {
 
       <div className="table-container">
         <table className="data-table">
-          <thead><tr><th>#</th><th>Name</th><th>Phone</th><th>Email</th><th>Registration No</th><th>Category</th><th>Actions</th></tr></thead>
+          <thead><tr><th>#</th><th>Contractor Name</th><th>Class</th><th>Licence Expiry</th><th>Actions</th></tr></thead>
           <tbody>
             {filtered.length === 0 ? (
-              <tr><td colSpan={7} style={{ textAlign:'center', padding:40, color:'var(--text-muted)' }}>No contractors</td></tr>
-            ) : filtered.map((c, i) => (
-              <tr key={c.id}>
-                <td>{i+1}</td><td>{c.name}</td><td>{c.phone}</td><td>{c.email}</td><td>{c.registrationNo}</td>
-                <td><span className="status-badge completed" style={{ background:'var(--blue-glow)', color:'var(--blue)' }}>{c.category}</span></td>
-                <td>
-                  <div style={{ display:'flex', gap:4 }}>
-                    <button className="btn btn-secondary btn-icon btn-sm" onClick={() => startEdit(c)}><Edit size={14} /></button>
-                    <button className="btn btn-danger btn-icon btn-sm" onClick={() => remove(c.id, c.name)}><Trash2 size={14} /></button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+              <tr><td colSpan={5} style={{ textAlign:'center', padding:40, color:'var(--text-muted)' }}>No contractors</td></tr>
+            ) : filtered.map((c, i) => {
+              const expDays = c.licenceExpiryDate ? Math.ceil((new Date(c.licenceExpiryDate) - now) / 86400000) : null;
+              return (
+                <tr key={c.id}>
+                  <td>{i+1}</td>
+                  <td>{c.name}</td>
+                  <td><span className="status-badge completed" style={{ background:'var(--blue-glow)', color:'var(--blue)' }}>{c.classOfContractor || '—'}</span></td>
+                  <td style={{ color: expDays !== null && expDays < 0 ? 'var(--rose)' : expDays !== null && expDays <= 30 ? 'var(--amber)' : '' }}>
+                    {fmtDate(c.licenceExpiryDate)}
+                    {expDays !== null && expDays < 0 && <span style={{ fontSize:10, marginLeft:6, color:'var(--rose)' }}>Expired</span>}
+                    {expDays !== null && expDays >= 0 && expDays <= 30 && <span style={{ fontSize:10, marginLeft:6, color:'var(--amber)' }}>{expDays}d left</span>}
+                  </td>
+                  <td>
+                    <div style={{ display:'flex', gap:4 }}>
+                      <button className="btn btn-secondary btn-icon btn-sm" onClick={() => startEdit(c)}><Edit size={14} /></button>
+                      <button className="btn btn-danger btn-icon btn-sm" onClick={() => remove(c.id, c.name)}><Trash2 size={14} /></button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

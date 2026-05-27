@@ -49,10 +49,6 @@ CivilTrack Pro is a comprehensive Civil Engineering Management Dashboard designe
    npm run build
    ```
 
-## 🔐 Security & Access
-
-Certain administrative features and project editing capabilities require a master password. 
-- **Default Master Password:** `1970`
 
 ## 🚀 Deployment (GitHub Pages)
 
