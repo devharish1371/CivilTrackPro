@@ -140,7 +140,7 @@ export default function ProjectList() {
             <tr>
               <th>#</th><th>Project</th><th>Category</th><th>Year</th><th>Constituency</th><th>Scheme</th>
               <th>Sanctioned</th><th>Expenditure</th><th>Balance</th><th>Progress</th>
-              <th>Status</th><th>JE</th><th>AE</th><th>Actions</th>
+              <th>Status</th><th>JE</th><th>AE</th><th>Updated</th><th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -165,6 +165,7 @@ export default function ProjectList() {
                 </td>
                 <td><span className={`status-badge ${p.statusOfWork}`}>{p.statusOfWork==='completed'?'Done':p.statusOfWork==='in_progress'?'Active':'Pending'}</span></td>
                 <td>{p.juniorEngineer}</td><td>{p.assistantEngineer}</td>
+                <td style={{ fontSize:11, color:'var(--text-muted)', whiteSpace:'nowrap' }}>{p.updatedAt ? new Date(p.updatedAt).toLocaleDateString('en-IN') : '—'}</td>
                 <td>
                   <div style={{ display:'flex', gap:3 }}>
                     <button className="btn btn-secondary btn-icon btn-sm" onClick={() => navigate(`/projects/${p.id}`)} title="View"><Eye size={14} /></button>

@@ -52,7 +52,10 @@ export default function ProjectDetail() {
               {p.isLocked && <Lock size={18} style={{ color:'var(--amber)' }} />}
               {p.projectName}
             </h1>
-            <p><span className={`status-badge ${p.statusOfWork}`}>{p.statusOfWork==='completed'?'Completed':p.statusOfWork==='in_progress'?'In Progress':'Yet to Start'}</span></p>
+            <p style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span className={`status-badge ${p.statusOfWork}`}>{p.statusOfWork==='completed'?'Completed':p.statusOfWork==='in_progress'?'In Progress':'Yet to Start'}</span>
+              {p.updatedAt && <span style={{ fontSize:12, color:'var(--text-muted)' }}>Last updated: {new Date(p.updatedAt).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })}</span>}
+            </p>
           </div>
         </div>
         <div className="btn-group">
