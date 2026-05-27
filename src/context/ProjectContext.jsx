@@ -23,8 +23,8 @@ function reducer(state, action) {
   for (const [plural, singular] of Object.entries(entities)) {
     const stateKey = plural.toLowerCase();
     if (type === `SET_${plural}`) return { ...state, [stateKey]: payload };
-    if (type === `ADD_${singular}`) return { ...state, [stateKey]: [...state[stateKey], payload] };
-    if (type === `UPDATE_${singular}`) return { ...state, [stateKey]: state[stateKey].map(i => i.id === payload.id ? payload : i) };
+    if (type === `ADD_${singular}`) return { ...state, [stateKey]: [...state[stateKey], { ...payload, updatedAt: new Date().toISOString() }] };
+    if (type === `UPDATE_${singular}`) return { ...state, [stateKey]: state[stateKey].map(i => i.id === payload.id ? { ...payload, updatedAt: new Date().toISOString() } : i) };
     if (type === `DELETE_${singular}`) return { ...state, [stateKey]: state[stateKey].filter(i => i.id !== payload) };
   }
 

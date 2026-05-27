@@ -1,7 +1,9 @@
 import { useState, useRef } from 'react';
 import { useProjects } from '../context/ProjectContext';
 import { initGoogleAuth, signOut, createSheet, initExistingSheet, pushToSheet, pullFromSheet, getAccessToken } from '../utils/googleSheets';
-import { Cloud, CloudOff, Upload, Download, Plus, RefreshCw, AlertTriangle, CheckCircle, Info, FileStack } from 'lucide-react';
+import { Cloud, CloudOff, Upload, Download, Plus, RefreshCw, AlertTriangle, CheckCircle, Info, FileStack, FileSpreadsheet } from 'lucide-react';
+import { exportProjectsToExcel } from '../utils/excelExport';
+import { importProjectsFromExcel } from '../utils/excelImport';
 
 export default function Settings() {
   const { projects, contractors, engineers, schemes, constituencies, grants, dispatch, gsheetConfig, setGsheetConfig } = useProjects();
@@ -9,6 +11,42 @@ export default function Settings() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const tokenClientRef = useRef(null);
+
+  const [exportStart, setExportStart] = useState('');
+  const [exportEnd, setExportEnd] = useState('');
+  const fileInputRef = useRef(null);
+
+  const handleExportExcel = () => {
+    try {
+      exportProjectsToExcel(projects, grants, 'CivilTrack_Sync.xlsx', exportStart, exportEnd);
+      setStatus(`Exported Excel ${exportStart || exportEnd ? 'for selected dates' : 'for all data'} ✓`);
+    } catch (e) { setError('Export failed: ' + e.message); }
+  };
+
+  const handleImportExcel = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLoading(true); setError('');
+    try {
+      const importedProjects = await importProjectsFromExcel(file, projects);
+      
+      const updatedProjects = [...projects];
+      let added = 0; let updated = 0;
+      
+      importedProjects.forEach(imp => {
+        const idx = updatedProjects.findIndex(p => p.id === imp.id);
+        if (idx >= 0) { updatedProjects[idx] = imp; updated++; }
+        else { updatedProjects.push(imp); added++; }
+      });
+      
+      dispatch({ type: 'SET_PROJECTS', payload: updatedProjects });
+      setStatus(`Import successful: ${added} added, ${updated} updated ✓`);
+    } catch (err) {
+      setError('Import failed: ' + err.message);
+    }
+    setLoading(false);
+    e.target.value = '';
+  };
 
   const updateConfig = (key, val) => setGsheetConfig(c => ({ ...c, [key]: val }));
 
@@ -142,6 +180,41 @@ export default function Settings() {
             </a>
           </div>
         )}
+      </div>
+
+      {/* Offline Excel Sync */}
+      <div className="card" style={{ marginBottom:16 }}>
+        <div className="card-header">
+          <span className="card-title" style={{ display:'flex', alignItems:'center', gap:8 }}>
+            <FileSpreadsheet size={16} /> Offline Excel Sync
+          </span>
+        </div>
+        <p style={{ fontSize:13, color:'var(--text-secondary)', marginBottom:16 }}>
+          Export your data to an Excel file, transfer it to another device, and import it there to update or add recent records. 
+          If you specify dates, it will only export records that were created or updated within that range.
+        </p>
+
+        <div className="form-grid">
+          <div className="form-group">
+            <label className="form-label">Export From Date (Optional)</label>
+            <input className="form-input" type="date" value={exportStart} onChange={e => setExportStart(e.target.value)} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Export To Date (Optional)</label>
+            <input className="form-input" type="date" value={exportEnd} onChange={e => setExportEnd(e.target.value)} />
+          </div>
+        </div>
+
+        <div className="btn-group" style={{ marginTop:16 }}>
+          <button className="btn btn-primary btn-sm" onClick={handleExportExcel} disabled={loading}>
+            <Download size={14} /> Export to Excel
+          </button>
+          
+          <input type="file" accept=".xlsx" ref={fileInputRef} style={{ display:'none' }} onChange={handleImportExcel} />
+          <button className="btn btn-secondary btn-sm" onClick={() => fileInputRef.current?.click()} disabled={loading}>
+            <Upload size={14} /> Import from Excel
+          </button>
+        </div>
       </div>
 
       {/* Status / Error */}

@@ -2,11 +2,22 @@ import * as XLSX from 'xlsx';
 
 const n = (v) => Number(v) || 0;
 
-export function exportProjectsToExcel(projects, grants = [], filename = 'CivilTrack_Projects.xlsx') {
+export function exportProjectsToExcel(projects, grants = [], filename = 'CivilTrack_Projects.xlsx', startDate = null, endDate = null) {
   const wb = XLSX.utils.book_new();
 
+  let filteredProjects = projects;
+  if (startDate || endDate) {
+    filteredProjects = projects.filter(p => {
+      const dt = new Date(p.updatedAt || new Date());
+      if (startDate && dt < new Date(startDate)) return false;
+      if (endDate && dt > new Date(endDate)) return false;
+      return true;
+    });
+  }
+
   // Sheet 1: All Projects
-  const main = projects.map((p, i) => ({
+  const main = filteredProjects.map((p, i) => ({
+    'ID': p.id,
     'S.No': i+1, 'Project Name': p.projectName, 'Category': p.category||'', 'Year': p.yearOfSanction,
     'Constituency': p.constituency, 'Scheme': p.scheme,
     'GO Number': p.goNumber||'', 'GO Date': p.goDate||'',
