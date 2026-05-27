@@ -108,6 +108,17 @@ export default function ProjectDetail() {
         </div>
       </div>
 
+      {/* Guarantee & Personnel */}
+      <div className="card" style={{ marginBottom:16 }}>
+        <div className="card-header"><span className="card-title"><Users size={14} style={{ display:'inline', verticalAlign:'middle' }} /> Guarantee & Personnel</span></div>
+        <div className="detail-grid">
+          <D label="Performance Guarantee" value={fmtDate(p.performanceGuaranteeDate)} />
+          <D label="Expiry Date" value={fmtDate(p.expiryDate)} cls={expiryDays!==null && expiryDays<=30?'danger':''} />
+          <D label="Junior Engineer" value={p.juniorEngineer} />
+          <D label="Assistant Engineer" value={p.assistantEngineer} />
+        </div>
+      </div>
+
       {/* Financial */}
       <div className="card" style={{ marginBottom:16 }}>
         <div className="card-header"><span className="card-title"><IndianRupee size={14} style={{ display:'inline', verticalAlign:'middle' }} /> Financial</span></div>
@@ -119,6 +130,26 @@ export default function ProjectDetail() {
           <D label="Utilised Amount" value={fmt(utilised)} cls="highlight" />
           <D label="Balance Amount" value={fmt(balance)} cls={balance<0?'danger':'amount'} />
         </div>
+        
+        {/* Financial Percentage Visualisation */}
+        {p.sanctionedAmount > 0 && (() => {
+          const utilisationPct = Math.round((utilised / p.sanctionedAmount) * 100);
+          return (
+            <div style={{ marginTop:16 }}>
+              <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
+                <span style={{ fontSize:12, color:'var(--text-secondary)' }}>Utilisation: <strong style={{ color:'var(--cyan)' }}>{utilisationPct}%</strong></span>
+                <span style={{ fontSize:12, color:'var(--text-secondary)' }}>Balance: <strong style={{ color: balance < 0 ? 'var(--rose)' : 'var(--emerald)' }}>{100 - utilisationPct}%</strong></span>
+              </div>
+              <div style={{ display:'flex', height:12, borderRadius:6, overflow:'hidden', background:'rgba(255,255,255,0.08)' }}>
+                <div style={{ width:`${Math.min(utilisationPct, 100)}%`, background: utilisationPct > 100 ? 'var(--rose)' : 'linear-gradient(90deg, var(--cyan), var(--blue))', borderRadius:'6px 0 0 6px', transition:'width 0.4s ease' }} />
+                <div style={{ flex:1, background: balance < 0 ? 'rgba(244,63,94,0.2)' : 'rgba(16,185,129,0.15)', borderRadius:'0 6px 6px 0' }} />
+              </div>
+              {utilisationPct > 100 && (
+                <div style={{ fontSize:11, color:'var(--rose)', marginTop:4 }}>⚠ Expenditure exceeds sanctioned amount by {fmt(Math.abs(balance))}</div>
+              )}
+            </div>
+          );
+        })()}
       </div>
 
       {/* Timeline */}
@@ -133,27 +164,16 @@ export default function ProjectDetail() {
         </div>
       </div>
 
-      {/* Physical Parameters */}
+      {/* Security Deposit (formerly Physical Parameters) */}
       <div className="card" style={{ marginBottom:16 }}>
-        <div className="card-header"><span className="card-title">Physical Parameters</span></div>
+        <div className="card-header"><span className="card-title">Security Deposit</span></div>
         <div className="detail-grid">
-          <D label="UC Sent On" value={fmtDate(p.ucSentDate)} />
-          <D label="Security Deposit Release" value={fmtDate(p.securityDepositReleaseDate)} />
-          <D label="Security Deducted On" value={fmtDate(p.securityDepositDeductedDate)} />
           <D label="Security Amount" value={fmt(p.securityAmount||0)} cls="amount" />
+          <D label="Security Deducted On" value={fmtDate(p.securityDepositDeductedDate)} />
+          <D label="Security Deposit Release" value={fmtDate(p.securityDepositReleaseDate)} />
+          <D label="UC Sent On" value={fmtDate(p.ucSentDate)} />
           <D label="M Book Number" value={p.mBookNumber} />
           <D label="Work Audit Register No" value={p.workAuditRegisterNo} />
-        </div>
-      </div>
-
-      {/* Guarantee & Personnel */}
-      <div className="card" style={{ marginBottom:16 }}>
-        <div className="card-header"><span className="card-title"><Users size={14} style={{ display:'inline', verticalAlign:'middle' }} /> Guarantee & Personnel</span></div>
-        <div className="detail-grid">
-          <D label="Performance Guarantee" value={fmtDate(p.performanceGuaranteeDate)} />
-          <D label="Expiry Date" value={fmtDate(p.expiryDate)} cls={expiryDays!==null && expiryDays<=30?'danger':''} />
-          <D label="Junior Engineer" value={p.juniorEngineer} />
-          <D label="Assistant Engineer" value={p.assistantEngineer} />
         </div>
       </div>
 
