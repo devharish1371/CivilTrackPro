@@ -1,5 +1,5 @@
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const fmt = (n) => new Intl.NumberFormat('en-IN', { style:'currency', currency:'INR', maximumFractionDigits:0 }).format(n);
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }) : '—';
@@ -40,7 +40,7 @@ export function generateProjectListPDF(projects, filters = {}) {
     ];
   });
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: 32,
     head: [['#','Project','Category','Year','Constituency','Scheme','GO No','Sanctioned','Expenditure','Deductions','Utilised','Balance','Progress','Status','JE','AE']],
     body: rows,
