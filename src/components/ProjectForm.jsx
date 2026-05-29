@@ -15,7 +15,7 @@ const empty = {
   extensionOfTime:'', statusOfWork:'yet_to_start', progress:0,
   juniorEngineer:'', assistantEngineer:'',
   ucSentDate:'', securityDepositReleaseDate:'', securityDepositDeductedDate:'', securityAmount:'',
-  mBookNumber:'', workAuditRegisterNo:'', category:'',
+  mBookNumber:'', workAuditRegisterNo:'', category:'', phase:'',
   latitude:'', longitude:'', physicalParametersNotes:'', isLocked:false, lockHash:'', notes:''
 };
 
@@ -188,6 +188,16 @@ export default function ProjectForm() {
               <datalist id="category-list">
                 {categories.map(c => <option key={c.id} value={c.name} />)}
               </datalist>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Phase</label>
+              <select className="form-select" value={form.phase || ''} onChange={e => set('phase', e.target.value)}>
+                <option value="">Select Phase</option>
+                <option value="Phase 1">Phase 1</option>
+                <option value="Phase 2">Phase 2</option>
+                <option value="Phase 3">Phase 3</option>
+                <option value="Phase 4">Phase 4</option>
+              </select>
             </div>
             <div className="form-group">
               <label className="form-label">GO Number</label>

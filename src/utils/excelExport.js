@@ -18,7 +18,7 @@ export function exportProjectsToExcel(projects, grants = [], filename = 'CivilTr
   // Sheet 1: All Projects
   const main = filteredProjects.map((p, i) => ({
     'ID': p.id,
-    'S.No': i+1, 'Project Name': p.projectName, 'Category': p.category||'', 'Year': p.yearOfSanction,
+    'S.No': i+1, 'Project Name': p.projectName, 'Category': p.category||'', 'Phase': p.phase||'', 'Year': p.yearOfSanction,
     'Constituency': p.constituency, 'Scheme': p.scheme,
     'GO Number': p.goNumber||'', 'GO Date': p.goDate||'',
     'Sanctioned (₹)': n(p.sanctionedAmount), 'Tendered Cost (₹)': n(p.tenderedCost),

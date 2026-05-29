@@ -12,7 +12,7 @@ const fmt = (n) => new Intl.NumberFormat('en-IN', { style:'currency', currency:'
 export default function ProjectList() {
   const { projects, contractors, engineers, schemes, constituencies, grants, dispatch } = useProjects();
   const navigate = useNavigate();
-  const [filters, setFilters] = useState({ year:'', scheme:'', category:'', status:'', constituency:'', search:'', engineer:'', contractor:'' });
+  const [filters, setFilters] = useState({ year:'', scheme:'', category:'', phase:'', status:'', constituency:'', search:'', engineer:'', contractor:'' });
   const [showFilters, setShowFilters] = useState(true);
   const [lockModal, setLockModal] = useState(null); // { projectId, action:'lock'|'unlock' }
   const [lockPw, setLockPw] = useState('');
@@ -28,6 +28,7 @@ export default function ProjectList() {
       if (filters.year && p.yearOfSanction !== Number(filters.year)) return false;
       if (filters.scheme && p.scheme !== filters.scheme) return false;
       if (filters.category && p.category !== filters.category) return false;
+      if (filters.phase && p.phase !== filters.phase) return false;
       if (filters.status && p.statusOfWork !== filters.status) return false;
       if (filters.constituency && p.constituency !== filters.constituency) return false;
       if (filters.engineer && p.juniorEngineer !== filters.engineer && p.assistantEngineer !== filters.engineer) return false;
@@ -62,7 +63,7 @@ export default function ProjectList() {
     }
   };
 
-  const clearFilters = () => setFilters({ year:'', scheme:'', category:'', status:'', constituency:'', search:'', engineer:'', contractor:'' });
+  const clearFilters = () => setFilters({ year:'', scheme:'', category:'', phase:'', status:'', constituency:'', search:'', engineer:'', contractor:'' });
   const hasFilters = Object.values(filters).some(v => v);
 
   return (
@@ -104,6 +105,16 @@ export default function ProjectList() {
             <label className="form-label">Category</label>
             <select className="form-select" value={filters.category} onChange={e => setFilters(f => ({...f, category:e.target.value}))}>
               <option value="">All</option>{uniqueCategories.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Phase</label>
+            <select className="form-select" value={filters.phase} onChange={e => setFilters(f => ({...f, phase:e.target.value}))}>
+              <option value="">All</option>
+              <option value="Phase 1">Phase 1</option>
+              <option value="Phase 2">Phase 2</option>
+              <option value="Phase 3">Phase 3</option>
+              <option value="Phase 4">Phase 4</option>
             </select>
           </div>
           <div className="form-group">

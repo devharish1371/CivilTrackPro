@@ -98,6 +98,7 @@ export default function ProjectDetail() {
           <D label="Constituency" value={p.constituency} />
           <D label="Scheme" value={p.scheme} />
           <D label="Category" value={p.category} />
+          <D label="Phase" value={p.phase} />
           <D label="GO Number" value={p.goNumber} />
           <D label="GO Date" value={fmtDate(p.goDate)} />
         </div>

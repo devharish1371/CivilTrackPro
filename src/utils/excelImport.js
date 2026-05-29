@@ -32,6 +32,7 @@ export async function importProjectsFromExcel(file, existingProjects) {
             id,
             projectName: row['Project Name'] || 'Unnamed Project',
             category: row['Category'] || '',
+            phase: row['Phase'] || '',
             yearOfSanction: Number(row['Year']) || new Date().getFullYear(),
             constituency: row['Constituency'] || '',
             scheme: row['Scheme'] || '',

@@ -1,26 +1,46 @@
+import { useState, useMemo } from 'react';
 import { useProjects } from '../context/ProjectContext';
 import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { Building2, IndianRupee, TrendingUp, AlertTriangle, Clock, CheckCircle, MapPin } from 'lucide-react';
+import { Building2, IndianRupee, TrendingUp, AlertTriangle, Clock, CheckCircle, MapPin, Filter, X } from 'lucide-react';
 
 const COLORS = ['#10b981','#f59e0b','#64748b','#06b6d4','#8b5cf6','#f43f5e','#3b82f6'];
 const fmt = (n) => { if (n >= 10000000) return `₹${(n/10000000).toFixed(2)} Cr`; if (n >= 100000) return `₹${(n/100000).toFixed(2)} L`; return `₹${n.toLocaleString('en-IN')}`; };
 
 export default function Dashboard() {
-  const { projects, grants, getAlerts } = useProjects();
+  const { projects, grants, getAlerts, schemes, constituencies } = useProjects();
   const navigate = useNavigate();
   const alerts = getAlerts();
 
-  const totalSanctioned = projects.reduce((s,p) => s + (p.sanctionedAmount||0), 0);
-  const totalExpenditure = projects.reduce((s,p) => s + (p.expenditureIncurred||0), 0);
-  const totalGrant = grants.reduce((s,g) => s + (g.amount||0), 0);
-  const totalDeductions = projects.reduce((s,p) => s + (p.deductions||0), 0);
+  const [filters, setFilters] = useState({ constituency: '', scheme: '', phase: '' });
+  const [showFilters, setShowFilters] = useState(false);
+
+  const filteredProjects = useMemo(() => {
+    return projects.filter(p => {
+      if (filters.constituency && p.constituency !== filters.constituency) return false;
+      if (filters.scheme && p.scheme !== filters.scheme) return false;
+      if (filters.phase && p.phase !== filters.phase) return false;
+      return true;
+    });
+  }, [projects, filters]);
+
+  const filteredGrants = useMemo(() => {
+    return grants.filter(g => {
+      if (filters.scheme && g.scheme !== filters.scheme) return false;
+      return true;
+    });
+  }, [grants, filters]);
+
+  const totalSanctioned = filteredProjects.reduce((s,p) => s + (p.sanctionedAmount||0), 0);
+  const totalExpenditure = filteredProjects.reduce((s,p) => s + (p.expenditureIncurred||0), 0);
+  const totalGrant = filteredGrants.reduce((s,g) => s + (g.amount||0), 0);
+  const totalDeductions = filteredProjects.reduce((s,p) => s + (p.deductions||0), 0);
   const totalUtilised = totalExpenditure + totalDeductions;
   const totalBalance = totalSanctioned - totalUtilised;
-  const completed = projects.filter(p => p.statusOfWork==='completed').length;
-  const inProgress = projects.filter(p => p.statusOfWork==='in_progress').length;
-  const yetToStart = projects.filter(p => p.statusOfWork==='yet_to_start').length;
-  const geoTagged = projects.filter(p => p.latitude && p.longitude && Number(p.latitude)!==0).length;
+  const completed = filteredProjects.filter(p => p.statusOfWork==='completed').length;
+  const inProgress = filteredProjects.filter(p => p.statusOfWork==='in_progress').length;
+  const yetToStart = filteredProjects.filter(p => p.statusOfWork==='yet_to_start').length;
+  const geoTagged = filteredProjects.filter(p => p.latitude && p.longitude && Number(p.latitude)!==0).length;
 
   const statusData = [
     { name:'Completed', value:completed },
@@ -29,24 +49,27 @@ export default function Dashboard() {
   ].filter(d => d.value > 0);
 
   const schemeMap = {};
-  projects.forEach(p => {
+  filteredProjects.forEach(p => {
     if (!schemeMap[p.scheme]) schemeMap[p.scheme] = { name:p.scheme, sanctioned:0, expenditure:0, grant:0 };
     schemeMap[p.scheme].sanctioned += p.sanctionedAmount||0;
     schemeMap[p.scheme].expenditure += p.expenditureIncurred||0;
   });
-  grants.forEach(g => {
+  filteredGrants.forEach(g => {
     if (!schemeMap[g.scheme]) schemeMap[g.scheme] = { name:g.scheme, sanctioned:0, expenditure:0, grant:0 };
     schemeMap[g.scheme].grant += g.amount||0;
   });
   const schemeData = Object.values(schemeMap).sort((a,b) => b.sanctioned - a.sanctioned);
 
   const conMap = {};
-  projects.forEach(p => {
+  filteredProjects.forEach(p => {
     if (!conMap[p.constituency]) conMap[p.constituency] = { name:p.constituency, total:0, count:0 };
     conMap[p.constituency].total += p.sanctionedAmount||0;
     conMap[p.constituency].count++;
   });
   const conData = Object.values(conMap).sort((a,b) => b.total - a.total);
+
+  const clearFilters = () => setFilters({ constituency: '', scheme: '', phase: '' });
+  const hasFilters = Object.values(filters).some(v => v);
 
   const Tip = ({ active, payload, label }) => {
     if (!active || !payload?.length) return null;
@@ -60,12 +83,49 @@ export default function Dashboard() {
 
   return (
     <div>
-      <div className="page-header"><div><h1>Dashboard</h1><p>Overview of all civil engineering projects</p></div></div>
+      <div className="page-header">
+        <div><h1>Dashboard</h1><p>Overview of {hasFilters ? 'filtered' : 'all'} civil engineering projects</p></div>
+        <div className="btn-group">
+          <button className={`btn btn-sm ${showFilters ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setShowFilters(!showFilters)}>
+            <Filter size={14} /> Filters {hasFilters && <span style={{ background:'var(--rose)', color:'#fff', padding:'2px 6px', borderRadius:10, fontSize:10, marginLeft:4 }}>Active</span>}
+          </button>
+        </div>
+      </div>
+
+      {showFilters && (
+        <div className="filter-bar" style={{ marginBottom: 20 }}>
+          <div className="form-group">
+            <label className="form-label">Constituency</label>
+            <select className="form-select" value={filters.constituency} onChange={e => setFilters(f => ({...f, constituency:e.target.value}))}>
+              <option value="">All Constituencies</option>
+              {constituencies.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+            </select>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Scheme</label>
+            <select className="form-select" value={filters.scheme} onChange={e => setFilters(f => ({...f, scheme:e.target.value}))}>
+              <option value="">All Schemes</option>
+              {schemes.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+            </select>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Phase</label>
+            <select className="form-select" value={filters.phase} onChange={e => setFilters(f => ({...f, phase:e.target.value}))}>
+              <option value="">All Phases</option>
+              <option value="Phase 1">Phase 1</option>
+              <option value="Phase 2">Phase 2</option>
+              <option value="Phase 3">Phase 3</option>
+              <option value="Phase 4">Phase 4</option>
+            </select>
+          </div>
+          {hasFilters && <button className="btn btn-danger btn-sm" onClick={clearFilters} style={{ alignSelf:'flex-end' }}><X size={14} /> Clear</button>}
+        </div>
+      )}
 
       <div className="stats-grid">
         <div className="stat-card cyan" onClick={() => navigate('/projects')} style={{ cursor:'pointer' }}>
           <div className="stat-icon cyan"><Building2 size={20} /></div>
-          <div className="stat-value">{projects.length}</div><div className="stat-label">Total Projects</div>
+          <div className="stat-value">{filteredProjects.length}</div><div className="stat-label">Total Projects</div>
         </div>
         <div className="stat-card purple">
           <div className="stat-icon purple"><IndianRupee size={20} /></div>
