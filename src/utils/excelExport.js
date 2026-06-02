@@ -2,18 +2,25 @@ import * as XLSX from 'xlsx';
 
 const n = (v) => Number(v) || 0;
 
-export function exportProjectsToExcel(projects, grants = [], filename = 'CivilTrack_Projects.xlsx', startDate = null, endDate = null) {
+export function exportProjectsToExcel(projects, contractors = [], engineers = [], schemes = [], constituencies = [], grants = [], filename = 'CivilTrack_Projects.xlsx', startDate = null, endDate = null) {
   const wb = XLSX.utils.book_new();
 
-  let filteredProjects = projects;
-  if (startDate || endDate) {
-    filteredProjects = projects.filter(p => {
-      const dt = new Date(p.updatedAt || new Date());
+  const filterByDate = (items) => {
+    if (!startDate && !endDate) return items;
+    return items.filter(item => {
+      const dt = new Date(item.updatedAt || new Date());
       if (startDate && dt < new Date(startDate)) return false;
       if (endDate && dt > new Date(endDate)) return false;
       return true;
     });
-  }
+  };
+
+  const filteredProjects = filterByDate(projects);
+  const filteredContractors = filterByDate(contractors);
+  const filteredEngineers = filterByDate(engineers);
+  const filteredSchemes = filterByDate(schemes);
+  const filteredConstituencies = filterByDate(constituencies);
+  const filteredGrants = filterByDate(grants);
 
   // Sheet 1: All Projects
   const main = filteredProjects.map((p, i) => ({
@@ -43,7 +50,47 @@ export function exportProjectsToExcel(projects, grants = [], filename = 'CivilTr
   ws1['!cols'][1] = { wch:40 };
   XLSX.utils.book_append_sheet(wb, ws1, 'All Projects');
 
-  // Sheet 2: By Scheme
+  // Contractors Sheet
+  if (filteredContractors.length) {
+    const wsContractors = XLSX.utils.json_to_sheet(filteredContractors.map(c => ({
+      'ID': c.id, 'Name': c.name, 'Class': c.classOfContractor, 'Expiry Date': c.dateOfExpiry
+    })));
+    XLSX.utils.book_append_sheet(wb, wsContractors, 'Contractors');
+  }
+
+  // Engineers Sheet
+  if (filteredEngineers.length) {
+    const wsEngineers = XLSX.utils.json_to_sheet(filteredEngineers.map(e => ({
+      'ID': e.id, 'Name': e.name, 'Type': e.type
+    })));
+    XLSX.utils.book_append_sheet(wb, wsEngineers, 'Engineers');
+  }
+
+  // Schemes Sheet
+  if (filteredSchemes.length) {
+    const wsSchemes = XLSX.utils.json_to_sheet(filteredSchemes.map(s => ({
+      'ID': s.id, 'Name': s.name
+    })));
+    XLSX.utils.book_append_sheet(wb, wsSchemes, 'Schemes');
+  }
+
+  // Constituencies Sheet
+  if (filteredConstituencies.length) {
+    const wsConstituencies = XLSX.utils.json_to_sheet(filteredConstituencies.map(c => ({
+      'ID': c.id, 'Name': c.name
+    })));
+    XLSX.utils.book_append_sheet(wb, wsConstituencies, 'Constituencies');
+  }
+
+  // Grants Sheet
+  if (filteredGrants.length) {
+    const wsGrants = XLSX.utils.json_to_sheet(filteredGrants.map(g => ({
+      'ID': g.id, 'Scheme': g.scheme, 'Year': g.year, 'Phase': g.phase, 'Amount (₹)': n(g.amount)
+    })));
+    XLSX.utils.book_append_sheet(wb, wsGrants, 'Grants');
+  }
+
+  // Summaries
   const sm = {};
   projects.forEach(p => {
     if (!sm[p.scheme]) sm[p.scheme] = { count:0, sanctioned:0, expenditure:0, grant:0, deductions:0 };
@@ -60,9 +107,8 @@ export function exportProjectsToExcel(projects, grants = [], filename = 'CivilTr
     'Expenditure (₹)':v.expenditure, 'Deductions (₹)':v.deductions,
     'Utilised (₹)':v.expenditure+v.deductions, 'Balance (₹)':v.sanctioned-v.expenditure-v.deductions
   })));
-  XLSX.utils.book_append_sheet(wb, ws2, 'By Scheme');
+  XLSX.utils.book_append_sheet(wb, ws2, 'Summary By Scheme');
 
-  // Sheet 3: By Status
   const st = {};
   projects.forEach(p => {
     const s = p.statusOfWork;
@@ -73,9 +119,8 @@ export function exportProjectsToExcel(projects, grants = [], filename = 'CivilTr
     'Status': k==='completed'?'Completed':k==='in_progress'?'In Progress':'Yet to Start',
     'Projects':v.count, 'Sanctioned (₹)':v.sanctioned, 'Expenditure (₹)':v.expenditure, 'Balance (₹)':v.sanctioned-v.expenditure
   })));
-  XLSX.utils.book_append_sheet(wb, ws3, 'By Status');
+  XLSX.utils.book_append_sheet(wb, ws3, 'Summary By Status');
 
-  // Sheet 4: By Constituency
   const cm = {};
   projects.forEach(p => {
     if (!cm[p.constituency]) cm[p.constituency] = { count:0, sanctioned:0, expenditure:0 };
@@ -84,7 +129,7 @@ export function exportProjectsToExcel(projects, grants = [], filename = 'CivilTr
   const ws4 = XLSX.utils.json_to_sheet(Object.entries(cm).map(([k,v]) => ({
     'Constituency':k, 'Projects':v.count, 'Sanctioned (₹)':v.sanctioned, 'Expenditure (₹)':v.expenditure, 'Balance (₹)':v.sanctioned-v.expenditure
   })));
-  XLSX.utils.book_append_sheet(wb, ws4, 'By Constituency');
+  XLSX.utils.book_append_sheet(wb, ws4, 'Summary By Constituency');
 
   XLSX.writeFile(wb, filename);
 }

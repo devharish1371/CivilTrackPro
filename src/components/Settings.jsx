@@ -18,7 +18,7 @@ export default function Settings() {
 
   const handleExportExcel = () => {
     try {
-      exportProjectsToExcel(projects, grants, 'CivilTrack_Sync.xlsx', exportStart, exportEnd);
+      exportProjectsToExcel(projects, contractors, engineers, schemes, constituencies, grants, 'CivilTrack_Sync.xlsx', exportStart, exportEnd);
       setStatus(`Exported Excel ${exportStart || exportEnd ? 'for selected dates' : 'for all data'} ✓`);
     } catch (e) { setError('Export failed: ' + e.message); }
   };
@@ -28,19 +28,30 @@ export default function Settings() {
     if (!file) return;
     setLoading(true); setError('');
     try {
-      const importedProjects = await importProjectsFromExcel(file, projects);
+      const data = await importProjectsFromExcel(file, projects, contractors, engineers, schemes, constituencies, grants);
       
-      const updatedProjects = [...projects];
-      let added = 0; let updated = 0;
+      const updateEntity = (existing, imported) => {
+        const updated = [...existing];
+        let added = 0; let modified = 0;
+        imported.forEach(imp => {
+          const idx = updated.findIndex(item => item.id === imp.id);
+          if (idx >= 0) { updated[idx] = imp; modified++; }
+          else { updated.push(imp); added++; }
+        });
+        return { updated, added, modified };
+      };
+
+      if (data.projects) {
+        const res = updateEntity(projects, data.projects);
+        dispatch({ type: 'SET_PROJECTS', payload: res.updated });
+        setStatus(`Import successful: ${res.added} projects added, ${res.modified} updated ✓`);
+      }
+      if (data.contractors) dispatch({ type: 'SET_CONTRACTORS', payload: updateEntity(contractors, data.contractors).updated });
+      if (data.engineers) dispatch({ type: 'SET_ENGINEERS', payload: updateEntity(engineers, data.engineers).updated });
+      if (data.schemes) dispatch({ type: 'SET_SCHEMES', payload: updateEntity(schemes, data.schemes).updated });
+      if (data.constituencies) dispatch({ type: 'SET_CONSTITUENCIES', payload: updateEntity(constituencies, data.constituencies).updated });
+      if (data.grants) dispatch({ type: 'SET_GRANTS', payload: updateEntity(grants, data.grants).updated });
       
-      importedProjects.forEach(imp => {
-        const idx = updatedProjects.findIndex(p => p.id === imp.id);
-        if (idx >= 0) { updatedProjects[idx] = imp; updated++; }
-        else { updatedProjects.push(imp); added++; }
-      });
-      
-      dispatch({ type: 'SET_PROJECTS', payload: updatedProjects });
-      setStatus(`Import successful: ${added} added, ${updated} updated ✓`);
     } catch (err) {
       setError('Import failed: ' + err.message);
     }
