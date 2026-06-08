@@ -12,11 +12,12 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const alerts = getAlerts();
 
-  const [filters, setFilters] = useState({ constituency: '', scheme: '', phase: '' });
+  const [filters, setFilters] = useState({ constituency: '', scheme: '', phase: '', year: '' });
   const [showFilters, setShowFilters] = useState(false);
 
   const filteredProjects = useMemo(() => {
     return projects.filter(p => {
+      if (filters.year && p.yearOfSanction !== Number(filters.year)) return false;
       if (filters.constituency && p.constituency !== filters.constituency) return false;
       if (filters.scheme && p.scheme !== filters.scheme) return false;
       if (filters.phase && p.phase !== filters.phase) return false;
@@ -26,6 +27,7 @@ export default function Dashboard() {
 
   const filteredGrants = useMemo(() => {
     return grants.filter(g => {
+      if (filters.year && g.year !== Number(filters.year)) return false;
       if (filters.scheme && g.scheme !== filters.scheme) return false;
       if (filters.constituency && g.constituency !== filters.constituency) return false;
       if (filters.phase && g.phase !== filters.phase) return false;
@@ -33,26 +35,39 @@ export default function Dashboard() {
     });
   }, [grants, filters]);
 
-  const optsConstituency = useMemo(() => {
+  const getOpts = (key, fType) => {
     const set = new Set();
-    projects.filter(p => (!filters.scheme || p.scheme === filters.scheme) && (!filters.phase || p.phase === filters.phase)).forEach(p => p.constituency && set.add(p.constituency));
-    grants.filter(g => (!filters.scheme || g.scheme === filters.scheme) && (!filters.phase || g.phase === filters.phase)).forEach(g => g.constituency && set.add(g.constituency));
-    return Array.from(set).sort();
-  }, [projects, grants, filters.scheme, filters.phase]);
+    projects.filter(p => {
+      if (fType !== 'year' && filters.year && p.yearOfSanction !== Number(filters.year)) return false;
+      if (fType !== 'scheme' && filters.scheme && p.scheme !== filters.scheme) return false;
+      if (fType !== 'constituency' && filters.constituency && p.constituency !== filters.constituency) return false;
+      if (fType !== 'phase' && filters.phase && p.phase !== filters.phase) return false;
+      return true;
+    }).forEach(p => {
+      const val = key === 'year' ? p.yearOfSanction : p[key];
+      if (val) set.add(val);
+    });
+    
+    grants.filter(g => {
+      if (fType !== 'year' && filters.year && g.year !== Number(filters.year)) return false;
+      if (fType !== 'scheme' && filters.scheme && g.scheme !== filters.scheme) return false;
+      if (fType !== 'constituency' && filters.constituency && g.constituency !== filters.constituency) return false;
+      if (fType !== 'phase' && filters.phase && g.phase !== filters.phase) return false;
+      return true;
+    }).forEach(g => {
+      const val = key === 'year' ? g.year : g[key];
+      if (val) set.add(val);
+    });
+    
+    const arr = Array.from(set);
+    if (key === 'year') return arr.sort((a,b)=>b-a);
+    return arr.sort();
+  };
 
-  const optsScheme = useMemo(() => {
-    const set = new Set();
-    projects.filter(p => (!filters.constituency || p.constituency === filters.constituency) && (!filters.phase || p.phase === filters.phase)).forEach(p => p.scheme && set.add(p.scheme));
-    grants.filter(g => (!filters.constituency || g.constituency === filters.constituency) && (!filters.phase || g.phase === filters.phase)).forEach(g => g.scheme && set.add(g.scheme));
-    return Array.from(set).sort();
-  }, [projects, grants, filters.constituency, filters.phase]);
-
-  const optsPhase = useMemo(() => {
-    const set = new Set();
-    projects.filter(p => (!filters.constituency || p.constituency === filters.constituency) && (!filters.scheme || p.scheme === filters.scheme)).forEach(p => p.phase && set.add(p.phase));
-    grants.filter(g => (!filters.constituency || g.constituency === filters.constituency) && (!filters.scheme || g.scheme === filters.scheme)).forEach(g => g.phase && set.add(g.phase));
-    return Array.from(set).sort();
-  }, [projects, grants, filters.constituency, filters.scheme]);
+  const optsYear = useMemo(() => getOpts('year', 'year'), [projects, grants, filters.scheme, filters.constituency, filters.phase]);
+  const optsConstituency = useMemo(() => getOpts('constituency', 'constituency'), [projects, grants, filters.scheme, filters.phase, filters.year]);
+  const optsScheme = useMemo(() => getOpts('scheme', 'scheme'), [projects, grants, filters.constituency, filters.phase, filters.year]);
+  const optsPhase = useMemo(() => getOpts('phase', 'phase'), [projects, grants, filters.constituency, filters.scheme, filters.year]);
 
   const totalSanctioned = filteredProjects.reduce((s,p) => s + (p.sanctionedAmount||0), 0);
   const totalExpenditure = filteredProjects.reduce((s,p) => s + (p.expenditureIncurred||0), 0);
@@ -97,7 +112,7 @@ export default function Dashboard() {
   });
   const conData = Object.values(conMap).sort((a,b) => (b.total+b.grant) - (a.total+a.grant));
 
-  const clearFilters = () => setFilters({ constituency: '', scheme: '', phase: '' });
+  const clearFilters = () => setFilters({ constituency: '', scheme: '', phase: '', year: '' });
   const hasFilters = Object.values(filters).some(v => v);
 
   const Tip = ({ active, payload, label }) => {
@@ -123,6 +138,13 @@ export default function Dashboard() {
 
       {showFilters && (
         <div className="filter-bar" style={{ marginBottom: 20 }}>
+          <div className="form-group">
+            <label className="form-label">Year</label>
+            <select className="form-select" value={filters.year} onChange={e => setFilters(f => ({...f, year:e.target.value}))}>
+              <option value="">All Years</option>
+              {optsYear.map(y => <option key={y} value={y}>{y}</option>)}
+            </select>
+          </div>
           <div className="form-group">
             <label className="form-label">Constituency</label>
             <select className="form-select" value={filters.constituency} onChange={e => setFilters(f => ({...f, constituency:e.target.value}))}>
