@@ -27,9 +27,32 @@ export default function Dashboard() {
   const filteredGrants = useMemo(() => {
     return grants.filter(g => {
       if (filters.scheme && g.scheme !== filters.scheme) return false;
+      if (filters.constituency && g.constituency !== filters.constituency) return false;
+      if (filters.phase && g.phase !== filters.phase) return false;
       return true;
     });
   }, [grants, filters]);
+
+  const optsConstituency = useMemo(() => {
+    const set = new Set();
+    projects.filter(p => (!filters.scheme || p.scheme === filters.scheme) && (!filters.phase || p.phase === filters.phase)).forEach(p => p.constituency && set.add(p.constituency));
+    grants.filter(g => (!filters.scheme || g.scheme === filters.scheme) && (!filters.phase || g.phase === filters.phase)).forEach(g => g.constituency && set.add(g.constituency));
+    return Array.from(set).sort();
+  }, [projects, grants, filters.scheme, filters.phase]);
+
+  const optsScheme = useMemo(() => {
+    const set = new Set();
+    projects.filter(p => (!filters.constituency || p.constituency === filters.constituency) && (!filters.phase || p.phase === filters.phase)).forEach(p => p.scheme && set.add(p.scheme));
+    grants.filter(g => (!filters.constituency || g.constituency === filters.constituency) && (!filters.phase || g.phase === filters.phase)).forEach(g => g.scheme && set.add(g.scheme));
+    return Array.from(set).sort();
+  }, [projects, grants, filters.constituency, filters.phase]);
+
+  const optsPhase = useMemo(() => {
+    const set = new Set();
+    projects.filter(p => (!filters.constituency || p.constituency === filters.constituency) && (!filters.scheme || p.scheme === filters.scheme)).forEach(p => p.phase && set.add(p.phase));
+    grants.filter(g => (!filters.constituency || g.constituency === filters.constituency) && (!filters.scheme || g.scheme === filters.scheme)).forEach(g => g.phase && set.add(g.phase));
+    return Array.from(set).sort();
+  }, [projects, grants, filters.constituency, filters.scheme]);
 
   const totalSanctioned = filteredProjects.reduce((s,p) => s + (p.sanctionedAmount||0), 0);
   const totalExpenditure = filteredProjects.reduce((s,p) => s + (p.expenditureIncurred||0), 0);
@@ -62,11 +85,17 @@ export default function Dashboard() {
 
   const conMap = {};
   filteredProjects.forEach(p => {
-    if (!conMap[p.constituency]) conMap[p.constituency] = { name:p.constituency, total:0, count:0 };
+    if (!conMap[p.constituency]) conMap[p.constituency] = { name:p.constituency, total:0, count:0, grant:0 };
     conMap[p.constituency].total += p.sanctionedAmount||0;
     conMap[p.constituency].count++;
   });
-  const conData = Object.values(conMap).sort((a,b) => b.total - a.total);
+  filteredGrants.forEach(g => {
+    if (g.constituency) {
+      if (!conMap[g.constituency]) conMap[g.constituency] = { name:g.constituency, total:0, count:0, grant:0 };
+      conMap[g.constituency].grant += g.amount||0;
+    }
+  });
+  const conData = Object.values(conMap).sort((a,b) => (b.total+b.grant) - (a.total+a.grant));
 
   const clearFilters = () => setFilters({ constituency: '', scheme: '', phase: '' });
   const hasFilters = Object.values(filters).some(v => v);
@@ -98,24 +127,21 @@ export default function Dashboard() {
             <label className="form-label">Constituency</label>
             <select className="form-select" value={filters.constituency} onChange={e => setFilters(f => ({...f, constituency:e.target.value}))}>
               <option value="">All Constituencies</option>
-              {constituencies.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+              {optsConstituency.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div className="form-group">
             <label className="form-label">Scheme</label>
             <select className="form-select" value={filters.scheme} onChange={e => setFilters(f => ({...f, scheme:e.target.value}))}>
               <option value="">All Schemes</option>
-              {schemes.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+              {optsScheme.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
           <div className="form-group">
             <label className="form-label">Phase</label>
             <select className="form-select" value={filters.phase} onChange={e => setFilters(f => ({...f, phase:e.target.value}))}>
               <option value="">All Phases</option>
-              <option value="Phase 1">Phase 1</option>
-              <option value="Phase 2">Phase 2</option>
-              <option value="Phase 3">Phase 3</option>
-              <option value="Phase 4">Phase 4</option>
+              {optsPhase.map(p => <option key={p} value={p}>{p}</option>)}
             </select>
           </div>
           {hasFilters && <button className="btn btn-danger btn-sm" onClick={clearFilters} style={{ alignSelf:'flex-end' }}><X size={14} /> Clear</button>}
@@ -182,8 +208,9 @@ export default function Dashboard() {
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
               <XAxis dataKey="name" tick={{ fill:'#94a3b8', fontSize:10 }} angle={-20} textAnchor="end" height={50} />
               <YAxis tickFormatter={v => fmt(v)} tick={{ fill:'#94a3b8', fontSize:10 }} />
-              <Tooltip content={<Tip />} />
+              <Tooltip content={<Tip />} /><Legend />
               <Bar dataKey="total" name="Sanctioned" fill="#10b981" radius={[4,4,0,0]} />
+              <Bar dataKey="grant" name="Grant" fill="#06b6d4" radius={[4,4,0,0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
