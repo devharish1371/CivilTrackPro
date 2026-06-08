@@ -3,11 +3,11 @@ import { useProjects } from '../context/ProjectContext';
 import { v4 as uuidv4 } from 'uuid';
 import { Plus, Edit, Trash2, X, Save } from 'lucide-react';
 
-const empty = { scheme: '', amount: '', date: '', goNumber: '', year: new Date().getFullYear(), phase: '' };
+const empty = { scheme: '', constituency: '', amount: '', date: '', goNumber: '', year: new Date().getFullYear(), phase: '' };
 const fmt = (n) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n);
 
 export default function GrantManager() {
-  const { grants, schemes, dispatch } = useProjects();
+  const { grants, schemes, constituencies, dispatch } = useProjects();
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(empty);
   const [search, setSearch] = useState('');
@@ -16,11 +16,11 @@ export default function GrantManager() {
     return grants.filter(g => {
       if (!search) return true;
       const q = search.toLowerCase();
-      return g.scheme.toLowerCase().includes(q) || g.goNumber.toLowerCase().includes(q);
+      return g.scheme.toLowerCase().includes(q) || (g.constituency||'').toLowerCase().includes(q) || g.goNumber.toLowerCase().includes(q);
     });
   }, [grants, search]);
 
-  const startEdit = (g) => { setEditing(g.id); setForm({ scheme: g.scheme, amount: g.amount, date: g.date, goNumber: g.goNumber, year: g.year || new Date().getFullYear(), phase: g.phase || '' }); };
+  const startEdit = (g) => { setEditing(g.id); setForm({ scheme: g.scheme, constituency: g.constituency || '', amount: g.amount, date: g.date, goNumber: g.goNumber, year: g.year || new Date().getFullYear(), phase: g.phase || '' }); };
   const startNew = () => { setEditing('new'); setForm(empty); };
   const cancel = () => { setEditing(null); setForm(empty); };
 
@@ -68,6 +68,13 @@ export default function GrantManager() {
               </select>
             </div>
             <div className="form-group">
+              <label className="form-label">Constituency</label>
+              <select className="form-select" value={form.constituency} onChange={e => set('constituency', e.target.value)}>
+                <option value="">Select Constituency</option>
+                {constituencies.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
               <label className="form-label">Grant Amount (₹) *</label>
               <input className="form-input" type="number" value={form.amount} onChange={e => set('amount', e.target.value)} placeholder="0" />
             </div>
@@ -103,13 +110,13 @@ export default function GrantManager() {
 
       <div className="table-container">
         <table className="data-table">
-          <thead><tr><th>#</th><th>Scheme</th><th>Year</th><th>Phase</th><th>GO Number</th><th>GO Date</th><th>Amount (₹)</th><th>Actions</th></tr></thead>
+          <thead><tr><th>#</th><th>Scheme</th><th>Constituency</th><th>Year</th><th>Phase</th><th>GO Number</th><th>GO Date</th><th>Amount (₹)</th><th>Actions</th></tr></thead>
           <tbody>
             {filtered.length === 0 ? (
-              <tr><td colSpan={6} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>No grants recorded</td></tr>
+              <tr><td colSpan={9} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>No grants recorded</td></tr>
             ) : filtered.map((g, i) => (
               <tr key={g.id}>
-                <td>{i + 1}</td><td>{g.scheme}</td><td>{g.year}</td><td>{g.phase}</td><td>{g.goNumber}</td><td>{g.date}</td>
+                <td>{i + 1}</td><td>{g.scheme}</td><td>{g.constituency || '—'}</td><td>{g.year}</td><td>{g.phase}</td><td>{g.goNumber}</td><td>{g.date}</td>
                 <td style={{ textAlign: 'right', fontWeight: 'bold', color: 'var(--emerald)' }}>{fmt(g.amount)}</td>
                 <td>
                   <div style={{ display: 'flex', gap: 4 }}>

@@ -119,6 +119,7 @@ export async function importProjectsFromExcel(file, existingProjects, existingCo
           result.grants = rows.map(r => ({
             id: r['ID'] || uuidv4(),
             scheme: r['Scheme'] || '',
+            constituency: r['Constituency'] || '',
             year: Number(r['Year']) || new Date().getFullYear(),
             phase: r['Phase'] || '',
             amount: Number(r['Amount (₹)']) || 0,

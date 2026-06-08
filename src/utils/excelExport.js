@@ -85,7 +85,7 @@ export function exportProjectsToExcel(projects, contractors = [], engineers = []
   // Grants Sheet
   if (filteredGrants.length) {
     const wsGrants = XLSX.utils.json_to_sheet(filteredGrants.map(g => ({
-      'ID': g.id, 'Scheme': g.scheme, 'Year': g.year, 'Phase': g.phase, 'Amount (₹)': n(g.amount)
+      'ID': g.id, 'Scheme': g.scheme, 'Constituency': g.constituency || '', 'Year': g.year, 'Phase': g.phase, 'Amount (₹)': n(g.amount)
     })));
     XLSX.utils.book_append_sheet(wb, wsGrants, 'Grants');
   }
