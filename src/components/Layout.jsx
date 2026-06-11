@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useProjects } from '../context/ProjectContext';
-import { LayoutDashboard, FolderKanban, PlusCircle, FileText, Bell, Menu, X, Building2, HardHat, Users, Settings, Cloud, Target, Map, Banknote, Tags } from 'lucide-react';
+import { LayoutDashboard, FolderKanban, PlusCircle, FileText, Bell, Menu, X, Building2, HardHat, Users, Settings, Cloud, Target, Map, Banknote, Tags, LogOut } from 'lucide-react';
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -52,6 +52,10 @@ export default function Layout({ children }) {
               {item.label === 'Alerts' && alertCount > 0 && <span className="nav-badge">{alertCount}</span>}
             </NavLink>
           ))}
+          <a href="#" className="nav-item" onClick={(e) => { e.preventDefault(); if(window.confirm('Are you sure you want to exit the app?')) { window.close(); window.location.href = 'about:blank'; } }}>
+            <LogOut />
+            Exit App
+          </a>
         </nav>
         <div style={{ padding:'14px', borderTop:'1px solid var(--border-subtle)', fontSize:'11px', color:'var(--text-muted)', display:'flex', alignItems:'center', gap:6 }}>
           {gsheetConfig.connected && <><Cloud size={12} style={{ color:'var(--emerald)' }} /> Sheets Synced</>}
