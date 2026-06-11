@@ -171,7 +171,7 @@ export default function Dashboard() {
       )}
 
       <div className="stats-grid">
-        <div className="stat-card cyan" onClick={() => navigate('/projects')} style={{ cursor:'pointer' }}>
+        <div className="stat-card cyan" onClick={() => navigate('/projects', { state: { filters } })} style={{ cursor:'pointer' }}>
           <div className="stat-icon cyan"><Building2 size={20} /></div>
           <div className="stat-value">{filteredProjects.length}</div><div className="stat-label">Total Projects</div>
         </div>
@@ -254,10 +254,18 @@ export default function Dashboard() {
 
       {/* Quick stats row */}
       <div className="stats-grid">
-        <div className="stat-card emerald"><div className="stat-icon emerald"><CheckCircle size={20} /></div><div className="stat-value">{completed}</div><div className="stat-label">Completed</div></div>
-        <div className="stat-card amber"><div className="stat-icon amber"><Clock size={20} /></div><div className="stat-value">{inProgress}</div><div className="stat-label">In Progress</div></div>
-        <div className="stat-card purple"><div className="stat-icon purple"><Building2 size={20} /></div><div className="stat-value">{yetToStart}</div><div className="stat-label">Yet to Start</div></div>
-        <div className="stat-card cyan"><div className="stat-icon cyan"><MapPin size={20} /></div><div className="stat-value">{geoTagged}</div><div className="stat-label">Geo-Tagged</div></div>
+        <div className="stat-card emerald" onClick={() => navigate('/projects', { state: { filters: { ...filters, status: 'completed' } } })} style={{ cursor:'pointer' }}>
+          <div className="stat-icon emerald"><CheckCircle size={20} /></div><div className="stat-value">{completed}</div><div className="stat-label">Completed</div>
+        </div>
+        <div className="stat-card amber" onClick={() => navigate('/projects', { state: { filters: { ...filters, status: 'in_progress' } } })} style={{ cursor:'pointer' }}>
+          <div className="stat-icon amber"><Clock size={20} /></div><div className="stat-value">{inProgress}</div><div className="stat-label">In Progress</div>
+        </div>
+        <div className="stat-card purple" onClick={() => navigate('/projects', { state: { filters: { ...filters, status: 'yet_to_start' } } })} style={{ cursor:'pointer' }}>
+          <div className="stat-icon purple"><Building2 size={20} /></div><div className="stat-value">{yetToStart}</div><div className="stat-label">Yet to Start</div>
+        </div>
+        <div className="stat-card cyan" onClick={() => navigate('/projects', { state: { filters } })} style={{ cursor:'pointer' }}>
+          <div className="stat-icon cyan"><MapPin size={20} /></div><div className="stat-value">{geoTagged}</div><div className="stat-label">Geo-Tagged</div>
+        </div>
       </div>
     </div>
   );

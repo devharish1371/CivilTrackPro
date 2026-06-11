@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useMemo, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useProjects, hashPassword } from '../context/ProjectContext';
 import { statusOptions } from '../data/sampleData';
 import { exportProjectsToExcel } from '../utils/excelExport';
@@ -12,7 +12,16 @@ const fmt = (n) => new Intl.NumberFormat('en-IN', { style:'currency', currency:'
 export default function ProjectList() {
   const { projects, contractors, engineers, schemes, constituencies, grants, dispatch } = useProjects();
   const navigate = useNavigate();
-  const [filters, setFilters] = useState({ year:'', scheme:'', category:'', phase:'', status:'', constituency:'', search:'', engineer:'', contractor:'' });
+  const location = useLocation();
+
+  const [filters, setFilters] = useState(() => {
+    const defaultFilters = { year:'', scheme:'', category:'', phase:'', status:'', constituency:'', search:'', engineer:'', contractor:'' };
+    if (location.state && location.state.filters) {
+      return { ...defaultFilters, ...location.state.filters };
+    }
+    return defaultFilters;
+  });
+  
   const [showFilters, setShowFilters] = useState(true);
   const [lockModal, setLockModal] = useState(null); // { projectId, action:'lock'|'unlock' }
   const [lockPw, setLockPw] = useState('');
