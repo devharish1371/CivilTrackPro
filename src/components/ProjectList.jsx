@@ -169,7 +169,7 @@ export default function ProjectList() {
             ) : filtered.map((p, i) => (
               <tr key={p.id} style={p.isLocked ? { opacity:0.85 } : {}}>
                 <td>{i+1}</td>
-                <td style={{ maxWidth:200, overflow:'hidden', textOverflow:'ellipsis' }} title={p.projectName}>
+                <td style={{ minWidth:200, whiteSpace:'normal', wordBreak:'break-word' }} title={p.projectName}>
                   {p.isLocked && <Lock size={11} style={{ color:'var(--amber)', marginRight:4, verticalAlign:'middle' }} />}
                   {p.projectName}
                 </td>

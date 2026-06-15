@@ -87,7 +87,6 @@ export default function ProjectForm() {
     if (!form.constituency) e.constituency = 'Required';
     if (!form.scheme) e.scheme = 'Required';
     if (!form.sanctionedAmount || Number(form.sanctionedAmount) <= 0) e.sanctionedAmount = 'Enter valid amount';
-    if (!form.contractorName.trim()) e.contractorName = 'Required';
     setErrors(e);
     return !Object.keys(e).length;
   };
@@ -215,7 +214,7 @@ export default function ProjectForm() {
           <div className="card-header"><span className="card-title"><Calendar size={14} style={{ display:'inline', verticalAlign:'middle' }} /> Timeline</span></div>
           <div className="form-grid">
             <div className="form-group">
-              <label className="form-label">Contractor *</label>
+              <label className="form-label">Contractor</label>
               <select className="form-select" value={form.contractorName} onChange={e => set('contractorName', e.target.value)}>
                 <option value="">Select or type below</option>
                 {contractors.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
