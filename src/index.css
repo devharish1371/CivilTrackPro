@@ -151,7 +151,7 @@ input, select, textarea { font-family: inherit; }
 .alert-icon.danger { background: var(--rose-glow); color: var(--rose); }
 .alert-icon.info { background: var(--blue-glow); color: var(--blue); }
 .alert-content h4 { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
-.alert-content p { font-size: 12px; color: var(--text-muted); }
+.alert-content p { font-size: 12px; color: var(--text-secondary); line-height: 1.4; }
 .alert-content .alert-date { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
 
 /* DETAIL VIEW */
