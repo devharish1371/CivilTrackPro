@@ -107,15 +107,12 @@ const BS = { cellPadding: 3, textColor: [30, 40, 55], lineColor: [218, 226, 238]
 const AR = { fillColor: [247, 250, 254] };
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  PROJECT LIST PDF — Landscape A4, 3 pages:
-//    Page 1: Project / Scheme info
-//    Page 2: Financial summary (amounts in Lakhs)
-//    Page 3: Timeline & Personnel
+//  PROJECT LIST PDF — Landscape A4, Single Compact Table
 // ═══════════════════════════════════════════════════════════════════════════
 export function generateProjectListPDF(projects, filters = {}) {
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   const W = doc.internal.pageSize.getWidth(); // 297
-  const MW = W - 28; // usable width = 269mm
+  const MW = W - 20; // 10mm margins = 277mm usable width
 
   const parts = [];
   if (filters.year) parts.push(`Year: ${filters.year}`);
@@ -130,58 +127,7 @@ export function generateProjectListPDF(projects, filters = {}) {
   const totalU = totalE + totalD;
   const totalBal = totalS - totalU;
 
-  // ═══ PAGE 1: Project / GO / Scheme Info ══════════════════════════════════
-  addHeader(doc, `Project Report  —  ${filterText}`, `Section 1 of 3: Project & Scheme Details  |  Total Projects: ${projects.length}`);
-
-  const p1Rows = projects.map((p, i) => [
-    i + 1,
-    p.projectName || '-',
-    p.category || '-',
-    p.yearOfSanction || '-',
-    p.constituency || '-',
-    p.scheme || '-',
-    p.phase || '-',
-    p.goNumber || '-',
-    fmtDate(p.goDate),
-    statusLabel(p.statusOfWork),
-    `${p.progress || 0}%`,
-  ]);
-
-  autoTable(doc, {
-    startY: 37,
-    head: [['#', 'Project Name / Description of Work', 'Category', 'Year', 'Constituency', 'Scheme', 'Phase', 'GO Number', 'GO Date', 'Status', 'Progress']],
-    body: p1Rows,
-    styles: { ...BS, fontSize: 7.5 },
-    headStyles: { ...HS, fontSize: 7.5 },
-    alternateRowStyles: AR,
-    tableWidth: MW,
-    margin: { left: 14, right: 14 },
-    columnStyles: {
-      0:  { cellWidth: 8,  halign: 'center' },
-      1:  { cellWidth: 72 },   // full project name
-      2:  { cellWidth: 18 },
-      3:  { cellWidth: 11,  halign: 'center' },
-      4:  { cellWidth: 25 },
-      5:  { cellWidth: 22 },
-      6:  { cellWidth: 15 },
-      7:  { cellWidth: 28 },
-      8:  { cellWidth: 22, halign: 'center' },
-      9:  { cellWidth: 20, halign: 'center' },
-      10: { cellWidth: 16, halign: 'center' },
-    },
-    didParseCell(data) {
-      if (data.section === 'body' && data.column.index === 9) {
-        const v = data.cell.raw;
-        if (v === 'Completed')   data.cell.styles.textColor = [16, 185, 129];
-        else if (v === 'In Progress') data.cell.styles.textColor = [245, 158, 11];
-        else data.cell.styles.textColor = [100, 116, 139];
-      }
-    }
-  });
-
-  // ═══ PAGE 2: Financial Summary ═══════════════════════════════════════════
-  doc.addPage();
-  addHeader(doc, `Financial Summary  —  ${filterText}`, `Section 2 of 3: All Amounts in Lakhs (INR)  |  Total Projects: ${projects.length}`);
+  addHeader(doc, `Project Report  —  ${filterText}`, `Total Projects: ${projects.length}`);
 
   addSummaryBar(doc, [
     { label: 'Projects', value: String(projects.length) },
@@ -192,57 +138,64 @@ export function generateProjectListPDF(projects, filters = {}) {
     { label: 'Total Balance', value: fmtL(totalBal), color: totalBal < 0 ? [244, 63, 94] : [16, 185, 129] },
   ], 37);
 
-  const p2Rows = projects.map((p, i) => {
+  const rows = projects.map((p, i) => {
     const utilised = (p.expenditureIncurred || 0) + (p.deductions || 0);
     const balance  = (p.sanctionedAmount || 0) - utilised;
-    const pct = p.sanctionedAmount > 0 ? Math.round((utilised / p.sanctionedAmount) * 100) : 0;
     return [
       i + 1,
       p.projectName || '-',
+      p.category || '-',
+      p.yearOfSanction || '-',
       p.constituency || '-',
       p.scheme || '-',
+      p.goNumber || '-',
       fmtL(p.sanctionedAmount),
-      fmtL(p.tenderedCost),
       fmtL(p.expenditureIncurred),
       fmtL(p.deductions || 0),
       fmtL(utilised),
       fmtL(balance),
-      `${pct}%`,
+      `${p.progress || 0}%`,
       statusLabel(p.statusOfWork),
+      p.juniorEngineer || '-',
+      p.assistantEngineer || '-'
     ];
   });
 
   autoTable(doc, {
     startY: 63,
-    head: [['#', 'Project Name / Description of Work', 'Constituency', 'Scheme', 'Sanctioned\n(L)', 'Tendered\n(L)', 'Expenditure\n(L)', 'Deductions\n(L)', 'Utilised\n(L)', 'Balance\n(L)', '%', 'Status']],
-    body: p2Rows,
-    styles: { ...BS, fontSize: 7.5 },
-    headStyles: { ...HS, fontSize: 7.5 },
+    head: [['#', 'Project Name', 'Category', 'Year', 'Constituency', 'Scheme', 'GO No', 'Sanctioned\n(L)', 'Expend.\n(L)', 'Deduct.\n(L)', 'Utilised\n(L)', 'Balance\n(L)', '%', 'Status', 'JE', 'AE']],
+    body: rows,
+    styles: { ...BS, fontSize: 6, cellPadding: 1.5 },
+    headStyles: { ...HS, fontSize: 6, cellPadding: 2 },
     alternateRowStyles: AR,
     tableWidth: MW,
-    margin: { left: 14, right: 14 },
+    margin: { left: 10, right: 10 },
     columnStyles: {
-      0:  { cellWidth: 8,  halign: 'center' },
-      1:  { cellWidth: 62 },
-      2:  { cellWidth: 22 },
-      3:  { cellWidth: 18 },
-      4:  { cellWidth: 22, halign: 'right' },
-      5:  { cellWidth: 22, halign: 'right' },
-      6:  { cellWidth: 22, halign: 'right' },
-      7:  { cellWidth: 22, halign: 'right' },
-      8:  { cellWidth: 22, halign: 'right' },
-      9:  { cellWidth: 22, halign: 'right' },
-      10: { cellWidth: 11, halign: 'center' },
-      11: { cellWidth: 22, halign: 'center' },
+      0:  { cellWidth: 5,  halign: 'center' },
+      1:  { cellWidth: 50 },
+      2:  { cellWidth: 14 },
+      3:  { cellWidth: 8, halign: 'center' },
+      4:  { cellWidth: 18 },
+      5:  { cellWidth: 16 },
+      6:  { cellWidth: 18 },
+      7:  { cellWidth: 16, halign: 'right' },
+      8:  { cellWidth: 16, halign: 'right' },
+      9:  { cellWidth: 14, halign: 'right' },
+      10: { cellWidth: 16, halign: 'right' },
+      11: { cellWidth: 16, halign: 'right' },
+      12: { cellWidth: 8, halign: 'center' },
+      13: { cellWidth: 16, halign: 'center' },
+      14: { cellWidth: 22 },
+      15: { cellWidth: 22 },
     },
     didParseCell(data) {
       if (data.section === 'body') {
-        if (data.column.index === 9) {
+        if (data.column.index === 11) {
           const raw = String(data.cell.raw || '');
           data.cell.styles.textColor = raw.startsWith('-') ? [244, 63, 94] : [16, 185, 129];
           data.cell.styles.fontStyle = 'bold';
         }
-        if (data.column.index === 11) {
+        if (data.column.index === 13) {
           const v = data.cell.raw;
           if (v === 'Completed')   data.cell.styles.textColor = [16, 185, 129];
           else if (v === 'In Progress') data.cell.styles.textColor = [245, 158, 11];
@@ -250,50 +203,6 @@ export function generateProjectListPDF(projects, filters = {}) {
         }
       }
     }
-  });
-
-  // ═══ PAGE 3: Timeline & Personnel ════════════════════════════════════════
-  doc.addPage();
-  addHeader(doc, `Timeline & Personnel  —  ${filterText}`, `Section 3 of 3: Contractor, Engineers & Key Dates  |  Total Projects: ${projects.length}`);
-
-  const p3Rows = projects.map((p, i) => [
-    i + 1,
-    p.projectName || '-',
-    p.contractorName || '-',
-    fmtDate(p.workOrderDate),
-    fmtDate(p.dateOfStartContract),
-    fmtDate(p.dateOfCompletionContract),
-    fmtDate(p.actualDateOfStart),
-    fmtDate(p.actualDateOfCompletion),
-    p.extensionOfTime || 'None',
-    fmtDate(p.expiryDate),
-    p.juniorEngineer || '-',
-    p.assistantEngineer || '-',
-  ]);
-
-  autoTable(doc, {
-    startY: 37,
-    head: [['#', 'Project Name / Description of Work', 'Contractor', 'Work Order', 'Contract Start', 'Contract End', 'Actual Start', 'Actual End', 'EOT', 'Guarantee Expiry', 'Jr. Engineer', 'Asst. Engineer']],
-    body: p3Rows,
-    styles: { ...BS, fontSize: 7.5 },
-    headStyles: { ...HS, fontSize: 7.5 },
-    alternateRowStyles: AR,
-    tableWidth: MW,
-    margin: { left: 14, right: 14 },
-    columnStyles: {
-      0:  { cellWidth: 8,  halign: 'center' },
-      1:  { cellWidth: 60 },
-      2:  { cellWidth: 28 },
-      3:  { cellWidth: 20, halign: 'center' },
-      4:  { cellWidth: 20, halign: 'center' },
-      5:  { cellWidth: 20, halign: 'center' },
-      6:  { cellWidth: 20, halign: 'center' },
-      7:  { cellWidth: 20, halign: 'center' },
-      8:  { cellWidth: 15, halign: 'center' },
-      9:  { cellWidth: 22, halign: 'center' },
-      10: { cellWidth: 20 },
-      11: { cellWidth: 20 },
-    },
   });
 
   addFooter(doc, `Project Report  —  ${filterText}`);
