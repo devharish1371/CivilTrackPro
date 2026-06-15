@@ -13,14 +13,18 @@ const fmt = (n) => {
   return `${sign}Rs.${formatted}`;
 };
 
-// Compact Lakhs format for list tables (e.g. 2640000 → "26.40 L")
+// Compact Crores/Lakhs format for list tables
 const fmtL = (n) => {
   if (n === null || n === undefined || n === '') return '-';
   const num = Number(n);
   if (isNaN(num) || num === 0) return '0.00 L';
-  const l = num / 100000;
-  const sign = l < 0 ? '-' : '';
-  return `${sign}${Math.abs(l).toFixed(2)} L`;
+  const absNum = Math.abs(num);
+  const sign = num < 0 ? '-' : '';
+  if (absNum >= 10000000) {
+    return `${sign}${(absNum / 10000000).toFixed(2)} Cr`;
+  } else {
+    return `${sign}${(absNum / 100000).toFixed(2)} L`;
+  }
 };
 
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
@@ -163,7 +167,7 @@ export function generateProjectListPDF(projects, filters = {}) {
 
   autoTable(doc, {
     startY: 63,
-    head: [['#', 'Project Name', 'Category', 'Year', 'Constituency', 'Scheme', 'GO No', 'Sanctioned\n(L)', 'Expend.\n(L)', 'Deduct.\n(L)', 'Utilised\n(L)', 'Balance\n(L)', '%', 'Status', 'JE', 'AE']],
+    head: [['#', 'Project Name', 'Category', 'Year', 'Constituency', 'Scheme', 'GO No', 'Sanctioned\n(Cr/L)', 'Expend.\n(Cr/L)', 'Deduct.\n(Cr/L)', 'Utilised\n(Cr/L)', 'Balance\n(Cr/L)', '%', 'Status', 'JE', 'AE']],
     body: rows,
     styles: { ...BS, fontSize: 6, cellPadding: 1.5 },
     headStyles: { ...HS, fontSize: 6, cellPadding: 2 },
