@@ -2,94 +2,121 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 // ─── Formatters ────────────────────────────────────────────────────────────
+// Full Indian currency format with Rs. prefix (avoids ₹ glyph issues in jsPDF)
 const fmt = (n) => {
-  if (n === null || n === undefined || n === '') return '—';
+  if (n === null || n === undefined || n === '') return '-';
   const num = Number(n);
-  if (isNaN(num)) return '—';
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num);
+  if (isNaN(num)) return '-';
+  const abs = Math.abs(num);
+  const sign = num < 0 ? '-' : '';
+  const formatted = abs.toLocaleString('en-IN', { maximumFractionDigits: 0 });
+  return `${sign}Rs.${formatted}`;
 };
-const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+
+// Compact Lakhs format for list tables (e.g. 2640000 → "26.40 L")
+const fmtL = (n) => {
+  if (n === null || n === undefined || n === '') return '-';
+  const num = Number(n);
+  if (isNaN(num) || num === 0) return '0.00 L';
+  const l = num / 100000;
+  const sign = l < 0 ? '-' : '';
+  return `${sign}${Math.abs(l).toFixed(2)} L`;
+};
+
+const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
 const statusLabel = (s) => s === 'completed' ? 'Completed' : s === 'in_progress' ? 'In Progress' : 'Yet to Start';
 
-// ─── Header / Footer ────────────────────────────────────────────────────────
+// ─── Header ─────────────────────────────────────────────────────────────────
 function addHeader(doc, title, subtitle = '') {
   const W = doc.internal.pageSize.getWidth();
-  // Dark navy banner
   doc.setFillColor(10, 15, 30);
-  doc.rect(0, 0, W, 30, 'F');
-  // Cyan accent bar
+  doc.rect(0, 0, W, 32, 'F');
   doc.setFillColor(6, 182, 212);
-  doc.rect(0, 30, W, 1.5, 'F');
-  // Logo text
+  doc.rect(0, 32, W, 1.5, 'F');
+
   doc.setTextColor(6, 182, 212);
   doc.setFontSize(20);
   doc.setFont('helvetica', 'bold');
   doc.text('CivilTrack Pro', 14, 14);
-  // Title
+
   doc.setTextColor(200, 220, 240);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.text(title, 14, 23);
+
   if (subtitle) {
     doc.setFontSize(8);
     doc.setTextColor(148, 163, 184);
-    doc.text(subtitle, 14, 28);
+    doc.text(subtitle, 14, 29);
   }
-  // Date top-right
+
+  const dateStr = `Generated: ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}`;
   doc.setFontSize(8);
   doc.setTextColor(148, 163, 184);
-  doc.text(`Generated: ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}`, W - 14, 14, { align: 'right' });
+  doc.text(dateStr, W - 14, 14, { align: 'right' });
 }
 
-function addFooter(doc, extraNote = '') {
+// ─── Footer ─────────────────────────────────────────────────────────────────
+function addFooter(doc, note = '') {
   const pages = doc.internal.getNumberOfPages();
   const W = doc.internal.pageSize.getWidth();
   const H = doc.internal.pageSize.getHeight();
   for (let i = 1; i <= pages; i++) {
     doc.setPage(i);
     doc.setFillColor(240, 244, 248);
-    doc.rect(0, H - 12, W, 12, 'F');
+    doc.rect(0, H - 13, W, 13, 'F');
     doc.setFontSize(7.5);
     doc.setTextColor(100);
-    doc.text(`CivilTrack Pro  |  ${extraNote || 'Confidential Report'}`, 14, H - 4.5);
-    doc.text(`Page ${i} of ${pages}`, W / 2, H - 4.5, { align: 'center' });
-    doc.text(new Date().toLocaleDateString('en-IN'), W - 14, H - 4.5, { align: 'right' });
+    doc.setFont('helvetica', 'normal');
+    doc.text(`CivilTrack Pro  |  ${note || 'Confidential'}`, 14, H - 5);
+    doc.text(`Page ${i} of ${pages}`, W / 2, H - 5, { align: 'center' });
+    doc.text(new Date().toLocaleDateString('en-IN'), W - 14, H - 5, { align: 'right' });
   }
 }
 
-// ─── Summary box ────────────────────────────────────────────────────────────
-function addSummaryBox(doc, items, startY) {
+// ─── Summary bar ─────────────────────────────────────────────────────────────
+function addSummaryBar(doc, items, y) {
   const W = doc.internal.pageSize.getWidth();
-  const colW = (W - 28) / items.length;
+  const totalW = W - 28;
+  const colW = totalW / items.length;
   doc.setFillColor(245, 248, 252);
-  doc.setDrawColor(220, 228, 240);
-  doc.roundedRect(14, startY, W - 28, 18, 2, 2, 'FD');
+  doc.setDrawColor(210, 220, 235);
+  doc.roundedRect(14, y, totalW, 20, 2, 2, 'FD');
   items.forEach((item, idx) => {
-    const x = 14 + idx * colW + colW / 2;
+    const cx = 14 + idx * colW + colW / 2;
+    // Separator line
+    if (idx > 0) {
+      doc.setDrawColor(210, 220, 235);
+      doc.line(14 + idx * colW, y + 3, 14 + idx * colW, y + 17);
+    }
     doc.setFontSize(7);
     doc.setTextColor(100, 116, 139);
     doc.setFont('helvetica', 'normal');
-    doc.text(item.label, x, startY + 5.5, { align: 'center' });
-    doc.setFontSize(9.5);
-    doc.setTextColor(item.color ? item.color[0] : 15, item.color ? item.color[1] : 23, item.color ? item.color[2] : 42);
+    doc.text(item.label, cx, y + 7, { align: 'center' });
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
-    doc.text(item.value, x, startY + 13.5, { align: 'center' });
+    if (item.color) doc.setTextColor(...item.color);
+    else doc.setTextColor(15, 23, 42);
+    doc.text(item.value, cx, y + 15, { align: 'center' });
   });
 }
 
-// ─── Shared table styles ─────────────────────────────────────────────────────
-const headStyles = { fillColor: [10, 15, 30], textColor: [200, 220, 240], fontStyle: 'bold', fontSize: 7.5, cellPadding: 3 };
-const bodyStyles = { fontSize: 7.5, cellPadding: 3, textColor: [30, 40, 50], lineColor: [220, 228, 240], lineWidth: 0.1 };
-const altRowStyles = { fillColor: [247, 250, 253] };
+// ─── Shared table styling ─────────────────────────────────────────────────────
+const HS = { fillColor: [10, 15, 30], textColor: [200, 220, 240], fontStyle: 'bold', cellPadding: 3 };
+const BS = { cellPadding: 3, textColor: [30, 40, 55], lineColor: [218, 226, 238], lineWidth: 0.15 };
+const AR = { fillColor: [247, 250, 254] };
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  1. PROJECT LIST PDF  (landscape A4, 2-table approach: info + financials)
+//  PROJECT LIST PDF — Landscape A4, 3 pages:
+//    Page 1: Project / Scheme info
+//    Page 2: Financial summary (amounts in Lakhs)
+//    Page 3: Timeline & Personnel
 // ═══════════════════════════════════════════════════════════════════════════
 export function generateProjectListPDF(projects, filters = {}) {
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   const W = doc.internal.pageSize.getWidth(); // 297
+  const MW = W - 28; // usable width = 269mm
 
-  // Filter label
   const parts = [];
   if (filters.year) parts.push(`Year: ${filters.year}`);
   if (filters.scheme) parts.push(`Scheme: ${filters.scheme}`);
@@ -97,131 +124,127 @@ export function generateProjectListPDF(projects, filters = {}) {
   if (filters.constituency) parts.push(`Constituency: ${filters.constituency}`);
   const filterText = parts.length ? parts.join('  |  ') : 'All Projects';
 
-  // ── PAGE 1: Project / Scheme Info ──────────────────────────────────────
-  addHeader(doc, `Project Report — ${filterText}`, `Total Projects: ${projects.length}`);
+  const totalS = projects.reduce((s, p) => s + (p.sanctionedAmount || 0), 0);
+  const totalE = projects.reduce((s, p) => s + (p.expenditureIncurred || 0), 0);
+  const totalD = projects.reduce((s, p) => s + (p.deductions || 0), 0);
+  const totalU = totalE + totalD;
+  const totalBal = totalS - totalU;
 
-  const infoRows = projects.map((p, i) => [
+  // ═══ PAGE 1: Project / GO / Scheme Info ══════════════════════════════════
+  addHeader(doc, `Project Report  —  ${filterText}`, `Section 1 of 3: Project & Scheme Details  |  Total Projects: ${projects.length}`);
+
+  const p1Rows = projects.map((p, i) => [
     i + 1,
-    p.projectName || '—',
-    p.category || '—',
-    p.yearOfSanction || '—',
-    p.constituency || '—',
-    p.scheme || '—',
-    p.goNumber || '—',
+    p.projectName || '-',
+    p.category || '-',
+    p.yearOfSanction || '-',
+    p.constituency || '-',
+    p.scheme || '-',
+    p.phase || '-',
+    p.goNumber || '-',
     fmtDate(p.goDate),
-    p.contractorName || '—',
     statusLabel(p.statusOfWork),
     `${p.progress || 0}%`,
-    p.juniorEngineer || '—',
-    p.assistantEngineer || '—',
   ]);
 
   autoTable(doc, {
-    startY: 36,
-    head: [['#', 'Project Name', 'Category', 'Year', 'Constituency', 'Scheme', 'GO No', 'GO Date', 'Contractor', 'Status', 'Progress', 'Jr. Engineer', 'Asst. Engineer']],
-    body: infoRows,
-    styles: bodyStyles,
-    headStyles,
-    alternateRowStyles: altRowStyles,
-    tableWidth: W - 28,
+    startY: 37,
+    head: [['#', 'Project Name / Description of Work', 'Category', 'Year', 'Constituency', 'Scheme', 'Phase', 'GO Number', 'GO Date', 'Status', 'Progress']],
+    body: p1Rows,
+    styles: { ...BS, fontSize: 7.5 },
+    headStyles: { ...HS, fontSize: 7.5 },
+    alternateRowStyles: AR,
+    tableWidth: MW,
     margin: { left: 14, right: 14 },
     columnStyles: {
-      0: { cellWidth: 8, halign: 'center' },
-      1: { cellWidth: 62 },   // Project Name — wider
-      2: { cellWidth: 16 },
-      3: { cellWidth: 10, halign: 'center' },
-      4: { cellWidth: 22 },
-      5: { cellWidth: 18 },
-      6: { cellWidth: 22 },
-      7: { cellWidth: 20 },
-      8: { cellWidth: 22 },
-      9: { cellWidth: 18, halign: 'center' },
-      10: { cellWidth: 14, halign: 'center' },
-      11: { cellWidth: 20 },
-      12: { cellWidth: 20 },
+      0:  { cellWidth: 8,  halign: 'center' },
+      1:  { cellWidth: 72 },   // full project name
+      2:  { cellWidth: 18 },
+      3:  { cellWidth: 11,  halign: 'center' },
+      4:  { cellWidth: 25 },
+      5:  { cellWidth: 22 },
+      6:  { cellWidth: 15 },
+      7:  { cellWidth: 28 },
+      8:  { cellWidth: 22, halign: 'center' },
+      9:  { cellWidth: 20, halign: 'center' },
+      10: { cellWidth: 16, halign: 'center' },
     },
     didParseCell(data) {
       if (data.section === 'body' && data.column.index === 9) {
         const v = data.cell.raw;
-        if (v === 'Completed') data.cell.styles.textColor = [16, 185, 129];
+        if (v === 'Completed')   data.cell.styles.textColor = [16, 185, 129];
         else if (v === 'In Progress') data.cell.styles.textColor = [245, 158, 11];
         else data.cell.styles.textColor = [100, 116, 139];
       }
     }
   });
 
-  // ── PAGE 2: Financial Summary ──────────────────────────────────────────
+  // ═══ PAGE 2: Financial Summary ═══════════════════════════════════════════
   doc.addPage();
-  addHeader(doc, `Financial Summary — ${filterText}`, `Total Projects: ${projects.length}`);
+  addHeader(doc, `Financial Summary  —  ${filterText}`, `Section 2 of 3: All Amounts in Lakhs (INR)  |  Total Projects: ${projects.length}`);
 
-  const totalS = projects.reduce((s, p) => s + (p.sanctionedAmount || 0), 0);
-  const totalE = projects.reduce((s, p) => s + (p.expenditureIncurred || 0), 0);
-  const totalD = projects.reduce((s, p) => s + (p.deductions || 0), 0);
-  const totalU = totalE + totalD;
+  addSummaryBar(doc, [
+    { label: 'Projects', value: String(projects.length) },
+    { label: 'Total Sanctioned', value: fmtL(totalS), color: [6, 182, 212] },
+    { label: 'Total Expenditure', value: fmtL(totalE), color: [245, 158, 11] },
+    { label: 'Total Deductions', value: fmtL(totalD), color: [245, 158, 11] },
+    { label: 'Total Utilised', value: fmtL(totalU), color: [139, 92, 246] },
+    { label: 'Total Balance', value: fmtL(totalBal), color: totalBal < 0 ? [244, 63, 94] : [16, 185, 129] },
+  ], 37);
 
-  // Summary strip
-  addSummaryBox(doc, [
-    { label: 'Total Projects', value: String(projects.length) },
-    { label: 'Total Sanctioned', value: fmt(totalS), color: [6, 182, 212] },
-    { label: 'Total Expenditure', value: fmt(totalE), color: [245, 158, 11] },
-    { label: 'Total Deductions', value: fmt(totalD), color: [245, 158, 11] },
-    { label: 'Total Utilised', value: fmt(totalU), color: [139, 92, 246] },
-    { label: 'Balance', value: fmt(totalS - totalU), color: totalS - totalU < 0 ? [244, 63, 94] : [16, 185, 129] },
-  ], 36);
-
-  const finRows = projects.map((p, i) => {
+  const p2Rows = projects.map((p, i) => {
     const utilised = (p.expenditureIncurred || 0) + (p.deductions || 0);
-    const balance = (p.sanctionedAmount || 0) - utilised;
+    const balance  = (p.sanctionedAmount || 0) - utilised;
+    const pct = p.sanctionedAmount > 0 ? Math.round((utilised / p.sanctionedAmount) * 100) : 0;
     return [
       i + 1,
-      p.projectName || '—',
-      p.constituency || '—',
-      p.scheme || '—',
-      fmt(p.sanctionedAmount),
-      fmt(p.tenderedCost),
-      fmt(p.expenditureIncurred),
-      fmt(p.deductions || 0),
-      fmt(utilised),
-      fmt(balance),
-      `${p.progress || 0}%`,
+      p.projectName || '-',
+      p.constituency || '-',
+      p.scheme || '-',
+      fmtL(p.sanctionedAmount),
+      fmtL(p.tenderedCost),
+      fmtL(p.expenditureIncurred),
+      fmtL(p.deductions || 0),
+      fmtL(utilised),
+      fmtL(balance),
+      `${pct}%`,
       statusLabel(p.statusOfWork),
     ];
   });
 
   autoTable(doc, {
-    startY: 60,
-    head: [['#', 'Project Name', 'Constituency', 'Scheme', 'Sanctioned (₹)', 'Tendered (₹)', 'Expenditure (₹)', 'Deductions (₹)', 'Utilised (₹)', 'Balance (₹)', 'Progress', 'Status']],
-    body: finRows,
-    styles: bodyStyles,
-    headStyles,
-    alternateRowStyles: altRowStyles,
-    tableWidth: W - 28,
+    startY: 63,
+    head: [['#', 'Project Name / Description of Work', 'Constituency', 'Scheme', 'Sanctioned\n(L)', 'Tendered\n(L)', 'Expenditure\n(L)', 'Deductions\n(L)', 'Utilised\n(L)', 'Balance\n(L)', '%', 'Status']],
+    body: p2Rows,
+    styles: { ...BS, fontSize: 7.5 },
+    headStyles: { ...HS, fontSize: 7.5 },
+    alternateRowStyles: AR,
+    tableWidth: MW,
     margin: { left: 14, right: 14 },
     columnStyles: {
-      0: { cellWidth: 8, halign: 'center' },
-      1: { cellWidth: 62 },
-      2: { cellWidth: 22 },
-      3: { cellWidth: 18 },
-      4: { cellWidth: 26, halign: 'right' },
-      5: { cellWidth: 26, halign: 'right' },
-      6: { cellWidth: 26, halign: 'right' },
-      7: { cellWidth: 20, halign: 'right' },
-      8: { cellWidth: 26, halign: 'right' },
-      9: { cellWidth: 26, halign: 'right' },
-      10: { cellWidth: 12, halign: 'center' },
-      11: { cellWidth: 18, halign: 'center' },
+      0:  { cellWidth: 8,  halign: 'center' },
+      1:  { cellWidth: 62 },
+      2:  { cellWidth: 22 },
+      3:  { cellWidth: 18 },
+      4:  { cellWidth: 22, halign: 'right' },
+      5:  { cellWidth: 22, halign: 'right' },
+      6:  { cellWidth: 22, halign: 'right' },
+      7:  { cellWidth: 22, halign: 'right' },
+      8:  { cellWidth: 22, halign: 'right' },
+      9:  { cellWidth: 22, halign: 'right' },
+      10: { cellWidth: 11, halign: 'center' },
+      11: { cellWidth: 22, halign: 'center' },
     },
     didParseCell(data) {
       if (data.section === 'body') {
-        // Balance column — color red if negative
         if (data.column.index === 9) {
-          const raw = data.cell.raw;
-          if (raw && raw.toString().startsWith('-')) data.cell.styles.textColor = [244, 63, 94];
-          else data.cell.styles.textColor = [16, 185, 129];
+          const raw = String(data.cell.raw || '');
+          data.cell.styles.textColor = raw.startsWith('-') ? [244, 63, 94] : [16, 185, 129];
+          data.cell.styles.fontStyle = 'bold';
         }
         if (data.column.index === 11) {
           const v = data.cell.raw;
-          if (v === 'Completed') data.cell.styles.textColor = [16, 185, 129];
+          if (v === 'Completed')   data.cell.styles.textColor = [16, 185, 129];
           else if (v === 'In Progress') data.cell.styles.textColor = [245, 158, 11];
           else data.cell.styles.textColor = [100, 116, 139];
         }
@@ -229,243 +252,259 @@ export function generateProjectListPDF(projects, filters = {}) {
     }
   });
 
-  addFooter(doc, `Project Report — ${filterText}`);
+  // ═══ PAGE 3: Timeline & Personnel ════════════════════════════════════════
+  doc.addPage();
+  addHeader(doc, `Timeline & Personnel  —  ${filterText}`, `Section 3 of 3: Contractor, Engineers & Key Dates  |  Total Projects: ${projects.length}`);
+
+  const p3Rows = projects.map((p, i) => [
+    i + 1,
+    p.projectName || '-',
+    p.contractorName || '-',
+    fmtDate(p.workOrderDate),
+    fmtDate(p.dateOfStartContract),
+    fmtDate(p.dateOfCompletionContract),
+    fmtDate(p.actualDateOfStart),
+    fmtDate(p.actualDateOfCompletion),
+    p.extensionOfTime || 'None',
+    fmtDate(p.expiryDate),
+    p.juniorEngineer || '-',
+    p.assistantEngineer || '-',
+  ]);
+
+  autoTable(doc, {
+    startY: 37,
+    head: [['#', 'Project Name / Description of Work', 'Contractor', 'Work Order', 'Contract Start', 'Contract End', 'Actual Start', 'Actual End', 'EOT', 'Guarantee Expiry', 'Jr. Engineer', 'Asst. Engineer']],
+    body: p3Rows,
+    styles: { ...BS, fontSize: 7.5 },
+    headStyles: { ...HS, fontSize: 7.5 },
+    alternateRowStyles: AR,
+    tableWidth: MW,
+    margin: { left: 14, right: 14 },
+    columnStyles: {
+      0:  { cellWidth: 8,  halign: 'center' },
+      1:  { cellWidth: 60 },
+      2:  { cellWidth: 28 },
+      3:  { cellWidth: 20, halign: 'center' },
+      4:  { cellWidth: 20, halign: 'center' },
+      5:  { cellWidth: 20, halign: 'center' },
+      6:  { cellWidth: 20, halign: 'center' },
+      7:  { cellWidth: 20, halign: 'center' },
+      8:  { cellWidth: 15, halign: 'center' },
+      9:  { cellWidth: 22, halign: 'center' },
+      10: { cellWidth: 20 },
+      11: { cellWidth: 20 },
+    },
+  });
+
+  addFooter(doc, `Project Report  —  ${filterText}`);
   return doc;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  2. PROJECT DETAIL PDF  (portrait A4, grid layout with tables per section)
+//  PROJECT DETAIL PDF — Portrait A4, full-amount grid layout
 // ═══════════════════════════════════════════════════════════════════════════
 export function generateProjectDetailPDF(project) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const p = project;
   const W = doc.internal.pageSize.getWidth(); // 210
+  const MW = W - 28;
   const utilised = (p.expenditureIncurred || 0) + (p.deductions || 0);
-  const balance = (p.sanctionedAmount || 0) - utilised;
+  const balance  = (p.sanctionedAmount || 0) - utilised;
+  const pct      = p.sanctionedAmount > 0 ? Math.min(Math.round((utilised / p.sanctionedAmount) * 100), 100) : 0;
 
   addHeader(doc, 'Project Detail Report', p.projectName || '');
 
-  // Status + progress strip
-  const statusColor = p.statusOfWork === 'completed' ? [16, 185, 129] : p.statusOfWork === 'in_progress' ? [245, 158, 11] : [100, 116, 139];
-  doc.setFillColor(...statusColor);
-  doc.rect(14, 34, 4, 8, 'F');
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...statusColor);
-  doc.text(statusLabel(p.statusOfWork), 21, 39);
-  doc.setTextColor(100);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
-  doc.text(`Progress: ${p.progress || 0}%`, 21, 44);
+  // Status badge strip
+  const sColor = p.statusOfWork === 'completed' ? [16,185,129] : p.statusOfWork === 'in_progress' ? [245,158,11] : [100,116,139];
+  doc.setFillColor(...sColor);
+  doc.roundedRect(14, 35, 4, 9, 1, 1, 'F');
+  doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.setTextColor(...sColor);
+  doc.text(statusLabel(p.statusOfWork), 21, 40);
+  doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(100);
+  doc.text(`Progress: ${p.progress || 0}%   |   Updated: ${p.updatedAt ? fmtDate(p.updatedAt) : '-'}`, 21, 45);
 
-  let currentY = 48;
+  let Y = 50;
 
-  // Helper: 2-column table section
-  const sectionTable = (title, fields) => {
-    // Section heading
-    doc.setFontSize(8.5);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(6, 182, 212);
-    doc.text(title, 14, currentY);
-    doc.setFillColor(6, 182, 212);
-    doc.rect(14, currentY + 1, W - 28, 0.4, 'F');
-    currentY += 5;
+  // Helper: render a 2-column key-value section table
+  const section = (title, fields) => {
+    doc.setFontSize(8.5); doc.setFont('helvetica','bold'); doc.setTextColor(6,182,212);
+    doc.text(title, 14, Y);
+    doc.setFillColor(6,182,212); doc.rect(14, Y+1.2, MW, 0.5, 'F');
+    Y += 5;
 
-    // Build rows in pairs (2 label-value per row)
     const rows = [];
     for (let i = 0; i < fields.length; i += 2) {
-      const left = fields[i];
-      const right = fields[i + 1];
-      rows.push([
-        left[0], left[1],
-        right ? right[0] : '', right ? right[1] : ''
-      ]);
+      const L = fields[i],  R = fields[i+1];
+      rows.push([ L[0], String(L[1] ?? '-'), R ? R[0] : '', R ? String(R[1] ?? '-') : '' ]);
     }
 
     autoTable(doc, {
-      startY: currentY,
+      startY: Y,
       body: rows,
-      styles: { fontSize: 8, cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 }, textColor: [30, 40, 50] },
-      alternateRowStyles: { fillColor: [247, 250, 253] },
-      tableWidth: W - 28,
-      margin: { left: 14, right: 14 },
+      styles: { fontSize: 8.5, cellPadding: { top:3, bottom:3, left:4, right:4 }, textColor:[30,40,55], lineColor:[218,226,238], lineWidth:0.15 },
+      alternateRowStyles: AR,
+      tableWidth: MW,
+      margin: { left:14, right:14 },
       columnStyles: {
-        0: { cellWidth: 40, fontStyle: 'bold', textColor: [80, 95, 115] },
-        1: { cellWidth: (W - 28) / 2 - 40 },
-        2: { cellWidth: 40, fontStyle: 'bold', textColor: [80, 95, 115] },
-        3: { cellWidth: (W - 28) / 2 - 40 },
+        0: { cellWidth: 44, fontStyle:'bold', textColor:[80,95,115] },
+        1: { cellWidth: MW/2 - 44 },
+        2: { cellWidth: 44, fontStyle:'bold', textColor:[80,95,115] },
+        3: { cellWidth: MW/2 - 44 },
       },
-      tableLineColor: [220, 228, 240],
-      tableLineWidth: 0.1,
+      tableLineColor: [218,226,238],
+      tableLineWidth: 0.15,
     });
-    currentY = doc.lastAutoTable.finalY + 5;
+    Y = doc.lastAutoTable.finalY + 5;
   };
 
-  // ── Section 1: Sanction & GO ──────────────────────────────────────────
-  sectionTable('SANCTION & GO DETAILS', [
-    ['Project Name', p.projectName || '—'],
-    ['Year of Sanction', p.yearOfSanction || '—'],
-    ['Constituency', p.constituency || '—'],
-    ['Scheme', p.scheme || '—'],
-    ['Category', p.category || '—'],
-    ['Phase', p.phase || '—'],
-    ['GO Number', p.goNumber || '—'],
-    ['GO Date', fmtDate(p.goDate)],
+  // ── 1. Sanction & GO ──────────────────────────────────────────────────
+  section('1. SANCTION & GO DETAILS', [
+    ['Project Name',     p.projectName],
+    ['Year of Sanction', p.yearOfSanction],
+    ['Constituency',     p.constituency],
+    ['Scheme',           p.scheme],
+    ['Category',         p.category],
+    ['Phase',            p.phase],
+    ['GO Number',        p.goNumber],
+    ['GO Date',          fmtDate(p.goDate)],
   ]);
 
-  // ── Section 2: Financial ──────────────────────────────────────────────
-  sectionTable('FINANCIAL DETAILS', [
+  // ── 2. Financial ──────────────────────────────────────────────────────
+  section('2. FINANCIAL DETAILS', [
     ['Sanctioned Amount', fmt(p.sanctionedAmount)],
-    ['Tendered Cost', fmt(p.tenderedCost)],
+    ['Tendered Cost',     fmt(p.tenderedCost)],
     ['Expenditure Incurred', fmt(p.expenditureIncurred)],
-    ['Deductions', fmt(p.deductions || 0)],
-    ['Total Utilised', fmt(utilised)],
-    ['Balance', fmt(balance)],
+    ['Deductions',        fmt(p.deductions || 0)],
+    ['Total Utilised',    fmt(utilised)],
+    ['Balance',           fmt(balance)],
+    ['Security Amount',   fmt(p.securityAmount || 0)],
+    ['Utilisation %',     `${pct}%`],
   ]);
 
   // Utilisation bar
-  if (p.sanctionedAmount > 0) {
-    const pct = Math.min(Math.round((utilised / p.sanctionedAmount) * 100), 100);
-    doc.setFontSize(7.5);
-    doc.setTextColor(80, 95, 115);
-    doc.setFont('helvetica', 'bold');
-    doc.text(`Utilisation: ${pct}%`, 14, currentY);
-    currentY += 3;
-    const barW = W - 28;
-    doc.setFillColor(220, 228, 240);
-    doc.roundedRect(14, currentY, barW, 4, 1, 1, 'F');
-    const barColor = pct > 90 ? [244, 63, 94] : pct > 60 ? [245, 158, 11] : [16, 185, 129];
-    doc.setFillColor(...barColor);
-    doc.roundedRect(14, currentY, barW * pct / 100, 4, 1, 1, 'F');
-    currentY += 9;
-  }
+  doc.setFontSize(7.5); doc.setFont('helvetica','bold'); doc.setTextColor(80,95,115);
+  doc.text(`Utilisation: ${pct}% of Sanctioned Amount`, 14, Y);
+  Y += 3;
+  doc.setFillColor(220,228,240); doc.roundedRect(14, Y, MW, 5, 1, 1, 'F');
+  const barColor = pct > 90 ? [244,63,94] : pct > 60 ? [245,158,11] : [16,185,129];
+  doc.setFillColor(...barColor); doc.roundedRect(14, Y, MW * pct / 100, 5, 1, 1, 'F');
+  Y += 10;
 
-  // ── Section 3: Timeline ───────────────────────────────────────────────
-  sectionTable('TIMELINE', [
-    ['Contractor', p.contractorName || '—'],
-    ['Work Order Date', fmtDate(p.workOrderDate)],
-    ['Contract Start', fmtDate(p.dateOfStartContract)],
-    ['Contract Completion', fmtDate(p.dateOfCompletionContract)],
-    ['Actual Start', fmtDate(p.actualDateOfStart)],
-    ['Actual Completion', fmtDate(p.actualDateOfCompletion)],
-    ['Extension of Time', p.extensionOfTime || 'None'],
-    ['Status', statusLabel(p.statusOfWork)],
+  // ── 3. Timeline ───────────────────────────────────────────────────────
+  section('3. TIMELINE', [
+    ['Contractor',           p.contractorName],
+    ['Work Order Date',      fmtDate(p.workOrderDate)],
+    ['Contract Start Date',  fmtDate(p.dateOfStartContract)],
+    ['Contract Completion',  fmtDate(p.dateOfCompletionContract)],
+    ['Actual Start Date',    fmtDate(p.actualDateOfStart)],
+    ['Actual Completion',    fmtDate(p.actualDateOfCompletion)],
+    ['Extension of Time',    p.extensionOfTime || 'None'],
+    ['Status',               statusLabel(p.statusOfWork)],
   ]);
 
-  // ── Section 4: Guarantee & Personnel ─────────────────────────────────
-  sectionTable('GUARANTEE & PERSONNEL', [
+  // ── 4. Guarantee & Personnel ──────────────────────────────────────────
+  section('4. GUARANTEE & PERSONNEL', [
     ['Performance Guarantee', fmtDate(p.performanceGuaranteeDate)],
-    ['Expiry Date', fmtDate(p.expiryDate)],
-    ['Junior Engineer', p.juniorEngineer || '—'],
-    ['Assistant Engineer', p.assistantEngineer || '—'],
+    ['Guarantee Expiry Date', fmtDate(p.expiryDate)],
+    ['Junior Engineer',       p.juniorEngineer],
+    ['Assistant Engineer',    p.assistantEngineer],
   ]);
 
-  // ── Section 5: Security Deposit ───────────────────────────────────────
-  sectionTable('SECURITY DEPOSIT', [
-    ['Security Amount', fmt(p.securityAmount || 0)],
-    ['Security Deducted On', fmtDate(p.securityDepositDeductedDate)],
+  // ── 5. Security Deposit ───────────────────────────────────────────────
+  section('5. SECURITY DEPOSIT', [
+    ['Security Amount',       fmt(p.securityAmount || 0)],
+    ['Security Deducted On',  fmtDate(p.securityDepositDeductedDate)],
     ['Security Release Date', fmtDate(p.securityDepositReleaseDate)],
-    ['UC Sent On', fmtDate(p.ucSentDate)],
-    ['M Book Number', p.mBookNumber || '—'],
-    ['Audit Register No', p.workAuditRegisterNo || '—'],
+    ['UC Sent On',            fmtDate(p.ucSentDate)],
+    ['M Book Number',         p.mBookNumber],
+    ['Audit Register No.',    p.workAuditRegisterNo],
   ]);
 
-  // ── Section 6: Location ───────────────────────────────────────────────
+  // ── 6. Location ───────────────────────────────────────────────────────
   if (p.latitude && p.longitude && Number(p.latitude) !== 0) {
-    sectionTable('GEO-LOCATION', [
-      ['Latitude', p.latitude],
+    section('6. GEO-LOCATION', [
+      ['Latitude',  p.latitude],
       ['Longitude', p.longitude],
-      ['Coordinates', `${p.latitude}, ${p.longitude}`],
     ]);
   }
 
-  // ── Section 7: Physical Parameters & Notes ────────────────────────────
-  if (p.physicalParametersNotes || p.notes) {
-    const textSections = [];
-    if (p.physicalParametersNotes) {
-      doc.setFontSize(8.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(6, 182, 212);
-      doc.text('PHYSICAL PARAMETERS', 14, currentY);
-      doc.setFillColor(6, 182, 212); doc.rect(14, currentY + 1, W - 28, 0.4, 'F');
-      currentY += 6;
-      doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(50);
-      const lines = doc.splitTextToSize(p.physicalParametersNotes, W - 28);
-      doc.text(lines, 14, currentY);
-      currentY += lines.length * 4 + 5;
-    }
-    if (p.notes) {
-      doc.setFontSize(8.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(6, 182, 212);
-      doc.text('NOTES / REMARKS', 14, currentY);
-      doc.setFillColor(6, 182, 212); doc.rect(14, currentY + 1, W - 28, 0.4, 'F');
-      currentY += 6;
-      doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(50);
-      const lines = doc.splitTextToSize(p.notes, W - 28);
-      doc.text(lines, 14, currentY);
-    }
-  }
+  // ── 7. Physical Parameters & Notes ────────────────────────────────────
+  const writeTextBlock = (heading, text) => {
+    doc.setFontSize(8.5); doc.setFont('helvetica','bold'); doc.setTextColor(6,182,212);
+    doc.text(heading, 14, Y);
+    doc.setFillColor(6,182,212); doc.rect(14, Y+1.2, MW, 0.5, 'F');
+    Y += 6;
+    doc.setFontSize(8.5); doc.setFont('helvetica','normal'); doc.setTextColor(50);
+    const lines = doc.splitTextToSize(text, MW);
+    doc.text(lines, 14, Y);
+    Y += lines.length * 5 + 5;
+  };
+
+  if (p.physicalParametersNotes) writeTextBlock('7. PHYSICAL PARAMETERS', p.physicalParametersNotes);
+  if (p.notes) writeTextBlock('8. NOTES / REMARKS', p.notes);
 
   addFooter(doc, p.projectName || 'Project Detail');
   return doc;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  3. ALERTS PDF  (portrait A4, clean action-ready layout)
+//  ALERTS PDF — Portrait A4
 // ═══════════════════════════════════════════════════════════════════════════
 export function generateAlertsPDF(alerts) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const W = doc.internal.pageSize.getWidth();
+  const MW = W - 28;
   const critical = alerts.filter(a => a.type === 'danger');
-  const warnings = alerts.filter(a => a.type !== 'danger');
+  const warnings  = alerts.filter(a => a.type !== 'danger');
 
-  addHeader(doc, 'Active Alerts Report', `Requires Immediate Action — ${new Date().toLocaleDateString('en-IN', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}`);
+  addHeader(doc, 'Active Alerts Report', `Action Required  |  Generated: ${new Date().toLocaleDateString('en-IN', { weekday:'long', day:'2-digit', month:'long', year:'numeric' })}`);
 
-  // Summary strip
-  addSummaryBox(doc, [
+  addSummaryBar(doc, [
     { label: 'Total Alerts', value: String(alerts.length) },
-    { label: 'Critical', value: String(critical.length), color: [244, 63, 94] },
-    { label: 'Warnings', value: String(warnings.length), color: [245, 158, 11] },
-  ], 36);
+    { label: 'Critical',     value: String(critical.length), color: [244,63,94] },
+    { label: 'Warnings',     value: String(warnings.length), color: [245,158,11] },
+  ], 37);
 
   const rows = alerts.map((a, i) => [
     i + 1,
     a.type === 'danger' ? 'CRITICAL' : 'WARNING',
-    a.title || '—',
-    a.projectName || '—',
-    a.delayText || '—',
+    a.title    || '-',
+    a.projectName || '-',
+    a.delayText   || '-',
     fmtDate(a.date),
   ]);
 
   autoTable(doc, {
-    startY: 60,
-    head: [['#', 'Severity', 'Alert Type', 'Project Name / Work', 'Timeline Delay', 'Date']],
+    startY: 63,
+    head: [['#', 'Severity', 'Alert Type', 'Project Name / Description of Work', 'Timeline Delay', 'Key Date']],
     body: rows,
-    styles: { ...bodyStyles, fontSize: 8.5, cellPadding: 3.5 },
-    headStyles: { ...headStyles, fontSize: 8.5 },
-    alternateRowStyles: altRowStyles,
-    tableWidth: W - 28,
-    margin: { left: 14, right: 14 },
+    styles: { ...BS, fontSize: 8.5 },
+    headStyles: { ...HS, fontSize: 8.5 },
+    alternateRowStyles: AR,
+    tableWidth: MW,
+    margin: { left:14, right:14 },
     columnStyles: {
-      0: { cellWidth: 8, halign: 'center' },
-      1: { cellWidth: 22, halign: 'center', fontStyle: 'bold' },
+      0: { cellWidth: 8,  halign:'center' },
+      1: { cellWidth: 22, halign:'center', fontStyle:'bold' },
       2: { cellWidth: 42 },
       3: { cellWidth: 76 },
-      4: { cellWidth: 26, halign: 'center' },
-      5: { cellWidth: 22, halign: 'center' },
+      4: { cellWidth: 26, halign:'center' },
+      5: { cellWidth: 22, halign:'center' },
     },
     didParseCell(data) {
       if (data.section === 'body' && data.column.index === 1) {
         if (data.cell.raw === 'CRITICAL') {
-          data.cell.styles.textColor = [255, 255, 255];
-          data.cell.styles.fillColor = [244, 63, 94];
+          data.cell.styles.fillColor  = [244,63,94];
+          data.cell.styles.textColor  = [255,255,255];
         } else {
-          data.cell.styles.textColor = [255, 255, 255];
-          data.cell.styles.fillColor = [245, 158, 11];
+          data.cell.styles.fillColor  = [245,158,11];
+          data.cell.styles.textColor  = [255,255,255];
         }
       }
-      // Highlight delay in red if overdue
       if (data.section === 'body' && data.column.index === 4) {
-        const v = String(data.cell.raw || '');
-        if (v.toLowerCase().startsWith('overdue') || v.toLowerCase().startsWith('expired')) {
-          data.cell.styles.textColor = [244, 63, 94];
+        const v = String(data.cell.raw || '').toLowerCase();
+        if (v.startsWith('overdue') || v.startsWith('expired')) {
+          data.cell.styles.textColor = [244,63,94];
           data.cell.styles.fontStyle = 'bold';
         }
       }
@@ -473,24 +512,20 @@ export function generateAlertsPDF(alerts) {
   });
 
   const finalY = doc.lastAutoTable.finalY + 8;
-  // Note box
-  doc.setFillColor(254, 242, 242);
-  doc.setDrawColor(244, 63, 94);
-  doc.roundedRect(14, finalY, W - 28, 14, 2, 2, 'FD');
-  doc.setFontSize(8);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(244, 63, 94);
-  doc.text('⚠ Action Required:', 18, finalY + 6);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(80);
-  doc.text('Please review the above alerts and take appropriate action. Critical items require immediate attention.', 18, finalY + 11);
+  doc.setFillColor(254,242,242);
+  doc.setDrawColor(244,63,94);
+  doc.roundedRect(14, finalY, MW, 14, 2, 2, 'FD');
+  doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(244,63,94);
+  doc.text('Action Required:', 18, finalY + 6);
+  doc.setFont('helvetica','normal'); doc.setTextColor(80);
+  doc.text('Please review the above alerts and take immediate action. Critical items require priority attention.', 18, finalY + 11);
 
-  addFooter(doc, 'Active Alerts — CivilTrack Pro');
+  addFooter(doc, 'Active Alerts Report — CivilTrack Pro');
   return doc;
 }
 
-// ─── Export helpers ──────────────────────────────────────────────────────────
-export function savePDF(doc, filename) { doc.save(filename); }
+// ─── Helpers ────────────────────────────────────────────────────────────────
+export function savePDF(doc, filename)  { doc.save(filename); }
 export function sharePDF(doc, filename) {
   const blob = doc.output('blob');
   const file = new File([blob], filename, { type: 'application/pdf' });
