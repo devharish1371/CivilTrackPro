@@ -113,18 +113,18 @@ export function ProjectProvider({ children }) {
     state.projects.forEach(p => {
       if (p.expiryDate) {
         const d = Math.ceil((new Date(p.expiryDate) - now) / 86400000);
-        if (d < 0) alerts.push({ id: p.id+'_exp', projectId: p.id, type:'danger', title:'Performance Guarantee Expired', message:`${p.projectName} — expired ${Math.abs(d)} days ago`, date: p.expiryDate });
-        else if (d <= 30) alerts.push({ id: p.id+'_exp', projectId: p.id, type:'warning', title:'Guarantee Expiring Soon', message:`${p.projectName} — ${d} days left`, date: p.expiryDate });
+        if (d < 0) alerts.push({ id: p.id+'_exp', projectId: p.id, type:'danger', title:'Performance Guarantee Expired', projectName: p.projectName, delayText: `Expired ${Math.abs(d)} days ago`, message:`${p.projectName} — expired ${Math.abs(d)} days ago`, date: p.expiryDate });
+        else if (d <= 30) alerts.push({ id: p.id+'_exp', projectId: p.id, type:'warning', title:'Guarantee Expiring Soon', projectName: p.projectName, delayText: `${d} days left`, message:`${p.projectName} — ${d} days left`, date: p.expiryDate });
       }
       if (p.dateOfCompletionContract && p.statusOfWork !== 'completed') {
         const d = Math.ceil((new Date(p.dateOfCompletionContract) - now) / 86400000);
-        if (d < 0) alerts.push({ id: p.id+'_cont', projectId: p.id, type:'danger', title:'Contract Period Expired', message:`${p.projectName} — overdue ${Math.abs(d)} days`, date: p.dateOfCompletionContract });
-        else if (d <= 30) alerts.push({ id: p.id+'_cont', projectId: p.id, type:'warning', title:'Contract Ending Soon', message:`${p.projectName} — ${d} days left`, date: p.dateOfCompletionContract });
+        if (d < 0) alerts.push({ id: p.id+'_cont', projectId: p.id, type:'danger', title:'Contract Period Expired', projectName: p.projectName, delayText: `Overdue ${Math.abs(d)} days`, message:`${p.projectName} — overdue ${Math.abs(d)} days`, date: p.dateOfCompletionContract });
+        else if (d <= 30) alerts.push({ id: p.id+'_cont', projectId: p.id, type:'warning', title:'Contract Ending Soon', projectName: p.projectName, delayText: `${d} days left`, message:`${p.projectName} — ${d} days left`, date: p.dateOfCompletionContract });
       }
       if (p.securityDepositReleaseDate) {
         const d = Math.ceil((new Date(p.securityDepositReleaseDate) - now) / 86400000);
-        if (d < 0) alerts.push({ id: p.id+'_sec', projectId: p.id, type:'danger', title:'Security Deposit Overdue', message:`${p.projectName} — overdue ${Math.abs(d)} days`, date: p.securityDepositReleaseDate });
-        else if (d <= 15) alerts.push({ id: p.id+'_sec', projectId: p.id, type:'info', title:'Security Deposit Release Due', message:`${p.projectName} — ${d} days left`, date: p.securityDepositReleaseDate });
+        if (d < 0) alerts.push({ id: p.id+'_sec', projectId: p.id, type:'danger', title:'Security Deposit Overdue', projectName: p.projectName, delayText: `Overdue ${Math.abs(d)} days`, message:`${p.projectName} — overdue ${Math.abs(d)} days`, date: p.securityDepositReleaseDate });
+        else if (d <= 15) alerts.push({ id: p.id+'_sec', projectId: p.id, type:'info', title:'Security Deposit Release Due', projectName: p.projectName, delayText: `${d} days left`, message:`${p.projectName} — ${d} days left`, date: p.securityDepositReleaseDate });
       }
     });
     return alerts.sort((a, b) => a.type === 'danger' ? -1 : b.type === 'danger' ? 1 : 0);

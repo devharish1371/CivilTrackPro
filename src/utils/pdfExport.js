@@ -121,19 +121,20 @@ export function generateAlertsPDF(alerts) {
       i+1, 
       a.type === 'danger' ? 'Critical' : 'Warning',
       a.title,
-      a.message,
+      a.projectName,
+      a.delayText,
       fmtDate(a.date)
     ];
   });
 
   autoTable(doc, {
     startY: 32,
-    head: [['#','Severity','Alert Type','Project Name / Details','Date']],
+    head: [['#','Severity','Alert Type','Project Name','Delay/Status','Date']],
     body: rows,
     styles: { fontSize:8, cellPadding:3, textColor:[30,30,30] },
     headStyles: { fillColor:[10,15,30], textColor:[200,220,240], fontSize:8 },
     alternateRowStyles: { fillColor:[240,245,250] },
-    columnStyles: { 1:{ cellWidth:20 }, 2:{ cellWidth:40 }, 4:{ cellWidth:25 } },
+    columnStyles: { 1:{ cellWidth:20 }, 2:{ cellWidth:40 }, 3:{ cellWidth:80 }, 4:{ cellWidth:25 } },
     didParseCell: function(data) {
       if (data.section === 'body' && data.column.index === 1) {
         if (data.cell.raw === 'Critical') data.cell.styles.textColor = [244,63,94]; // Rose
