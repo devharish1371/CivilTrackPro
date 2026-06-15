@@ -112,6 +112,45 @@ export function generateProjectDetailPDF(project) {
   return doc;
 }
 
+export function generateAlertsPDF(alerts) {
+  const doc = new jsPDF({ unit:'mm', format:'a4' });
+  addHeader(doc, `Active Alerts Report`);
+
+  const rows = alerts.map((a, i) => {
+    return [
+      i+1, 
+      a.type === 'danger' ? 'Critical' : 'Warning',
+      a.title,
+      a.message,
+      fmtDate(a.date)
+    ];
+  });
+
+  autoTable(doc, {
+    startY: 32,
+    head: [['#','Severity','Alert Type','Project Name / Details','Date']],
+    body: rows,
+    styles: { fontSize:8, cellPadding:3, textColor:[30,30,30] },
+    headStyles: { fillColor:[10,15,30], textColor:[200,220,240], fontSize:8 },
+    alternateRowStyles: { fillColor:[240,245,250] },
+    columnStyles: { 1:{ cellWidth:20 }, 2:{ cellWidth:40 }, 4:{ cellWidth:25 } },
+    didParseCell: function(data) {
+      if (data.section === 'body' && data.column.index === 1) {
+        if (data.cell.raw === 'Critical') data.cell.styles.textColor = [244,63,94]; // Rose
+        else if (data.cell.raw === 'Warning') data.cell.styles.textColor = [245,158,11]; // Amber
+      }
+    }
+  });
+
+  const y = doc.lastAutoTable.finalY + 10;
+  doc.setFontSize(10); doc.setTextColor(30); doc.setFont('helvetica','bold'); doc.text('Summary', 14, y);
+  doc.setFont('helvetica','normal'); doc.setFontSize(9);
+  doc.text(`Total Active Alerts: ${alerts.length}  |  Critical: ${alerts.filter(a => a.type === 'danger').length}  |  Warnings: ${alerts.filter(a => a.type === 'warning').length}`, 14, y+6);
+  
+  addFooter(doc);
+  return doc;
+}
+
 export function savePDF(doc, filename) { doc.save(filename); }
 export function sharePDF(doc, filename) {
   const blob = doc.output('blob');

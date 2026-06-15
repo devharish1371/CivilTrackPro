@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useProjects } from '../context/ProjectContext';
-import { AlertTriangle, Clock, ShieldAlert, ChevronRight } from 'lucide-react';
+import { generateAlertsPDF, savePDF, sharePDF } from '../utils/pdfExport';
+import { AlertTriangle, Clock, ShieldAlert, ChevronRight, FileText, Share2 } from 'lucide-react';
 
 export default function AlertsPanel() {
   const { getAlerts } = useProjects();
@@ -19,6 +20,12 @@ export default function AlertsPanel() {
           <h1>Alerts</h1>
           <p>{alerts.length} active alerts requiring attention</p>
         </div>
+        {alerts.length > 0 && (
+          <div className="btn-group">
+            <button className="btn btn-secondary btn-sm" onClick={() => savePDF(generateAlertsPDF(alerts), 'Active_Alerts.pdf')}><FileText size={14} /> PDF</button>
+            <button className="btn btn-secondary btn-sm" onClick={() => sharePDF(generateAlertsPDF(alerts), 'Active_Alerts.pdf')}><Share2 size={14} /> Share</button>
+          </div>
+        )}
       </div>
 
       {alerts.length === 0 ? (

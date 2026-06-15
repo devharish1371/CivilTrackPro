@@ -189,8 +189,6 @@ export default function ProjectList() {
                 <td>
                   <div style={{ display:'flex', gap:3 }}>
                     <button className="btn btn-secondary btn-icon btn-sm" onClick={() => navigate(`/projects/${p.id}`)} title="View"><Eye size={14} /></button>
-                    <button className="btn btn-secondary btn-icon btn-sm" onClick={() => savePDF(generateProjectDetailPDF(p), `${p.projectName.replace(/\\s+/g,'_')}.pdf`)} title="Download PDF"><FileText size={14} /></button>
-                    <button className="btn btn-secondary btn-icon btn-sm" onClick={() => sharePDF(generateProjectDetailPDF(p), `${p.projectName.replace(/\\s+/g,'_')}.pdf`)} title="Share PDF"><Share2 size={14} /></button>
                     <button className="btn btn-secondary btn-icon btn-sm" onClick={() => !p.isLocked && navigate(`/projects/${p.id}/edit`)} disabled={p.isLocked} title="Edit"><Edit size={14} /></button>
                     <button className="btn btn-danger btn-icon btn-sm" onClick={() => !p.isLocked && handleDelete(p.id, p.projectName)} disabled={p.isLocked} title="Delete"><Trash2 size={14} /></button>
                     <button className={`btn btn-icon btn-sm ${p.isLocked ? 'btn-success' : 'btn-secondary'}`} onClick={() => handleLockToggle(p)} title={p.isLocked?'Unlock':'Lock'}>
