@@ -215,14 +215,11 @@ export default function ProjectForm() {
           <div className="form-grid">
             <div className="form-group">
               <label className="form-label">Contractor</label>
-              <select className="form-select" value={form.contractorName} onChange={e => set('contractorName', e.target.value)}>
-                <option value="">Select or type below</option>
-                {contractors.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
-              </select><E f="contractorName" />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Or Enter Contractor Name</label>
-              <input className="form-input" value={form.contractorName} onChange={e => set('contractorName', e.target.value)} placeholder="M/s ..." />
+              <input className="form-input" list="contractor-list" value={form.contractorName} onChange={e => set('contractorName', e.target.value)} placeholder="Select or type..." />
+              <datalist id="contractor-list">
+                {contractors.map(c => <option key={c.id} value={c.name} />)}
+              </datalist>
+              <E f="contractorName" />
             </div>
             <div className="form-group"><label className="form-label">Work Order Date</label><input className="form-input" type="date" value={form.workOrderDate} onChange={e => set('workOrderDate', e.target.value)} /></div>
             <div className="form-group"><label className="form-label">Start Date (Contract)</label><input className="form-input" type="date" value={form.dateOfStartContract} onChange={e => set('dateOfStartContract', e.target.value)} /></div>
@@ -244,15 +241,17 @@ export default function ProjectForm() {
             <div className="form-group"><label className="form-label">Expiry Date</label><input className="form-input" type="date" value={form.expiryDate} onChange={e => set('expiryDate', e.target.value)} /></div>
             <div className="form-group">
               <label className="form-label">Junior Engineer</label>
-              <select className="form-select" value={form.juniorEngineer} onChange={e => set('juniorEngineer', e.target.value)}>
-                <option value="">Select</option>{jeList.map(e => <option key={e.id} value={e.name}>{e.name} — {e.division}</option>)}
-              </select>
+              <input className="form-input" list="je-list" value={form.juniorEngineer} onChange={e => set('juniorEngineer', e.target.value)} placeholder="Select or type..." />
+              <datalist id="je-list">
+                {jeList.map(e => <option key={e.id} value={e.name}>{e.name} — {e.division}</option>)}
+              </datalist>
             </div>
             <div className="form-group">
               <label className="form-label">Assistant Engineer</label>
-              <select className="form-select" value={form.assistantEngineer} onChange={e => set('assistantEngineer', e.target.value)}>
-                <option value="">Select</option>{aeList.map(e => <option key={e.id} value={e.name}>{e.name} — {e.division}</option>)}
-              </select>
+              <input className="form-input" list="ae-list" value={form.assistantEngineer} onChange={e => set('assistantEngineer', e.target.value)} placeholder="Select or type..." />
+              <datalist id="ae-list">
+                {aeList.map(e => <option key={e.id} value={e.name}>{e.name} — {e.division}</option>)}
+              </datalist>
             </div>
           </div>
         </div>
