@@ -17,22 +17,25 @@ export default function GrantManager() {
   const [filterYear, setFilterYear] = useState('');
   const [filterScheme, setFilterScheme] = useState('');
   const [filterPhase, setFilterPhase] = useState('');
+  const [filterConstituency, setFilterConstituency] = useState('');
 
   const filtered = useMemo(() => {
     return grants.filter(g => {
       if (filterYear && String(g.year) !== String(filterYear)) return false;
       if (filterScheme && g.scheme !== filterScheme) return false;
       if (filterPhase && g.phase !== filterPhase) return false;
+      if (filterConstituency && g.constituency !== filterConstituency) return false;
       
       if (!search) return true;
       const q = search.toLowerCase();
       return g.scheme.toLowerCase().includes(q) || (g.constituency||'').toLowerCase().includes(q) || g.goNumber.toLowerCase().includes(q);
     });
-  }, [grants, search, filterYear, filterScheme, filterPhase]);
+  }, [grants, search, filterYear, filterScheme, filterPhase, filterConstituency]);
 
   const uniqueYears = [...new Set(grants.map(g => g.year))].filter(Boolean).sort().reverse();
   const uniqueSchemes = [...new Set(grants.map(g => g.scheme))].filter(Boolean).sort();
   const uniquePhases = [...new Set(grants.map(g => g.phase))].filter(Boolean).sort();
+  const uniqueConstituencies = [...new Set(grants.map(g => g.constituency))].filter(Boolean).sort();
 
   const startEdit = (g) => { setEditing(g.id); setForm({ scheme: g.scheme, constituency: g.constituency || '', amount: g.amount, date: g.date, goNumber: g.goNumber, year: g.year || new Date().getFullYear(), phase: g.phase || '' }); };
   const startNew = () => { setEditing('new'); setForm(empty); };
@@ -54,7 +57,7 @@ export default function GrantManager() {
   const totalGrant = filtered.reduce((sum, g) => sum + (g.amount || 0), 0);
 
   const handleExportPDF = () => {
-    const doc = generateGrantsListPDF(filtered, { year: filterYear, scheme: filterScheme, phase: filterPhase });
+    const doc = generateGrantsListPDF(filtered, { year: filterYear, scheme: filterScheme, phase: filterPhase, constituency: filterConstituency });
     doc.save('Grants_Report.pdf');
   };
 
@@ -66,6 +69,7 @@ export default function GrantManager() {
     setFilterYear('');
     setFilterScheme('');
     setFilterPhase('');
+    setFilterConstituency('');
   };
 
   return (
@@ -108,7 +112,14 @@ export default function GrantManager() {
             {uniquePhases.map(p => <option key={p} value={p}>{p}</option>)}
           </select>
         </div>
-        {(filterYear || filterScheme || filterPhase) && (
+        <div className="form-group">
+          <label className="form-label">Constituency</label>
+          <select className="form-select" value={filterConstituency} onChange={e => setFilterConstituency(e.target.value)}>
+            <option value="">All Constituencies</option>
+            {uniqueConstituencies.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+        {(filterYear || filterScheme || filterPhase || filterConstituency) && (
           <button className="btn btn-danger btn-sm" onClick={clearFilters} style={{ alignSelf: 'flex-end' }}>
             <X size={14} /> Clear
           </button>

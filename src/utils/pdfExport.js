@@ -225,6 +225,7 @@ export function generateGrantsListPDF(grants, filters = {}) {
   if (filters.year) parts.push(`Year: ${filters.year}`);
   if (filters.scheme) parts.push(`Scheme: ${filters.scheme}`);
   if (filters.phase) parts.push(`Phase: ${filters.phase}`);
+  if (filters.constituency) parts.push(`Constituency: ${filters.constituency}`);
   const filterText = parts.length ? parts.join('  |  ') : 'All Grants';
 
   const totalG = grants.reduce((s, g) => s + (g.amount || 0), 0);
