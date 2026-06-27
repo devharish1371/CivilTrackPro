@@ -133,3 +133,22 @@ export function exportProjectsToExcel(projects, contractors = [], engineers = []
 
   XLSX.writeFile(wb, filename);
 }
+
+export function exportGrantsToExcel(grants, filename = 'CivilTrack_Grants.xlsx') {
+  const wb = XLSX.utils.book_new();
+  const data = grants.map((g, i) => ({
+    'S.No': i+1,
+    'Scheme': g.scheme,
+    'Constituency': g.constituency || '',
+    'Year': g.year,
+    'Phase': g.phase || '',
+    'GO Number': g.goNumber || '',
+    'GO Date': g.date || '',
+    'Amount (₹)': n(g.amount)
+  }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  ws['!cols'] = Array(8).fill({ wch:20 });
+  XLSX.utils.book_append_sheet(wb, ws, 'Grants');
+  XLSX.writeFile(wb, filename);
+}
+

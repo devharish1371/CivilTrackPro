@@ -214,6 +214,66 @@ export function generateProjectListPDF(projects, filters = {}) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+//  GRANTS LIST PDF
+// ═══════════════════════════════════════════════════════════════════════════
+export function generateGrantsListPDF(grants, filters = {}) {
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const W = doc.internal.pageSize.getWidth();
+  const MW = W - 20;
+
+  const parts = [];
+  if (filters.year) parts.push(`Year: ${filters.year}`);
+  if (filters.scheme) parts.push(`Scheme: ${filters.scheme}`);
+  if (filters.phase) parts.push(`Phase: ${filters.phase}`);
+  const filterText = parts.length ? parts.join('  |  ') : 'All Grants';
+
+  const totalG = grants.reduce((s, g) => s + (g.amount || 0), 0);
+
+  addHeader(doc, `Grants Report  —  ${filterText}`, `Total Grants: ${grants.length}`);
+
+  addSummaryBar(doc, [
+    { label: 'Grants', value: String(grants.length) },
+    { label: 'Total Amount', value: fmt(totalG), color: [6, 182, 212] }
+  ], 37);
+
+  const rows = grants.map((g, i) => [
+    i + 1,
+    g.scheme || '-',
+    g.constituency || '-',
+    g.year || '-',
+    g.phase || '-',
+    g.goNumber || '-',
+    g.date ? fmtDate(g.date) : '-',
+    fmt(g.amount)
+  ]);
+
+  autoTable(doc, {
+    startY: 63,
+    head: [['#', 'Scheme', 'Constituency', 'Year', 'Phase', 'GO No', 'GO Date', 'Amount (₹)']],
+    body: rows,
+    styles: { ...BS, fontSize: 8, cellPadding: 2 },
+    headStyles: { ...HS, fontSize: 8 },
+    alternateRowStyles: AR,
+    tableWidth: MW,
+    margin: { left: 10, right: 10 },
+    columnStyles: {
+      0: { cellWidth: 10, halign: 'center' },
+      1: { cellWidth: 35 },
+      2: { cellWidth: 30 },
+      3: { cellWidth: 15, halign: 'center' },
+      4: { cellWidth: 20 },
+      5: { cellWidth: 25 },
+      6: { cellWidth: 20 },
+      7: { cellWidth: 35, halign: 'right' }
+    }
+  });
+
+  addFooter(doc, `Grants Report  —  ${filterText}`);
+  return doc;
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
 //  PROJECT DETAIL PDF — Portrait A4, full-amount grid layout
 // ═══════════════════════════════════════════════════════════════════════════
 export function generateProjectDetailPDF(project) {

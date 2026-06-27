@@ -1,7 +1,9 @@
 import { useState, useMemo } from 'react';
 import { useProjects } from '../context/ProjectContext';
 import { v4 as uuidv4 } from 'uuid';
-import { Plus, Edit, Trash2, X, Save } from 'lucide-react';
+import { Plus, Edit, Trash2, X, Save, Download } from 'lucide-react';
+import { generateGrantsListPDF } from '../utils/pdfExport';
+import { exportGrantsToExcel } from '../utils/excelExport';
 
 const empty = { scheme: '', constituency: '', amount: '', date: '', goNumber: '', year: new Date().getFullYear(), phase: '' };
 const fmt = (n) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n);
@@ -10,15 +12,27 @@ export default function GrantManager() {
   const { grants, schemes, constituencies, dispatch } = useProjects();
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(empty);
+  
   const [search, setSearch] = useState('');
+  const [filterYear, setFilterYear] = useState('');
+  const [filterScheme, setFilterScheme] = useState('');
+  const [filterPhase, setFilterPhase] = useState('');
 
   const filtered = useMemo(() => {
     return grants.filter(g => {
+      if (filterYear && String(g.year) !== String(filterYear)) return false;
+      if (filterScheme && g.scheme !== filterScheme) return false;
+      if (filterPhase && g.phase !== filterPhase) return false;
+      
       if (!search) return true;
       const q = search.toLowerCase();
       return g.scheme.toLowerCase().includes(q) || (g.constituency||'').toLowerCase().includes(q) || g.goNumber.toLowerCase().includes(q);
     });
-  }, [grants, search]);
+  }, [grants, search, filterYear, filterScheme, filterPhase]);
+
+  const uniqueYears = [...new Set(grants.map(g => g.year))].filter(Boolean).sort().reverse();
+  const uniqueSchemes = [...new Set(grants.map(g => g.scheme))].filter(Boolean).sort();
+  const uniquePhases = [...new Set(grants.map(g => g.phase))].filter(Boolean).sort();
 
   const startEdit = (g) => { setEditing(g.id); setForm({ scheme: g.scheme, constituency: g.constituency || '', amount: g.amount, date: g.date, goNumber: g.goNumber, year: g.year || new Date().getFullYear(), phase: g.phase || '' }); };
   const startNew = () => { setEditing('new'); setForm(empty); };
@@ -37,16 +51,35 @@ export default function GrantManager() {
   const remove = (id, scheme) => { if (confirm(`Delete grant for ${scheme}?`)) dispatch({ type: 'DELETE_GRANT', payload: id }); };
   const set = (f, v) => setForm(x => ({ ...x, [f]: v }));
 
-  const totalGrant = grants.reduce((sum, g) => sum + (g.amount || 0), 0);
+  const totalGrant = filtered.reduce((sum, g) => sum + (g.amount || 0), 0);
+
+  const handleExportPDF = () => {
+    const doc = generateGrantsListPDF(filtered, { year: filterYear, scheme: filterScheme, phase: filterPhase });
+    doc.save('Grants_Report.pdf');
+  };
+
+  const handleExportExcel = () => {
+    exportGrantsToExcel(filtered);
+  };
+
+  const clearFilters = () => {
+    setFilterYear('');
+    setFilterScheme('');
+    setFilterPhase('');
+  };
 
   return (
     <div>
       <div className="page-header">
         <div>
           <h1>Grants</h1>
-          <p>Manage scheme grants (Total: {fmt(totalGrant)})</p>
+          <p>Manage scheme grants (Filtered Total: {fmt(totalGrant)})</p>
         </div>
-        <button className="btn btn-primary btn-sm" onClick={startNew}><Plus size={14} /> Add Grant</button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn-secondary btn-sm" onClick={handleExportPDF} title="Download PDF"><Download size={14} /> PDF</button>
+          <button className="btn btn-secondary btn-sm" onClick={handleExportExcel} title="Download Excel"><Download size={14} /> Excel</button>
+          <button className="btn btn-primary btn-sm" onClick={startNew}><Plus size={14} /> Add Grant</button>
+        </div>
       </div>
 
       <div className="filter-bar" style={{ marginBottom: 16 }}>
@@ -54,6 +87,32 @@ export default function GrantManager() {
           <label className="form-label">Search</label>
           <input className="form-input" placeholder="Scheme, GO Number..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
+        <div className="form-group">
+          <label className="form-label">Year</label>
+          <select className="form-select" value={filterYear} onChange={e => setFilterYear(e.target.value)}>
+            <option value="">All Years</option>
+            {uniqueYears.map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
+        </div>
+        <div className="form-group">
+          <label className="form-label">Scheme</label>
+          <select className="form-select" value={filterScheme} onChange={e => setFilterScheme(e.target.value)}>
+            <option value="">All Schemes</option>
+            {uniqueSchemes.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+        <div className="form-group">
+          <label className="form-label">Phase</label>
+          <select className="form-select" value={filterPhase} onChange={e => setFilterPhase(e.target.value)}>
+            <option value="">All Phases</option>
+            {uniquePhases.map(p => <option key={p} value={p}>{p}</option>)}
+          </select>
+        </div>
+        {(filterYear || filterScheme || filterPhase) && (
+          <button className="btn btn-danger btn-sm" onClick={clearFilters} style={{ alignSelf: 'flex-end' }}>
+            <X size={14} /> Clear
+          </button>
+        )}
       </div>
 
       {editing && (
@@ -132,3 +191,4 @@ export default function GrantManager() {
     </div>
   );
 }
+
