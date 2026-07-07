@@ -114,9 +114,9 @@ const AR = { fillColor: [247, 250, 254] };
 //  PROJECT LIST PDF — Landscape A4, Single Compact Table
 // ═══════════════════════════════════════════════════════════════════════════
 export function generateProjectListPDF(projects, filters = {}) {
-  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-  const W = doc.internal.pageSize.getWidth(); // 297
-  const MW = W - 20; // 10mm margins = 277mm usable width
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a3' });
+  const W = doc.internal.pageSize.getWidth(); // 420mm
+  const MW = W - 24; // 12mm margins = 396mm usable width
 
   const parts = [];
   if (filters.year) parts.push(`Year: ${filters.year}`);
@@ -169,28 +169,28 @@ export function generateProjectListPDF(projects, filters = {}) {
     startY: 63,
     head: [['#', 'Project Name', 'Category', 'Year', 'Constituency', 'Scheme', 'GO No', 'Sanctioned\n(Cr/L)', 'Expend.\n(Cr/L)', 'Deduct.\n(Cr/L)', 'Utilised\n(Cr/L)', 'Balance\n(Cr/L)', '%', 'Status', 'JE', 'AE']],
     body: rows,
-    styles: { ...BS, fontSize: 6, cellPadding: 1.5 },
-    headStyles: { ...HS, fontSize: 6, cellPadding: 2 },
+    styles: { ...BS, fontSize: 8, cellPadding: 2.5 },
+    headStyles: { ...HS, fontSize: 8, cellPadding: 3 },
     alternateRowStyles: AR,
     tableWidth: MW,
-    margin: { left: 10, right: 10 },
+    margin: { left: 12, right: 12 },
     columnStyles: {
-      0:  { cellWidth: 5,  halign: 'center' },
-      1:  { cellWidth: 50 },
-      2:  { cellWidth: 14 },
-      3:  { cellWidth: 8, halign: 'center' },
-      4:  { cellWidth: 18 },
-      5:  { cellWidth: 16 },
-      6:  { cellWidth: 18 },
-      7:  { cellWidth: 16, halign: 'right' },
-      8:  { cellWidth: 16, halign: 'right' },
-      9:  { cellWidth: 14, halign: 'right' },
-      10: { cellWidth: 16, halign: 'right' },
-      11: { cellWidth: 16, halign: 'right' },
-      12: { cellWidth: 8, halign: 'center' },
-      13: { cellWidth: 16, halign: 'center' },
-      14: { cellWidth: 22 },
-      15: { cellWidth: 22 },
+      0:  { cellWidth: 8,  halign: 'center' },
+      1:  { cellWidth: 74 },
+      2:  { cellWidth: 18 },
+      3:  { cellWidth: 12, halign: 'center' },
+      4:  { cellWidth: 26 },
+      5:  { cellWidth: 24 },
+      6:  { cellWidth: 24 },
+      7:  { cellWidth: 22, halign: 'right' },
+      8:  { cellWidth: 22, halign: 'right' },
+      9:  { cellWidth: 18, halign: 'right' },
+      10: { cellWidth: 22, halign: 'right' },
+      11: { cellWidth: 22, halign: 'right' },
+      12: { cellWidth: 10, halign: 'center' },
+      13: { cellWidth: 22, halign: 'center' },
+      14: { cellWidth: 28 },
+      15: { cellWidth: 28 },
     },
     didParseCell(data) {
       if (data.section === 'body') {
