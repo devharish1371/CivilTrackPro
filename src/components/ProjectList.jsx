@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useProjects, hashPassword } from '../context/ProjectContext';
 import { statusOptions } from '../data/sampleData';
 import { exportProjectsToExcel } from '../utils/excelExport';
-import { generateProjectListPDF, generateProjectDetailPDF, savePDF, sharePDF, PROJECT_COLUMNS } from '../utils/pdfExport';
+import { generateProjectListPDF, generateProjectDetailPDF, savePDF, sharePDF } from '../utils/pdfExport';
 import { downloadKML } from '../utils/kmlExport';
 import { Eye, Edit, Trash2, Download, FileText, Share2, Filter, X, Lock, Unlock, MapPin, Search } from 'lucide-react';
 
@@ -34,9 +34,6 @@ export default function ProjectList() {
   const [lockModal, setLockModal] = useState(null); // { projectId, action:'lock'|'unlock' }
   const [lockPw, setLockPw] = useState('');
   const [lockError, setLockError] = useState('');
-  
-  const [exportModal, setExportModal] = useState(false);
-  const [selectedCols, setSelectedCols] = useState(() => PROJECT_COLUMNS.map(c => c.id));
 
   const years = useMemo(() => [...new Set(projects.map(p => p.yearOfSanction))].sort((a,b) => b-a), [projects]);
   const uniqueEngineers = useMemo(() => [...new Set(projects.flatMap(p => [p.juniorEngineer, p.assistantEngineer]).filter(Boolean))].sort(), [projects]);
@@ -94,7 +91,8 @@ export default function ProjectList() {
         <div className="btn-group">
           <button className="btn btn-secondary btn-sm" onClick={() => setShowFilters(!showFilters)}><Filter size={14} /> Filters</button>
           <button className="btn btn-secondary btn-sm" onClick={() => exportProjectsToExcel(filtered, grants)}><Download size={14} /> Excel</button>
-          <button className="btn btn-secondary btn-sm" onClick={() => setExportModal(true)}><FileText size={14} /> Export PDF...</button>
+          <button className="btn btn-secondary btn-sm" onClick={() => savePDF(generateProjectListPDF(filtered, filters),'Report.pdf')}><FileText size={14} /> PDF</button>
+          <button className="btn btn-secondary btn-sm" onClick={() => sharePDF(generateProjectListPDF(filtered, filters),'Report.pdf')}><Share2 size={14} /> Share</button>
           <button className="btn btn-secondary btn-sm" onClick={() => downloadKML(filtered)}><MapPin size={14} /> KML</button>
           <button className="btn btn-primary btn-sm" onClick={() => navigate('/projects/new')}>+ Add</button>
         </div>
@@ -227,41 +225,6 @@ export default function ProjectList() {
             <div className="btn-group" style={{ marginTop:16, justifyContent:'flex-end' }}>
               <button className="btn btn-secondary btn-sm" onClick={() => setLockModal(null)}>Cancel</button>
               <button className="btn btn-primary btn-sm" onClick={confirmLock}>{lockModal.action==='lock' ? 'Lock' : 'Unlock'}</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Export Options Modal */}
-      {exportModal && (
-        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }} onClick={() => setExportModal(false)}>
-          <div className="card" style={{ width:400, maxWidth:'90vw' }} onClick={e => e.stopPropagation()}>
-            <h3 style={{ marginBottom:16 }}>Select PDF Columns</h3>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:24, maxHeight:'60vh', overflowY:'auto' }}>
-              {PROJECT_COLUMNS.map(c => (
-                <label key={c.id} style={{ display:'flex', alignItems:'center', gap:8, fontSize:13, cursor:'pointer' }}>
-                  <input 
-                    type="checkbox" 
-                    checked={selectedCols.includes(c.id)}
-                    onChange={(e) => {
-                      if (e.target.checked) setSelectedCols([...selectedCols, c.id]);
-                      else setSelectedCols(selectedCols.filter(id => id !== c.id));
-                    }}
-                  />
-                  {c.label.replace('\n', ' ')}
-                </label>
-              ))}
-            </div>
-            <div className="btn-group" style={{ justifyContent:'flex-end' }}>
-              <button className="btn btn-secondary btn-sm" onClick={() => setExportModal(false)}>Cancel</button>
-              <button className="btn btn-primary btn-sm" onClick={() => {
-                sharePDF(generateProjectListPDF(filtered, filters, selectedCols), 'Report.pdf');
-                setExportModal(false);
-              }}><Share2 size={14}/> Share PDF</button>
-              <button className="btn btn-primary btn-sm" onClick={() => {
-                savePDF(generateProjectListPDF(filtered, filters, selectedCols), 'Report.pdf');
-                setExportModal(false);
-              }}><FileText size={14}/> Download PDF</button>
             </div>
           </div>
         </div>

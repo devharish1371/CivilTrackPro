@@ -120,26 +120,7 @@ const AR = { fillColor: false };
 // ═══════════════════════════════════════════════════════════════════════════
 //  PROJECT LIST PDF — A3 Landscape, Ink-Saving
 // ═══════════════════════════════════════════════════════════════════════════
-export const PROJECT_COLUMNS = [
-  { id: 'index', label: '#', cellWidth: 8, halign: 'center' },
-  { id: 'projectName', label: 'Project Name', cellWidth: 74 },
-  { id: 'category', label: 'Category', cellWidth: 18 },
-  { id: 'year', label: 'Year', cellWidth: 12, halign: 'center' },
-  { id: 'constituency', label: 'Constituency', cellWidth: 26 },
-  { id: 'scheme', label: 'Scheme', cellWidth: 24 },
-  { id: 'goNumber', label: 'GO No', cellWidth: 24 },
-  { id: 'sanctioned', label: 'Sanctioned\n(Cr/L)', cellWidth: 22, halign: 'right' },
-  { id: 'expend', label: 'Expend.\n(Cr/L)', cellWidth: 22, halign: 'right' },
-  { id: 'deduct', label: 'Deduct.\n(Cr/L)', cellWidth: 18, halign: 'right' },
-  { id: 'utilised', label: 'Utilised\n(Cr/L)', cellWidth: 22, halign: 'right' },
-  { id: 'balance', label: 'Balance\n(Cr/L)', cellWidth: 22, halign: 'right' },
-  { id: 'progress', label: '%', cellWidth: 10, halign: 'center' },
-  { id: 'status', label: 'Status', cellWidth: 22, halign: 'center' },
-  { id: 'je', label: 'JE', cellWidth: 28 },
-  { id: 'ae', label: 'AE', cellWidth: 28 }
-];
-
-export function generateProjectListPDF(projects, filters = {}, selectedColIds = null) {
+export function generateProjectListPDF(projects, filters = {}) {
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a3' });
   const W = doc.internal.pageSize.getWidth(); // 420mm
   const MW = W - 24; // 12mm margins = 396mm usable width
@@ -168,61 +149,68 @@ export function generateProjectListPDF(projects, filters = {}, selectedColIds = 
     { label: 'Total Balance',    value: fmtL(totalBal) },
   ], 40);
 
-  const columns = selectedColIds ? PROJECT_COLUMNS.filter(c => selectedColIds.includes(c.id)) : PROJECT_COLUMNS;
-  
-  const headers = [columns.map(c => c.label)];
-  
-  const columnStyles = {};
-  columns.forEach((c, idx) => {
-    columnStyles[idx] = { cellWidth: c.cellWidth, halign: c.halign };
-  });
-
   const rows = projects.map((p, i) => {
     const utilised = (p.expenditureIncurred || 0) + (p.deductions || 0);
     const balance  = (p.sanctionedAmount || 0) - utilised;
-    
-    const allRowData = {
-      index: i + 1,
-      projectName: p.projectName || '-',
-      category: p.category || '-',
-      year: p.yearOfSanction || '-',
-      constituency: p.constituency || '-',
-      scheme: p.scheme || '-',
-      goNumber: p.goNumber || '-',
-      sanctioned: fmtL(p.sanctionedAmount),
-      expend: fmtL(p.expenditureIncurred),
-      deduct: fmtL(p.deductions || 0),
-      utilised: fmtL(utilised),
-      balance: fmtL(balance),
-      progress: `${p.progress || 0}%`,
-      status: statusLabel(p.statusOfWork),
-      je: p.juniorEngineer || '-',
-      ae: p.assistantEngineer || '-'
-    };
-    
-    return columns.map(c => allRowData[c.id]);
+    return [
+      i + 1,
+      p.projectName || '-',
+      p.yearOfSanction || '-',
+      p.constituency || '-',
+      p.scheme || '-',
+      p.phase || '-',
+      p.goNumber || '-',
+      fmtDate(p.goDate),
+      p.contractorName || '-',
+      fmtDate(p.workOrderDate),
+      fmtDate(p.dateOfCompletionContract),
+      fmtDate(p.actualDateOfCompletion),
+      fmtL(p.sanctionedAmount),
+      fmtL(p.tenderedCost),
+      fmtL(p.expenditureIncurred),
+      fmtL(utilised),
+      fmtL(balance),
+      statusLabel(p.statusOfWork),
+      p.notes || '-'
+    ];
   });
-
-  // Calculate the total cell widths of selected columns to adjust proportional scaling if necessary
-  // autoTable will try to fit it into MW anyway, but passing proper styles helps it distribute space
 
   autoTable(doc, {
     startY: 64,
-    head: headers,
+    head: [['#', 'Project Name', 'Year', 'Constituency', 'Scheme', 'Phase', 'GO No', 'GO Date', 'Contractor', 'WO Date', 'Comp (C)', 'Act Comp', 'Sanc.\n(Cr/L)', 'Tender\n(Cr/L)', 'Expend.\n(Cr/L)', 'Utilised\n(Cr/L)', 'Balance\n(Cr/L)', 'Status', 'Remarks']],
     body: rows,
     styles: { ...BS, fontSize: 8, cellPadding: 2.5 },
     headStyles: { ...HS, fontSize: 8, cellPadding: 3 },
     alternateRowStyles: AR,
     tableWidth: MW,
     margin: { left: 12, right: 12 },
-    columnStyles: columnStyles,
+    columnStyles: {
+      0:  { cellWidth: 8,  halign: 'center' },
+      1:  { cellWidth: 50 },
+      2:  { cellWidth: 10, halign: 'center' },
+      3:  { cellWidth: 18 },
+      4:  { cellWidth: 20 },
+      5:  { cellWidth: 14 },
+      6:  { cellWidth: 18 },
+      7:  { cellWidth: 16 },
+      8:  { cellWidth: 25 },
+      9:  { cellWidth: 16 },
+      10: { cellWidth: 16 },
+      11: { cellWidth: 16 },
+      12: { cellWidth: 18, halign: 'right' },
+      13: { cellWidth: 18, halign: 'right' },
+      14: { cellWidth: 18, halign: 'right' },
+      15: { cellWidth: 18, halign: 'right' },
+      16: { cellWidth: 18, halign: 'right' },
+      17: { cellWidth: 18, halign: 'center' },
+      18: { cellWidth: 45 },
+    },
     didParseCell(data) {
       if (data.section === 'body') {
-        const colId = columns[data.column.index]?.id;
-        if (colId === 'balance') {
+        if (data.column.index === 15) { // Utilised
           data.cell.styles.fontStyle = 'bold';
         }
-        if (colId === 'status') {
+        if (data.column.index === 17) { // Status
           data.cell.styles.fontStyle = 'bold';
         }
       }
