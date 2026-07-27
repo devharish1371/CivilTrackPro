@@ -21,10 +21,10 @@
 
 /* ── LIGHT MODE ─────────────────────────────────────────────── */
 [data-theme="light"] {
-  --bg-deep: #ede8df; --bg-primary: #f5f0e8; --bg-secondary: #ede8df;
-  --bg-card: #faf7f2; --bg-elevated: #ede8df;
+  --bg-deep: #e8e0c8; --bg-primary: #f5edcc; --bg-secondary: #ede4b8;
+  --bg-card: #faf5e0; --bg-elevated: #ede4b8;
   --bg-glass: rgba(0,0,0,0.03); --bg-glass-hover: rgba(0,0,0,0.06);
-  --border-subtle: rgba(120,100,70,0.12); --border-default: rgba(120,100,70,0.2);
+  --border-subtle: rgba(140,110,40,0.15); --border-default: rgba(140,110,40,0.25);
   --text-primary: #1c1410; --text-secondary: #5c4f3a; --text-muted: #9e8f78;
   --cyan: #0e7490; --cyan-glow: rgba(14,116,144,0.12);
   --purple: #6d28d9; --purple-glow: rgba(109,40,217,0.12);
