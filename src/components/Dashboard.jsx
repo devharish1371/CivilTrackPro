@@ -263,7 +263,7 @@ export default function Dashboard() {
         <div className="stat-card purple" onClick={() => navigate('/projects', { state: { filters: { ...filters, status: 'yet_to_start' } } })} style={{ cursor:'pointer' }}>
           <div className="stat-icon purple"><Building2 size={20} /></div><div className="stat-value">{yetToStart}</div><div className="stat-label">Yet to Start</div>
         </div>
-        <div className="stat-card cyan" onClick={() => navigate('/projects', { state: { filters } })} style={{ cursor:'pointer' }}>
+        <div className="stat-card cyan" onClick={() => navigate('/projects', { state: { filters: { ...filters, geoTagged: true } } })} style={{ cursor:'pointer' }}>
           <div className="stat-icon cyan"><MapPin size={20} /></div><div className="stat-value">{geoTagged}</div><div className="stat-label">Geo-Tagged</div>
         </div>
       </div>
