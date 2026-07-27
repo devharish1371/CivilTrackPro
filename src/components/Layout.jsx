@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useProjects } from '../context/ProjectContext';
-import { LayoutDashboard, FolderKanban, PlusCircle, FileText, Bell, Menu, X, Building2, HardHat, Users, Settings, Cloud, Target, Map, Banknote, Tags, LogOut } from 'lucide-react';
+import { LayoutDashboard, FolderKanban, PlusCircle, FileText, Bell, Menu, X, Building2, HardHat, Users, Settings, Cloud, Target, Map, Banknote, Tags, LogOut, Sun, Moon } from 'lucide-react';
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -27,10 +27,19 @@ const pageTitles = {
 
 export default function Layout({ children }) {
   const [open, setOpen] = useState(false);
+  const [theme, setTheme] = useState(() => localStorage.getItem('ct-theme') || 'dark');
   const loc = useLocation();
   const { getAlerts, gsheetConfig } = useProjects();
   const alertCount = getAlerts().length;
   const title = pageTitles[loc.pathname] || (loc.pathname.includes('/edit') ? 'Edit Project' : 'Project Detail');
+
+  // Apply theme to <html> element
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('ct-theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark');
 
   return (
     <div className="app-layout">
@@ -69,6 +78,14 @@ export default function Layout({ children }) {
             <h2>{title}</h2>
           </div>
           <div className="topbar-right">
+            {/* Theme toggle */}
+            <button
+              className="theme-toggle"
+              onClick={toggleTheme}
+              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
             <NavLink to="/alerts" className="topbar-btn"><Bell size={18} />{alertCount > 0 && <span className="badge-dot" />}</NavLink>
           </div>
         </header>
