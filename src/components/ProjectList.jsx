@@ -19,8 +19,16 @@ export default function ProjectList() {
     if (location.state && location.state.filters) {
       return { ...defaultFilters, ...location.state.filters };
     }
+    const saved = sessionStorage.getItem('ct-project-filters');
+    if (saved) {
+      try { return { ...defaultFilters, ...JSON.parse(saved) }; } catch (e) {}
+    }
     return defaultFilters;
   });
+
+  useEffect(() => {
+    sessionStorage.setItem('ct-project-filters', JSON.stringify(filters));
+  }, [filters]);
   
   const [showFilters, setShowFilters] = useState(true);
   const [lockModal, setLockModal] = useState(null); // { projectId, action:'lock'|'unlock' }
