@@ -159,8 +159,6 @@ export function generateProjectListPDF(projects, filters = {}) {
       p.constituency || '-',
       p.scheme || '-',
       p.phase || '-',
-      p.goNumber || '-',
-      fmtDate(p.goDate),
       p.contractorName || '-',
       fmtDate(p.workOrderDate),
       fmtDate(p.dateOfCompletionContract),
@@ -171,13 +169,14 @@ export function generateProjectListPDF(projects, filters = {}) {
       fmtL(utilised),
       fmtL(balance),
       statusLabel(p.statusOfWork),
+      fmtDate(p.ucSentDate),
       p.notes || '-'
     ];
   });
 
   autoTable(doc, {
     startY: 64,
-    head: [['#', 'Project Name', 'Year', 'Constituency', 'Scheme', 'Phase', 'GO No', 'GO Date', 'Contractor', 'WO Date', 'Comp (C)', 'Act Comp', 'Sanc.\n(Cr/L)', 'Tender\n(Cr/L)', 'Expend.\n(Cr/L)', 'Utilised\n(Cr/L)', 'Balance\n(Cr/L)', 'Status', 'Remarks']],
+    head: [['#', 'Project Name', 'Year', 'Constituency', 'Scheme', 'Phase', 'Contractor', 'WO Date', 'Comp (C)', 'Act Comp', 'Sanc.\n(Cr/L)', 'Tender\n(Cr/L)', 'Expend.\n(Cr/L)', 'Utilised\n(Cr/L)', 'Balance\n(Cr/L)', 'Status', 'UC Date', 'Remarks']],
     body: rows,
     styles: { ...BS, fontSize: 8, cellPadding: 2.5 },
     headStyles: { ...HS, fontSize: 8, cellPadding: 3 },
@@ -186,31 +185,30 @@ export function generateProjectListPDF(projects, filters = {}) {
     margin: { left: 12, right: 12 },
     columnStyles: {
       0:  { cellWidth: 8,  halign: 'center' },
-      1:  { cellWidth: 50 },
+      1:  { cellWidth: 58 },
       2:  { cellWidth: 10, halign: 'center' },
       3:  { cellWidth: 18 },
       4:  { cellWidth: 20 },
       5:  { cellWidth: 14 },
-      6:  { cellWidth: 18 },
+      6:  { cellWidth: 25 },
       7:  { cellWidth: 16 },
-      8:  { cellWidth: 25 },
+      8:  { cellWidth: 16 },
       9:  { cellWidth: 16 },
-      10: { cellWidth: 16 },
-      11: { cellWidth: 16 },
+      10: { cellWidth: 18, halign: 'right' },
+      11: { cellWidth: 18, halign: 'right' },
       12: { cellWidth: 18, halign: 'right' },
       13: { cellWidth: 18, halign: 'right' },
       14: { cellWidth: 18, halign: 'right' },
-      15: { cellWidth: 18, halign: 'right' },
-      16: { cellWidth: 18, halign: 'right' },
-      17: { cellWidth: 18, halign: 'center' },
-      18: { cellWidth: 45 },
+      15: { cellWidth: 18, halign: 'center' },
+      16: { cellWidth: 16, halign: 'center' },
+      17: { cellWidth: 55 },
     },
     didParseCell(data) {
       if (data.section === 'body') {
-        if (data.column.index === 15) { // Utilised
+        if (data.column.index === 13) { // Utilised
           data.cell.styles.fontStyle = 'bold';
         }
-        if (data.column.index === 17) { // Status
+        if (data.column.index === 15) { // Status
           data.cell.styles.fontStyle = 'bold';
         }
       }

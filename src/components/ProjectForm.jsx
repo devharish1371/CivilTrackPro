@@ -14,7 +14,7 @@ const empty = {
   expenditureIncurred:'', deductions:'',
   extensionOfTime:'', statusOfWork:'yet_to_start', progress:0,
   juniorEngineer:'', assistantEngineer:'',
-  ucSentDate:'', securityDepositReleaseDate:'', securityDepositDeductedDate:'', securityAmount:'',
+  ucSent: 'No', ucSentDate:'', securityDepositReleaseDate:'', securityDepositDeductedDate:'', securityAmount:'',
   mBookNumber:'', workAuditRegisterNo:'', category:'', phase:'',
   latitude:'', longitude:'', physicalParametersNotes:'', isLocked:false, lockHash:'', notes:''
 };
@@ -348,7 +348,6 @@ export default function ProjectForm() {
             <div className="form-group"><label className="form-label">Security Amount (₹)</label><input className="form-input" type="number" value={form.securityAmount} onChange={e => set('securityAmount', e.target.value)} /></div>
             <div className="form-group"><label className="form-label">Security Deposit Deducted Date</label><input className="form-input" type="date" value={form.securityDepositDeductedDate} onChange={e => set('securityDepositDeductedDate', e.target.value)} /></div>
             <div className="form-group"><label className="form-label">Security Deposit Release Date</label><input className="form-input" type="date" value={form.securityDepositReleaseDate} onChange={e => set('securityDepositReleaseDate', e.target.value)} /></div>
-            <div className="form-group"><label className="form-label">UC Sent On Date</label><input className="form-input" type="date" value={form.ucSentDate} onChange={e => set('ucSentDate', e.target.value)} /></div>
             <div className="form-group"><label className="form-label">M Book Number</label><input className="form-input" value={form.mBookNumber} onChange={e => set('mBookNumber', e.target.value)} placeholder="MB-XXX-YYYY-NNN" /></div>
             <div className="form-group"><label className="form-label">Work Audit Register No.</label><input className="form-input" value={form.workAuditRegisterNo} onChange={e => set('workAuditRegisterNo', e.target.value)} placeholder="WAR/XXX/YYYY/NNN" /></div>
           </div>
@@ -359,6 +358,26 @@ export default function ProjectForm() {
           <div className="card-header"><span className="card-title"><FileText size={14} style={{ display:'inline', verticalAlign:'middle' }} /> Physical Parameters</span></div>
           <div className="form-group">
             <textarea className="form-textarea" style={{ minHeight: '100px' }} value={form.physicalParametersNotes} onChange={e => set('physicalParametersNotes', e.target.value)} placeholder="Enter physical parameters and related notes..." />
+          </div>
+        </div>
+
+        {/* 7.5. Utilisation Certificate (UC) */}
+        <div className="card" style={{ marginBottom:16 }}>
+          <div className="card-header"><span className="card-title"><FileText size={14} style={{ display:'inline', verticalAlign:'middle' }} /> Utilisation Certificate (UC)</span></div>
+          <div className="form-grid">
+            <div className="form-group">
+              <label className="form-label">UC Sent</label>
+              <select className="form-select" value={form.ucSent} onChange={e => set('ucSent', e.target.value)}>
+                <option value="No">No</option>
+                <option value="Yes">Yes</option>
+              </select>
+            </div>
+            {form.ucSent === 'Yes' && (
+              <div className="form-group">
+                <label className="form-label">UC Sent On Date</label>
+                <input className="form-input" type="date" value={form.ucSentDate} onChange={e => set('ucSentDate', e.target.value)} />
+              </div>
+            )}
           </div>
         </div>
 

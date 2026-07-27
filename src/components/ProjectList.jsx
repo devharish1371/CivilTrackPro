@@ -15,7 +15,7 @@ export default function ProjectList() {
   const location = useLocation();
 
   const [filters, setFilters] = useState(() => {
-    const defaultFilters = { year:'', scheme:'', category:'', phase:'', status:'', constituency:'', search:'', engineer:'', contractor:'', geoTagged: false };
+    const defaultFilters = { year:'', scheme:'', category:'', phase:'', status:'', constituency:'', search:'', engineer:'', contractor:'', geoTagged: false, ucSent: '' };
     if (location.state && location.state.filters) {
       return { ...defaultFilters, ...location.state.filters };
     }
@@ -51,6 +51,7 @@ export default function ProjectList() {
       if (filters.engineer && p.juniorEngineer !== filters.engineer && p.assistantEngineer !== filters.engineer) return false;
       if (filters.contractor && p.contractorName !== filters.contractor) return false;
       if (filters.geoTagged && (!p.latitude || !p.longitude || Number(p.latitude) === 0)) return false;
+      if (filters.ucSent && p.ucSent !== filters.ucSent) return false;
       if (filters.search) {
         const q = filters.search.toLowerCase();
         return [p.projectName, p.contractorName, p.juniorEngineer, p.assistantEngineer, p.goNumber, p.mBookNumber, p.constituency, p.scheme, p.category]
@@ -81,7 +82,7 @@ export default function ProjectList() {
     }
   };
 
-  const clearFilters = () => setFilters({ year:'', scheme:'', category:'', phase:'', status:'', constituency:'', search:'', engineer:'', contractor:'', geoTagged: false });
+  const clearFilters = () => setFilters({ year:'', scheme:'', category:'', phase:'', status:'', constituency:'', search:'', engineer:'', contractor:'', geoTagged: false, ucSent: '' });
   const hasFilters = Object.values(filters).some(v => v);
 
   return (
@@ -157,6 +158,14 @@ export default function ProjectList() {
             <label className="form-label">Contractor</label>
             <select className="form-select" value={filters.contractor} onChange={e => setFilters(f => ({...f, contractor:e.target.value}))}>
               <option value="">All</option>{uniqueContractors.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <div className="form-group">
+            <label className="form-label">UC Sent</label>
+            <select className="form-select" value={filters.ucSent} onChange={e => setFilters(f => ({...f, ucSent:e.target.value}))}>
+              <option value="">All</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
             </select>
           </div>
           {hasFilters && <button className="btn btn-danger btn-sm" onClick={clearFilters} style={{ alignSelf:'flex-end' }}><X size={14} /> Clear</button>}

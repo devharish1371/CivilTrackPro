@@ -186,7 +186,6 @@ export default function ProjectDetail() {
           <D label="Security Amount" value={fmt(p.securityAmount||0)} cls="amount" />
           <D label="Security Deducted On" value={fmtDate(p.securityDepositDeductedDate)} />
           <D label="Security Deposit Release" value={fmtDate(p.securityDepositReleaseDate)} />
-          <D label="UC Sent On" value={fmtDate(p.ucSentDate)} />
           <D label="M Book Number" value={p.mBookNumber} />
           <D label="Work Audit Register No" value={p.workAuditRegisterNo} />
         </div>
@@ -196,6 +195,15 @@ export default function ProjectDetail() {
       <div className="card" style={{ marginBottom:16 }}>
         <div className="card-header"><span className="card-title"><FileText size={14} style={{ display:'inline', verticalAlign:'middle' }} /> Physical Parameters</span></div>
         <p style={{ color:'var(--text-secondary)', fontSize:13, lineHeight:1.6, whiteSpace:'pre-wrap' }}>{p.physicalParametersNotes || '—'}</p>
+      </div>
+
+      {/* Utilisation Certificate (UC) */}
+      <div className="card" style={{ marginBottom:16 }}>
+        <div className="card-header"><span className="card-title"><FileText size={14} style={{ display:'inline', verticalAlign:'middle' }} /> Utilisation Certificate (UC)</span></div>
+        <div className="detail-grid">
+          <D label="UC Sent" value={p.ucSent || 'No'} />
+          {(p.ucSent === 'Yes' || p.ucSentDate) && <D label="UC Sent On" value={fmtDate(p.ucSentDate)} />}
+        </div>
       </div>
 
       {/* Geo */}
