@@ -186,30 +186,30 @@ export default function ProjectList() {
               <tr><td colSpan={13} style={{ textAlign:'center', padding:40, color:'var(--text-muted)' }}>No projects found</td></tr>
             ) : filtered.map((p, i) => (
               <tr key={p.id} style={p.isLocked ? { opacity:0.85 } : {}}>
-                <td>{i+1}</td>
-                <td style={{ minWidth:200, whiteSpace:'normal', wordBreak:'break-word' }} title={p.projectName}>
-                  {p.isLocked && <Lock size={11} style={{ color:'var(--amber)', marginRight:4, verticalAlign:'middle' }} />}
-                  {p.projectName}
-                </td>
-                <td>{p.category}</td><td>{p.yearOfSanction}</td><td>{p.constituency}</td><td>{p.scheme}</td>
-                <td style={{ textAlign:'right' }}>{fmt(p.sanctionedAmount)}</td>
-                <td style={{ textAlign:'right' }}>{fmt(p.expenditureIncurred)}</td>
-                <td style={{ textAlign:'right', color:(p.sanctionedAmount - p.expenditureIncurred) < 0 ? 'var(--rose)' : 'var(--emerald)' }}>{fmt(p.sanctionedAmount - p.expenditureIncurred)}</td>
-                <td>
+                <td data-label="#">{i+1}. {p.isLocked && <Lock size={11} style={{ color:'var(--amber)', marginRight:4, verticalAlign:'middle' }} />}{p.projectName}</td>
+                <td data-label="Category">{p.category}</td>
+                <td data-label="Year">{p.yearOfSanction}</td>
+                <td data-label="Constituency">{p.constituency}</td>
+                <td data-label="Scheme">{p.scheme}</td>
+                <td data-label="Sanctioned" style={{ textAlign:'right' }}>{fmt(p.sanctionedAmount)}</td>
+                <td data-label="Expenditure" style={{ textAlign:'right' }}>{fmt(p.expenditureIncurred)}</td>
+                <td data-label="Balance" style={{ textAlign:'right', color:(p.sanctionedAmount - p.expenditureIncurred) < 0 ? 'var(--rose)' : 'var(--emerald)' }}>{fmt(p.sanctionedAmount - p.expenditureIncurred)}</td>
+                <td data-label="Progress">
                   <div style={{ display:'flex', alignItems:'center', gap:6 }}>
                     <div className="progress-bar" style={{ width:50 }}><div className={`progress-fill ${p.progress>=80?'green':p.progress>=40?'amber':'red'}`} style={{ width:`${p.progress}%` }} /></div>
                     <span style={{ fontSize:11 }}>{p.progress}%</span>
                   </div>
                 </td>
-                <td><span className={`status-badge ${p.statusOfWork}`}>{p.statusOfWork==='completed'?'Done':p.statusOfWork==='in_progress'?'Active':'Pending'}</span></td>
-                <td>{p.juniorEngineer}</td><td>{p.assistantEngineer}</td>
-                <td style={{ fontSize:11, color:'var(--text-muted)', whiteSpace:'nowrap' }}>{p.updatedAt ? new Date(p.updatedAt).toLocaleDateString('en-IN') : '—'}</td>
+                <td data-label="Status"><span className={`status-badge ${p.statusOfWork}`}>{p.statusOfWork==='completed'?'Done':p.statusOfWork==='in_progress'?'Active':'Pending'}</span></td>
+                <td data-label="JE">{p.juniorEngineer}</td>
+                <td data-label="AE">{p.assistantEngineer}</td>
+                <td data-label="Updated" style={{ fontSize:11, color:'var(--text-muted)', whiteSpace:'nowrap' }}>{p.updatedAt ? new Date(p.updatedAt).toLocaleDateString('en-IN') : '—'}</td>
                 <td>
-                  <div style={{ display:'flex', gap:3 }}>
-                    <button className="btn btn-secondary btn-icon btn-sm" onClick={() => navigate(`/projects/${p.id}`)} title="View"><Eye size={14} /></button>
-                    <button className="btn btn-secondary btn-icon btn-sm" onClick={() => !p.isLocked && navigate(`/projects/${p.id}/edit`)} disabled={p.isLocked} title="Edit"><Edit size={14} /></button>
-                    <button className="btn btn-danger btn-icon btn-sm" onClick={() => !p.isLocked && handleDelete(p.id, p.projectName)} disabled={p.isLocked} title="Delete"><Trash2 size={14} /></button>
-                    <button className={`btn btn-icon btn-sm ${p.isLocked ? 'btn-success' : 'btn-secondary'}`} onClick={() => handleLockToggle(p)} title={p.isLocked?'Unlock':'Lock'}>
+                  <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+                    <button className="btn btn-secondary btn-sm" onClick={() => navigate(`/projects/${p.id}`)} title="View"><Eye size={14} /> View</button>
+                    <button className="btn btn-secondary btn-sm" onClick={() => !p.isLocked && navigate(`/projects/${p.id}/edit`)} disabled={p.isLocked} title="Edit"><Edit size={14} /> Edit</button>
+                    <button className="btn btn-danger btn-sm" onClick={() => !p.isLocked && handleDelete(p.id, p.projectName)} disabled={p.isLocked} title="Delete"><Trash2 size={14} /></button>
+                    <button className={`btn btn-sm ${p.isLocked ? 'btn-success' : 'btn-secondary'}`} onClick={() => handleLockToggle(p)} title={p.isLocked?'Unlock':'Lock'}>
                       {p.isLocked ? <Lock size={14} /> : <Unlock size={14} />}
                     </button>
                   </div>
