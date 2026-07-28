@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Building2, IndianRupee, TrendingUp, AlertTriangle, Clock, CheckCircle, MapPin, Filter, X, FileText } from 'lucide-react';
 
-const COLORS = ['#10b981','#f59e0b','#64748b','#06b6d4','#8b5cf6','#f43f5e','#3b82f6'];
+const COLORS = ['#3a9e7e', '#c07a2a', '#6674a8', '#c9a84c', '#3d6ea8', '#b84455', '#4a5878'];
 const fmt = (n) => { if (n >= 10000000) return `₹${(n/10000000).toFixed(2)} Cr`; if (n >= 100000) return `₹${(n/100000).toFixed(2)} L`; return `₹${n.toLocaleString('en-IN')}`; };
 
 export default function Dashboard() {
