@@ -265,7 +265,7 @@ export default function Settings() {
           <div className="card" style={{ width:360, maxWidth:'90vw' }} onClick={e => e.stopPropagation()}>
             <h3 style={{ marginBottom:12, color:'var(--rose)' }}>⚠️ Erase All Data</h3>
             <p style={{ fontSize:13, color:'var(--text-secondary)', marginBottom:16 }}>
-              This will permanently delete all projects, engineers, contractors, schemes, and grants from this device. Enter master password (1970) to confirm:
+              This will permanently delete all projects, engineers, contractors, schemes, and grants from this device. Enter master password to confirm:
             </p>
             <input className="form-input" type="password" placeholder="Password" value={erasePw} onChange={e => { setErasePw(e.target.value); setEraseError(''); }}
               onKeyDown={e => e.key==='Enter' && confirmErase()} autoFocus />
