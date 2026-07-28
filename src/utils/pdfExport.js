@@ -120,7 +120,7 @@ const AR = { fillColor: false };
 // ═══════════════════════════════════════════════════════════════════════════
 //  PROJECT LIST PDF — A3 Landscape, Ink-Saving
 // ═══════════════════════════════════════════════════════════════════════════
-export function generateProjectListPDF(projects, filters = {}) {
+export function generateProjectListPDF(projects, filters = {}, selectedColumns = null) {
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a3' });
   const W = doc.internal.pageSize.getWidth(); // 420mm
   const MW = W - 24; // 12mm margins = 396mm usable width
@@ -149,66 +149,80 @@ export function generateProjectListPDF(projects, filters = {}) {
     { label: 'Total Balance',    value: fmtL(totalBal) },
   ], 40);
 
+  const ALL_COLS = [
+    { id: 'projectName', label: 'Project Name', align: 'left' },
+    { id: 'category', label: 'Category', align: 'left' },
+    { id: 'yearOfSanction', label: 'Year', align: 'center' },
+    { id: 'constituency', label: 'Constituency', align: 'left' },
+    { id: 'scheme', label: 'Scheme', align: 'left' },
+    { id: 'phase', label: 'Phase', align: 'left' },
+    { id: 'contractorName', label: 'Contractor', align: 'left' },
+    { id: 'workOrderDate', label: 'WO Date', align: 'left' },
+    { id: 'completionDateContract', label: 'Comp (C)', align: 'left' },
+    { id: 'actualCompletionDate', label: 'Act Comp', align: 'left' },
+    { id: 'sanctionedAmount', label: 'Sanc.\n(Cr/L)', align: 'right' },
+    { id: 'tenderedCost', label: 'Tender\n(Cr/L)', align: 'right' },
+    { id: 'expenditureIncurred', label: 'Expend.\n(Cr/L)', align: 'right' },
+    { id: 'utilisedAmount', label: 'Utilised\n(Cr/L)', align: 'right' },
+    { id: 'balanceAmount', label: 'Balance\n(Cr/L)', align: 'right' },
+    { id: 'statusOfWork', label: 'Status', align: 'center' },
+    { id: 'ucSentDate', label: 'UC Date', align: 'center' },
+    { id: 'remarks', label: 'Remarks', align: 'left' }
+  ];
+
+  const cols = selectedColumns 
+    ? ALL_COLS.filter(c => selectedColumns.includes(c.id))
+    : ALL_COLS.filter(c => c.id !== 'category');
+
   const rows = projects.map((p, i) => {
     const utilised = (p.expenditureIncurred || 0) + (p.deductions || 0);
     const balance  = (p.sanctionedAmount || 0) - utilised;
-    return [
-      i + 1,
-      p.projectName || '-',
-      p.yearOfSanction || '-',
-      p.constituency || '-',
-      p.scheme || '-',
-      p.phase || '-',
-      p.contractorName || '-',
-      fmtDate(p.workOrderDate),
-      fmtDate(p.dateOfCompletionContract),
-      fmtDate(p.actualDateOfCompletion),
-      fmtL(p.sanctionedAmount),
-      fmtL(p.tenderedCost),
-      fmtL(p.expenditureIncurred),
-      fmtL(utilised),
-      fmtL(balance),
-      statusLabel(p.statusOfWork),
-      fmtDate(p.ucSentDate),
-      p.notes || '-'
-    ];
+    
+    const rowData = [i + 1];
+    cols.forEach(c => {
+      if (c.id === 'projectName') rowData.push(p.projectName || '-');
+      else if (c.id === 'category') rowData.push(p.category || '-');
+      else if (c.id === 'yearOfSanction') rowData.push(p.yearOfSanction || '-');
+      else if (c.id === 'constituency') rowData.push(p.constituency || '-');
+      else if (c.id === 'scheme') rowData.push(p.scheme || '-');
+      else if (c.id === 'phase') rowData.push(p.phase || '-');
+      else if (c.id === 'contractorName') rowData.push(p.contractorName || '-');
+      else if (c.id === 'workOrderDate') rowData.push(fmtDate(p.workOrderDate));
+      else if (c.id === 'completionDateContract') rowData.push(fmtDate(p.dateOfCompletionContract));
+      else if (c.id === 'actualCompletionDate') rowData.push(fmtDate(p.actualDateOfCompletion));
+      else if (c.id === 'sanctionedAmount') rowData.push(fmtL(p.sanctionedAmount));
+      else if (c.id === 'tenderedCost') rowData.push(fmtL(p.tenderedCost));
+      else if (c.id === 'expenditureIncurred') rowData.push(fmtL(p.expenditureIncurred));
+      else if (c.id === 'utilisedAmount') rowData.push(fmtL(utilised));
+      else if (c.id === 'balanceAmount') rowData.push(fmtL(balance));
+      else if (c.id === 'statusOfWork') rowData.push(statusLabel(p.statusOfWork));
+      else if (c.id === 'ucSentDate') rowData.push(fmtDate(p.ucSentDate));
+      else if (c.id === 'remarks') rowData.push(p.notes || '-');
+    });
+    return rowData;
+  });
+
+  const headers = ['#', ...cols.map(c => c.label)];
+  const colStyles = { 0: { cellWidth: 8, halign: 'center' } };
+  cols.forEach((c, idx) => {
+    colStyles[idx + 1] = { halign: c.align };
+    if (c.id === 'remarks') colStyles[idx + 1].cellWidth = 'wrap';
   });
 
   autoTable(doc, {
     startY: 64,
-    head: [['#', 'Project Name', 'Year', 'Constituency', 'Scheme', 'Phase', 'Contractor', 'WO Date', 'Comp (C)', 'Act Comp', 'Sanc.\n(Cr/L)', 'Tender\n(Cr/L)', 'Expend.\n(Cr/L)', 'Utilised\n(Cr/L)', 'Balance\n(Cr/L)', 'Status', 'UC Date', 'Remarks']],
+    head: [headers],
     body: rows,
     styles: { ...BS, fontSize: 8, cellPadding: 2.5 },
     headStyles: { ...HS, fontSize: 8, cellPadding: 3 },
     alternateRowStyles: AR,
     tableWidth: MW,
     margin: { left: 12, right: 12 },
-    columnStyles: {
-      0:  { cellWidth: 8,  halign: 'center' },
-      1:  { cellWidth: 58 },
-      2:  { cellWidth: 10, halign: 'center' },
-      3:  { cellWidth: 18 },
-      4:  { cellWidth: 20 },
-      5:  { cellWidth: 14 },
-      6:  { cellWidth: 25 },
-      7:  { cellWidth: 16 },
-      8:  { cellWidth: 16 },
-      9:  { cellWidth: 16 },
-      10: { cellWidth: 18, halign: 'right' },
-      11: { cellWidth: 18, halign: 'right' },
-      12: { cellWidth: 18, halign: 'right' },
-      13: { cellWidth: 18, halign: 'right' },
-      14: { cellWidth: 18, halign: 'right' },
-      15: { cellWidth: 18, halign: 'center' },
-      16: { cellWidth: 16, halign: 'center' },
-      17: { cellWidth: 55 },
-    },
+    columnStyles: colStyles,
     didParseCell(data) {
       if (data.section === 'body') {
-        if (data.column.index === 13) { // Utilised
-          data.cell.styles.fontStyle = 'bold';
-        }
-        if (data.column.index === 15) { // Status
+        const colId = cols[data.column.index - 1]?.id;
+        if (colId === 'utilisedAmount' || colId === 'statusOfWork') {
           data.cell.styles.fontStyle = 'bold';
         }
       }

@@ -8,6 +8,35 @@ import { downloadKML } from '../utils/kmlExport';
 import { Eye, Edit, Trash2, Download, FileText, Share2, Filter, X, Lock, Unlock, MapPin, Search } from 'lucide-react';
 
 const fmt = (n) => new Intl.NumberFormat('en-IN', { style:'currency', currency:'INR', maximumFractionDigits:0 }).format(n);
+const fmtL = (n) => {
+  if (!n) return '₹0.00 L';
+  const num = Number(n);
+  if (isNaN(num)) return '₹0.00 L';
+  const abs = Math.abs(num);
+  const sign = num < 0 ? '-' : '';
+  if (abs >= 10000000) return `${sign}₹${(abs / 10000000).toFixed(2)} Cr`;
+  return `${sign}₹${(abs / 100000).toFixed(2)} L`;
+};
+
+const ALL_COLUMNS = [
+  { id: 'projectName', label: 'Project Name' },
+  { id: 'yearOfSanction', label: 'Year' },
+  { id: 'constituency', label: 'Constituency' },
+  { id: 'scheme', label: 'Scheme' },
+  { id: 'phase', label: 'Phase' },
+  { id: 'contractorName', label: 'Contractor' },
+  { id: 'workOrderDate', label: 'WO Date' },
+  { id: 'completionDateContract', label: 'Comp (C)' },
+  { id: 'actualCompletionDate', label: 'Act Comp' },
+  { id: 'sanctionedAmount', label: 'Sanc.' },
+  { id: 'tenderedCost', label: 'Tender' },
+  { id: 'expenditureIncurred', label: 'Expend.' },
+  { id: 'utilisedAmount', label: 'Utilised' },
+  { id: 'balanceAmount', label: 'Balance' },
+  { id: 'statusOfWork', label: 'Status' },
+  { id: 'ucSentDate', label: 'UC Date' },
+  { id: 'remarks', label: 'Remarks' }
+];
 
 export default function ProjectList() {
   const { projects, contractors, engineers, schemes, constituencies, grants, dispatch } = useProjects();
@@ -34,6 +63,10 @@ export default function ProjectList() {
   const [lockModal, setLockModal] = useState(null); // { projectId, action:'lock'|'unlock' }
   const [lockPw, setLockPw] = useState('');
   const [lockError, setLockError] = useState('');
+  
+  const [pdfModal, setPdfModal] = useState(false);
+  const [selectedColumns, setSelectedColumns] = useState(ALL_COLUMNS.map(c => c.id));
+
 
   const years = useMemo(() => [...new Set(projects.map(p => p.yearOfSanction))].sort((a,b) => b-a), [projects]);
   const uniqueEngineers = useMemo(() => [...new Set(projects.flatMap(p => [p.juniorEngineer, p.assistantEngineer]).filter(Boolean))].sort(), [projects]);
@@ -92,8 +125,8 @@ export default function ProjectList() {
         <div className="btn-group">
           <button className="btn btn-secondary btn-sm" onClick={() => setShowFilters(!showFilters)}><Filter size={14} /> Filters</button>
           <button className="btn btn-secondary btn-sm" onClick={() => exportProjectsToExcel(filtered, grants)}><Download size={14} /> Excel</button>
-          <button className="btn btn-secondary btn-sm" onClick={() => savePDF(generateProjectListPDF(filtered, filters),'Report.pdf')}><FileText size={14} /> PDF</button>
-          <button className="btn btn-secondary btn-sm" onClick={() => sharePDF(generateProjectListPDF(filtered, filters),'Report.pdf')}><Share2 size={14} /> Share</button>
+          <button className="btn btn-secondary btn-sm" onClick={() => setPdfModal(true)}><FileText size={14} /> PDF</button>
+          <button className="btn btn-secondary btn-sm" onClick={() => sharePDF(generateProjectListPDF(filtered, filters, selectedColumns),'Report.pdf')}><Share2 size={14} /> Share</button>
           <button className="btn btn-secondary btn-sm" onClick={() => downloadKML(filtered)}><MapPin size={14} /> KML</button>
           <button className="btn btn-primary btn-sm" onClick={() => navigate('/projects/new')}>+ Add</button>
         </div>
@@ -191,9 +224,9 @@ export default function ProjectList() {
                 <td data-label="Year">{p.yearOfSanction}</td>
                 <td data-label="Constituency">{p.constituency}</td>
                 <td data-label="Scheme">{p.scheme}</td>
-                <td data-label="Sanctioned" style={{ textAlign:'right' }}>{fmt(p.sanctionedAmount)}</td>
-                <td data-label="Expenditure" style={{ textAlign:'right' }}>{fmt(p.expenditureIncurred)}</td>
-                <td data-label="Balance" style={{ textAlign:'right', color:(p.sanctionedAmount - p.expenditureIncurred) < 0 ? 'var(--rose)' : 'var(--emerald)' }}>{fmt(p.sanctionedAmount - p.expenditureIncurred)}</td>
+                <td data-label="Sanctioned" style={{ textAlign:'right' }}>{fmtL(p.sanctionedAmount)}</td>
+                <td data-label="Expenditure" style={{ textAlign:'right' }}>{fmtL(p.expenditureIncurred)}</td>
+                <td data-label="Balance" style={{ textAlign:'right', color:(p.sanctionedAmount - p.expenditureIncurred) < 0 ? 'var(--rose)' : 'var(--emerald)' }}>{fmtL(p.sanctionedAmount - p.expenditureIncurred)}</td>
                 <td data-label="Progress">
                   <div style={{ display:'flex', alignItems:'center', gap:6 }}>
                     <div className="progress-bar" style={{ width:50 }}><div className={`progress-fill ${p.progress>=80?'green':p.progress>=40?'amber':'red'}`} style={{ width:`${p.progress}%` }} /></div>
@@ -234,6 +267,39 @@ export default function ProjectList() {
             <div className="btn-group" style={{ marginTop:16, justifyContent:'flex-end' }}>
               <button className="btn btn-secondary btn-sm" onClick={() => setLockModal(null)}>Cancel</button>
               <button className="btn btn-primary btn-sm" onClick={confirmLock}>{lockModal.action==='lock' ? 'Lock' : 'Unlock'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PDF Export Columns Modal */}
+      {pdfModal && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }} onClick={() => setPdfModal(false)}>
+          <div className="card" style={{ width:500, maxWidth:'90vw', maxHeight:'90vh', overflowY:'auto' }} onClick={e => e.stopPropagation()}>
+            <h3 style={{ marginBottom:12 }}>Export PDF — Select Columns</h3>
+            <p style={{ fontSize:13, color:'var(--text-secondary)', marginBottom:16 }}>Choose the columns you want to include in the PDF export. Layout will scale automatically.</p>
+            
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:20 }}>
+              {ALL_COLUMNS.map(col => (
+                <label key={col.id} style={{ display:'flex', alignItems:'center', gap:8, fontSize:13, cursor:'pointer' }}>
+                  <input type="checkbox" checked={selectedColumns.includes(col.id)} 
+                    onChange={(e) => {
+                      if (e.target.checked) setSelectedColumns([...selectedColumns, col.id]);
+                      else setSelectedColumns(selectedColumns.filter(id => id !== col.id));
+                    }} 
+                  />
+                  {col.label}
+                </label>
+              ))}
+            </div>
+
+            <div className="btn-group" style={{ justifyContent:'flex-end', borderTop:'1px solid var(--border-subtle)', paddingTop:16 }}>
+              <button className="btn btn-secondary btn-sm" onClick={() => setSelectedColumns(ALL_COLUMNS.map(c=>c.id))}>Select All</button>
+              <button className="btn btn-secondary btn-sm" onClick={() => setPdfModal(false)}>Cancel</button>
+              <button className="btn btn-primary btn-sm" onClick={() => {
+                savePDF(generateProjectListPDF(filtered, filters, selectedColumns), 'Report.pdf');
+                setPdfModal(false);
+              }} disabled={selectedColumns.length === 0}>Generate PDF</button>
             </div>
           </div>
         </div>

@@ -27,8 +27,8 @@
 
 /* ── LIGHT MODE — Warm Ivory + Navy ────────────────────────── */
 [data-theme="light"] {
-  --bg-deep: #eceef3; --bg-primary: #f7f8fb; --bg-secondary: #eceef3;
-  --bg-card: #ffffff; --bg-elevated: #f0f2f7;
+  --bg-deep: #fcf9ee; --bg-primary: #fdfbf4; --bg-secondary: #fcf9ee;
+  --bg-card: #ffffff; --bg-elevated: #f8f3e2;
   --bg-glass: rgba(0,0,0,0.025); --bg-glass-hover: rgba(0,0,0,0.05);
   --border-subtle: rgba(30,45,90,0.08); --border-default: rgba(30,45,90,0.16);
   --text-primary: #111827; --text-secondary: #3d4f72; --text-muted: #8a96b0;
