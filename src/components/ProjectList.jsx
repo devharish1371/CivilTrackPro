@@ -295,6 +295,7 @@ export default function ProjectList() {
 
             <div className="btn-group" style={{ justifyContent:'flex-end', borderTop:'1px solid var(--border-subtle)', paddingTop:16 }}>
               <button className="btn btn-secondary btn-sm" onClick={() => setSelectedColumns(ALL_COLUMNS.map(c=>c.id))}>Select All</button>
+              <button className="btn btn-secondary btn-sm" onClick={() => setSelectedColumns([])}>Deselect All</button>
               <button className="btn btn-secondary btn-sm" onClick={() => setPdfModal(false)}>Cancel</button>
               <button className="btn btn-primary btn-sm" onClick={() => {
                 savePDF(generateProjectListPDF(filtered, filters, selectedColumns), 'Report.pdf');

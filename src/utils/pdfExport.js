@@ -209,12 +209,17 @@ export function generateProjectListPDF(projects, filters = {}, selectedColumns =
     if (c.id === 'remarks') colStyles[idx + 1].cellWidth = 'wrap';
   });
 
+  let dynamicFontSize = 8;
+  if (cols.length <= 6) dynamicFontSize = 11;
+  else if (cols.length <= 10) dynamicFontSize = 10;
+  else if (cols.length <= 14) dynamicFontSize = 9;
+
   autoTable(doc, {
     startY: 64,
     head: [headers],
     body: rows,
-    styles: { ...BS, fontSize: 8, cellPadding: 2.5 },
-    headStyles: { ...HS, fontSize: 8, cellPadding: 3 },
+    styles: { ...BS, fontSize: dynamicFontSize, cellPadding: 2.5 },
+    headStyles: { ...HS, fontSize: dynamicFontSize, cellPadding: 3 },
     alternateRowStyles: AR,
     tableWidth: MW,
     margin: { left: 12, right: 12 },
