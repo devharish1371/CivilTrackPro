@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useProjects } from '../context/ProjectContext';
 import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { Building2, IndianRupee, TrendingUp, AlertTriangle, Clock, CheckCircle, MapPin, Filter, X } from 'lucide-react';
+import { Building2, IndianRupee, TrendingUp, AlertTriangle, Clock, CheckCircle, MapPin, Filter, X, FileText } from 'lucide-react';
 
 const COLORS = ['#10b981','#f59e0b','#64748b','#06b6d4','#8b5cf6','#f43f5e','#3b82f6'];
 const fmt = (n) => { if (n >= 10000000) return `₹${(n/10000000).toFixed(2)} Cr`; if (n >= 100000) return `₹${(n/100000).toFixed(2)} L`; return `₹${n.toLocaleString('en-IN')}`; };
@@ -75,10 +75,11 @@ export default function Dashboard() {
   const totalDeductions = filteredProjects.reduce((s,p) => s + (p.deductions||0), 0);
   const totalUtilised = totalExpenditure + totalDeductions;
   const totalBalance = totalSanctioned - totalUtilised;
-  const completed = filteredProjects.filter(p => p.statusOfWork==='completed').length;
-  const inProgress = filteredProjects.filter(p => p.statusOfWork==='in_progress').length;
-  const yetToStart = filteredProjects.filter(p => p.statusOfWork==='yet_to_start').length;
-  const geoTagged = filteredProjects.filter(p => p.latitude && p.longitude && Number(p.latitude)!==0).length;
+  const completed  = filteredProjects.filter(p => p.statusOfWork==='completed').length;
+  const inProgress  = filteredProjects.filter(p => p.statusOfWork==='in_progress').length;
+  const yetToStart  = filteredProjects.filter(p => p.statusOfWork==='yet_to_start').length;
+  const geoTagged   = filteredProjects.filter(p => p.latitude && p.longitude && Number(p.latitude)!==0).length;
+  const ucSentCount = filteredProjects.filter(p => p.ucSent === 'Yes').length;
 
   const statusData = [
     { name:'Completed', value:completed },
@@ -265,6 +266,9 @@ export default function Dashboard() {
         </div>
         <div className="stat-card cyan" onClick={() => navigate('/projects', { state: { filters: { ...filters, geoTagged: true } } })} style={{ cursor:'pointer' }}>
           <div className="stat-icon cyan"><MapPin size={20} /></div><div className="stat-value">{geoTagged}</div><div className="stat-label">Geo-Tagged</div>
+        </div>
+        <div className="stat-card blue" onClick={() => navigate('/projects', { state: { filters: { ...filters, ucSent: 'Yes' } } })} style={{ cursor:'pointer' }}>
+          <div className="stat-icon blue"><FileText size={20} /></div><div className="stat-value">{ucSentCount}</div><div className="stat-label">UC Sent</div>
         </div>
       </div>
     </div>
