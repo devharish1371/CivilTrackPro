@@ -33,8 +33,8 @@ function reducer(state, action) {
     return { ...state, ...payload };
   }
 
-  if (type === 'RESET_ALL') {
-    return { projects: sampleProjects, contractors: sampleContractors, engineers: sampleEngineers, schemes: sampleSchemes, constituencies: sampleConstituencies, grants: sampleGrants, categories: sampleCategories };
+  if (type === 'ERASE_ALL') {
+    return { projects: [], contractors: [], engineers: [], schemes: [], constituencies: [], grants: [], categories: [] };
   }
   return state;
 }

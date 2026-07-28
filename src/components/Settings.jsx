@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { useProjects } from '../context/ProjectContext';
 import { initGoogleAuth, signOut, createSheet, initExistingSheet, pushToSheet, pullFromSheet, getAccessToken } from '../utils/googleSheets';
-import { Cloud, CloudOff, Upload, Download, Plus, RefreshCw, AlertTriangle, CheckCircle, Info, FileStack, FileSpreadsheet } from 'lucide-react';
+import { Cloud, CloudOff, Upload, Download, Plus, RefreshCw, AlertTriangle, CheckCircle, Info, FileStack, FileSpreadsheet, Trash2 } from 'lucide-react';
 import { exportProjectsToExcel } from '../utils/excelExport';
 import { importProjectsFromExcel } from '../utils/excelImport';
 
@@ -129,11 +129,19 @@ export default function Settings() {
     setLoading(false);
   };
 
-  const handleReset = () => {
-    if (confirm('Reset all data to sample defaults? This cannot be undone.')) {
-      dispatch({ type: 'RESET_ALL' });
-      setStatus('Data reset to defaults ✓');
+  const [eraseModal, setEraseModal] = useState(false);
+  const [erasePw, setErasePw] = useState('');
+  const [eraseError, setEraseError] = useState('');
+
+  const confirmErase = () => {
+    if (erasePw !== '1970') {
+      setEraseError('Incorrect password');
+      return;
     }
+    dispatch({ type: 'ERASE_ALL' });
+    setStatus('All data erased successfully ✓');
+    setEraseModal(false);
+    setErasePw('');
   };
 
   return (
@@ -245,12 +253,30 @@ export default function Settings() {
         </div>
       </div>
 
-      {/* Reset */}
-      <div className="card">
+      {/* Erase Data */}
+      <div className="card" style={{ marginBottom:16 }}>
         <div className="card-header"><span className="card-title" style={{ color:'var(--rose)' }}>Danger Zone</span></div>
-        <p style={{ fontSize:13, color:'var(--text-muted)', marginBottom:12 }}>Reset all local data back to sample defaults.</p>
-        <button className="btn btn-danger btn-sm" onClick={handleReset}><RefreshCw size={14} /> Reset All Data</button>
+        <p style={{ fontSize:13, color:'var(--text-muted)', marginBottom:12 }}>Erase all local data and start with a clean slate.</p>
+        <button className="btn btn-danger btn-sm" onClick={() => { setEraseModal(true); setErasePw(''); setEraseError(''); }}><Trash2 size={14} /> Erase All Data</button>
       </div>
+
+      {eraseModal && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }} onClick={() => setEraseModal(false)}>
+          <div className="card" style={{ width:360, maxWidth:'90vw' }} onClick={e => e.stopPropagation()}>
+            <h3 style={{ marginBottom:12, color:'var(--rose)' }}>⚠️ Erase All Data</h3>
+            <p style={{ fontSize:13, color:'var(--text-secondary)', marginBottom:16 }}>
+              This will permanently delete all projects, engineers, contractors, schemes, and grants from this device. Enter master password (1970) to confirm:
+            </p>
+            <input className="form-input" type="password" placeholder="Password" value={erasePw} onChange={e => { setErasePw(e.target.value); setEraseError(''); }}
+              onKeyDown={e => e.key==='Enter' && confirmErase()} autoFocus />
+            {eraseError && <p style={{ color:'var(--rose)', fontSize:12, marginTop:6 }}>{eraseError}</p>}
+            <div className="btn-group" style={{ marginTop:16, justifyContent:'flex-end' }}>
+              <button className="btn btn-secondary btn-sm" onClick={() => setEraseModal(false)}>Cancel</button>
+              <button className="btn btn-danger btn-sm" onClick={confirmErase}>Erase Data</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
