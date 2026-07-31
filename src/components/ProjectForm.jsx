@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useProjects } from '../context/ProjectContext';
 import { statusOptions } from '../data/sampleData';
+import { isAssistantEngineer, isJuniorEngineer } from '../utils/engineers';
 import { v4 as uuidv4 } from 'uuid';
 import { Save, ArrowLeft, MapPin, IndianRupee, AlertTriangle, Calendar, Users, FileText } from 'lucide-react';
 
@@ -31,8 +32,8 @@ export default function ProjectForm() {
   const [toast, setToast] = useState('');
   const [dateWarnings, setDateWarnings] = useState([]);
 
-  const jeList = engineers.filter(e => e.designation === 'Junior Engineer');
-  const aeList = engineers.filter(e => e.designation === 'Assistant Engineer');
+  const jeList = engineers.filter(e => isJuniorEngineer(e.designation));
+  const aeList = engineers.filter(e => isAssistantEngineer(e.designation));
   const hasSavedJuniorEngineer = form.juniorEngineer && !jeList.some(e => e.name === form.juniorEngineer);
   const hasSavedAssistantEngineer = form.assistantEngineer && !aeList.some(e => e.name === form.assistantEngineer);
 

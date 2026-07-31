@@ -250,24 +250,24 @@ export default function ProjectList() {
               <tr key={p.id} style={p.isLocked ? { opacity:0.85 } : {}}>
                 <td data-label="#">{i+1}. {p.isLocked && <Lock size={11} style={{ color:'var(--amber)', marginRight:4, verticalAlign:'middle' }} />}</td>
                 <td data-label="Project">
-                  <div style={{ minWidth: 200, maxWidth: 300, whiteSpace: 'normal', lineHeight: 1.4, fontWeight: 500 }}>
+                  <div className="project-cell-content project-name-cell">
                     {p.projectName}
                   </div>
                 </td>
                 <td data-label="Details">
-                  <div style={{ whiteSpace: 'nowrap' }}>
+                  <div className="project-cell-content">
                     <strong>{p.scheme}</strong> ({p.yearOfSanction})<br />
                     <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{p.category}</span>
                   </div>
                 </td>
                 <td data-label="Location">
-                  <div style={{ whiteSpace: 'nowrap' }}>
+                  <div className="project-cell-content">
                     {p.constituency}<br />
                     <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{p.villagePanchayat}</span>
                   </div>
                 </td>
                 <td data-label="Financials">
-                  <div style={{ whiteSpace: 'nowrap', fontSize: 12 }}>
+                  <div className="project-cell-content project-financials-cell">
                     <div><span style={{ color:'var(--text-secondary)' }}>S:</span> {fmtL(p.sanctionedAmount)}</div>
                     <div><span style={{ color:'var(--text-secondary)' }}>E:</span> {fmtL(p.expenditureIncurred)}</div>
                     <div><span style={{ color:'var(--text-secondary)' }}>B:</span> <span style={{ color:(p.sanctionedAmount - p.expenditureIncurred) < 0 ? 'var(--rose)' : 'var(--emerald)', fontWeight: 600 }}>{fmtL(p.sanctionedAmount - p.expenditureIncurred)}</span></div>
@@ -283,12 +283,12 @@ export default function ProjectList() {
                   </div>
                 </td>
                 <td data-label="Engineers">
-                  <div style={{ whiteSpace: 'nowrap', fontSize: 12 }}>
+                  <div className="project-cell-content project-engineers-cell">
                     <div><span style={{ color:'var(--text-secondary)' }}>JE:</span> {p.juniorEngineer}</div>
                     <div><span style={{ color:'var(--text-secondary)' }}>AE:</span> {p.assistantEngineer}</div>
                   </div>
                 </td>
-                <td data-label="Updated" style={{ fontSize:11, color:'var(--text-muted)', whiteSpace:'nowrap' }}>
+                <td data-label="Updated" className="project-updated-cell">
                   {p.updatedAt ? new Date(p.updatedAt).toLocaleDateString('en-IN') : '—'}
                 </td>
                 <td>

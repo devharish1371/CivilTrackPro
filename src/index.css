@@ -199,6 +199,9 @@ input, select, textarea { font-family: inherit; }
 .map-canvas { height: 100%; width: 100%; }
 .map-helper-text { margin-top: 12px; font-size: 12px; color: var(--text-muted); line-height: 1.5; }
 .map-popup-summary { display: grid; gap: 6px; font-size: 12px; margin-bottom: 10px; }
+.map-popup-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.map-popup-actions .btn { flex: 1 1 auto; justify-content: center; }
+.project-name-cell { min-width: 200px; max-width: 300px; white-space: normal; line-height: 1.4; font-weight: 500; }
 .leaflet-container { background: var(--bg-secondary); max-width: 100%; }
 .leaflet-tooltip.map-short-label {
   background: var(--bg-card);
@@ -350,6 +353,7 @@ code { background: var(--bg-glass); padding: 2px 6px; border-radius: 4px; font-s
     border-radius: var(--radius-md);
     padding: 12px;
     gap: 4px 8px;
+    min-width: 0;
   }
   .data-table tbody tr:hover { background: var(--bg-card); }
 
@@ -363,7 +367,21 @@ code { background: var(--bg-glass); padding: 2px 6px; border-radius: 4px; font-s
     font-size: 12px;
     white-space: normal;
     word-break: break-word;
+    min-width: 0;
+    max-width: 100%;
   }
+  .data-table td > * { min-width: 0; max-width: 100%; }
+  .project-cell-content {
+    min-width: 0;
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.4;
+  }
+  .project-name-cell { min-width: 0; max-width: 100%; font-weight: 500; }
+  .project-financials-cell { font-size: 12px; }
+  .project-engineers-cell { font-size: 12px; }
+  .project-updated-cell { font-size: 11px; color: var(--text-muted); }
   .data-table td::before {
     content: attr(data-label);
     font-size: 10px;

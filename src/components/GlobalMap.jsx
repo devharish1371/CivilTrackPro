@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useProjects } from '../context/ProjectContext';
 import { MapContainer, TileLayer, Marker, Popup, Tooltip, useMap } from 'react-leaflet';
 import { useNavigate } from 'react-router-dom';
-import { Filter, MapPin, X } from 'lucide-react';
+import { ExternalLink, Filter, MapPin, X } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -202,9 +202,19 @@ export default function GlobalMap() {
                       <div><strong>Status:</strong> <span className={`status-badge ${p.statusOfWork}`} style={{ padding:'2px 4px', fontSize:10 }}>{p.statusOfWork}</span></div>
                       <div><strong>Sanctioned:</strong> ₹{(p.sanctionedAmount || 0).toLocaleString('en-IN')}</div>
                     </div>
-                    <button className="btn btn-primary btn-sm" style={{ width: '100%' }} onClick={() => navigate(`/projects/${p.id}`)}>
-                      View Project
-                    </button>
+                    <div className="map-popup-actions">
+                      <button className="btn btn-primary btn-sm" onClick={() => navigate(`/projects/${p.id}`)}>
+                        View Project
+                      </button>
+                      <a
+                        className="btn btn-secondary btn-sm"
+                        href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${p.latitude},${p.longitude}`)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <ExternalLink size={14} /> Directions
+                      </a>
+                    </div>
                   </div>
                 </Popup>
               </Marker>
