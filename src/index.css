@@ -147,6 +147,8 @@ input, select, textarea { font-family: inherit; }
 .action-context span { display: inline-flex; align-items: center; gap: 4px; }
 .action-item-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 .action-arrow { color: var(--text-muted); margin-left: 2px; }
+.action-pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-subtle); color: var(--text-muted); font-size: 12px; }
+.action-page-number { display: inline-flex; align-items: center; padding: 0 8px; white-space: nowrap; }
 .action-empty-state { text-align: center; padding: 54px 20px; color: var(--text-muted); }
 .action-empty-state svg { color: var(--emerald); margin-bottom: 10px; }
 .action-empty-state h3 { color: var(--text-secondary); font-size: 16px; margin-bottom: 4px; }
@@ -374,6 +376,8 @@ code { background: var(--bg-glass); padding: 2px 6px; border-radius: 4px; font-s
   .action-filter { width: 100%; }
   .action-item { flex-wrap: wrap; }
   .action-item-actions { width: 100%; justify-content: flex-start; padding-left: 46px; }
+  .action-pagination { align-items: flex-start; flex-direction: column; }
+  .action-pagination .btn-group { width: 100%; justify-content: space-between; }
 
   /* stat cards */
   .stat-card { padding: 14px 12px; }

@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProjects } from '../context/ProjectContext';
-import { AlertTriangle, ArrowUpRight, CalendarClock, CheckCircle2, CircleAlert, Edit, Eye, FileWarning, ListChecks, MapPin, ShieldAlert, WalletCards } from 'lucide-react';
+import { AlertTriangle, ArrowUpRight, CalendarClock, CheckCircle2, ChevronLeft, ChevronRight, CircleAlert, Edit, Eye, FileWarning, ListChecks, MapPin, ShieldAlert, WalletCards } from 'lucide-react';
 
 const DAY_MS = 86400000;
 const UPCOMING_DAYS = 45;
+const ACTIONS_PER_PAGE = 10;
 
 const toDate = (value) => {
   if (!value) return null;
@@ -103,6 +104,7 @@ export default function ActionCenter() {
   const { projects } = useProjects();
   const navigate = useNavigate();
   const [filter, setFilter] = useState('all');
+  const [page, setPage] = useState(1);
   const today = useMemo(() => new Date(), []);
   const actions = useMemo(() => buildActions(projects, today), [projects, today]);
 
@@ -114,11 +116,23 @@ export default function ActionCenter() {
     information: actions.filter(a => a.type === 'information').length,
   }), [actions]);
 
-  const visibleActions = filter === 'all'
-    ? actions
-    : filter === 'urgent'
-      ? actions.filter(a => a.type === 'urgent' || a.type === 'financial')
-      : actions.filter(a => a.type === filter);
+  const applyFilter = (nextFilter) => {
+    setFilter(nextFilter);
+    setPage(1);
+  };
+
+  const visibleActions = useMemo(() => {
+    if (filter === 'all') return actions;
+    if (filter === 'urgent') return actions.filter(a => a.type === 'urgent' || a.type === 'financial');
+    return actions.filter(a => a.type === filter);
+  }, [actions, filter]);
+
+  const totalPages = Math.max(1, Math.ceil(visibleActions.length / ACTIONS_PER_PAGE));
+  const currentPage = Math.min(page, totalPages);
+  const paginatedActions = visibleActions.slice(
+    (currentPage - 1) * ACTIONS_PER_PAGE,
+    currentPage * ACTIONS_PER_PAGE
+  );
 
   return (
     <div>
@@ -133,22 +147,22 @@ export default function ActionCenter() {
       </div>
 
       <div className="action-summary-grid">
-        <button className={`action-summary-card danger ${filter === 'urgent' ? 'selected' : ''}`} onClick={() => setFilter('urgent')}>
+        <button className={`action-summary-card danger ${filter === 'urgent' ? 'selected' : ''}`} onClick={() => applyFilter('urgent')}>
           <div className="stat-icon rose"><AlertTriangle size={20} /></div>
           <div className="stat-value">{counts.urgent}</div>
           <div className="stat-label">Needs Attention</div>
         </button>
-        <button className={`action-summary-card warning ${filter === 'upcoming' ? 'selected' : ''}`} onClick={() => setFilter('upcoming')}>
+        <button className={`action-summary-card warning ${filter === 'upcoming' ? 'selected' : ''}`} onClick={() => applyFilter('upcoming')}>
           <div className="stat-icon amber"><CalendarClock size={20} /></div>
           <div className="stat-value">{counts.upcoming}</div>
           <div className="stat-label">Upcoming Deadlines</div>
         </button>
-        <button className={`action-summary-card compliance ${filter === 'compliance' ? 'selected' : ''}`} onClick={() => setFilter('compliance')}>
+        <button className={`action-summary-card compliance ${filter === 'compliance' ? 'selected' : ''}`} onClick={() => applyFilter('compliance')}>
           <div className="stat-icon blue"><ShieldAlert size={20} /></div>
           <div className="stat-value">{counts.compliance}</div>
           <div className="stat-label">Compliance Follow-ups</div>
         </button>
-        <button className={`action-summary-card information ${filter === 'information' ? 'selected' : ''}`} onClick={() => setFilter('information')}>
+        <button className={`action-summary-card information ${filter === 'information' ? 'selected' : ''}`} onClick={() => applyFilter('information')}>
           <div className="stat-icon purple"><FileWarning size={20} /></div>
           <div className="stat-value">{counts.information}</div>
           <div className="stat-label">Data Checks</div>
@@ -161,7 +175,7 @@ export default function ActionCenter() {
             <span className="card-title">Follow-up Queue</span>
             <p className="action-center-subtitle">Select an item to open its project record.</p>
           </div>
-          <select className="form-select action-filter" value={filter} onChange={e => setFilter(e.target.value)}>
+          <select className="form-select action-filter" value={filter} onChange={e => applyFilter(e.target.value)}>
             <option value="all">All Actions ({counts.all})</option>
             <option value="urgent">Needs Attention ({counts.urgent})</option>
             <option value="upcoming">Upcoming ({counts.upcoming})</option>
@@ -178,7 +192,7 @@ export default function ActionCenter() {
           </div>
         ) : (
           <div className="action-list">
-            {visibleActions.map(action => {
+            {paginatedActions.map(action => {
               const meta = actionMeta[action.type];
               const Icon = meta.icon;
               return (
@@ -208,6 +222,22 @@ export default function ActionCenter() {
                 </div>
               );
             })}
+          </div>
+        )}
+        {visibleActions.length > 0 && (
+          <div className="action-pagination">
+            <span>Showing {(currentPage - 1) * ACTIONS_PER_PAGE + 1}–{Math.min(currentPage * ACTIONS_PER_PAGE, visibleActions.length)} of {visibleActions.length} actions</span>
+            {totalPages > 1 && (
+              <div className="btn-group">
+                <button className="btn btn-secondary btn-sm" onClick={() => setPage(Math.max(1, currentPage - 1))} disabled={currentPage === 1}>
+                  <ChevronLeft size={14} /> Previous
+                </button>
+                <span className="action-page-number">Page {currentPage} of {totalPages}</span>
+                <button className="btn btn-secondary btn-sm" onClick={() => setPage(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages}>
+                  Next <ChevronRight size={14} />
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
