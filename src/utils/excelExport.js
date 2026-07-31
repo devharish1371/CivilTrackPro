@@ -62,7 +62,7 @@ export function exportProjectsToExcel(projects, contractors = [], engineers = []
   // Engineers Sheet
   if (filteredEngineers.length) {
     const wsEngineers = XLSX.utils.json_to_sheet(filteredEngineers.map(e => ({
-      'ID': e.id, 'Name': e.name, 'Type': e.type
+      'ID': e.id, 'Name': e.name, 'Type': e.designation || e.type || ''
     })));
     XLSX.utils.book_append_sheet(wb, wsEngineers, 'Engineers');
   }
@@ -156,4 +156,3 @@ export function exportGrantsToExcel(grants, filename = 'CivilTrack_Grants.xlsx')
   XLSX.utils.book_append_sheet(wb, ws, 'Grants');
   XLSX.writeFile(wb, filename);
 }
-

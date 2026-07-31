@@ -89,7 +89,7 @@ export async function importProjectsFromExcel(file, existingProjects, existingCo
           result.engineers = rows.map(r => ({
             id: r['ID'] || uuidv4(),
             name: r['Name'],
-            type: r['Type'] || 'je',
+            designation: r['Designation'] || r['Type'] || 'Junior Engineer',
             updatedAt: new Date().toISOString()
           })).filter(e => e.name);
         }

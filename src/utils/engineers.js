@@ -6,14 +6,16 @@ const normalizeDesignation = (designation) => String(designation || '')
 
 const compactDesignation = (designation) => normalizeDesignation(designation).replace(/\s/g, '');
 
+export const getEngineerDesignation = (engineer) => engineer?.designation || engineer?.type || '';
+
 export const isJuniorEngineer = (designation) => {
   const normalized = normalizeDesignation(designation);
   const compact = compactDesignation(designation);
-  return normalized === 'junior engineer' || normalized === 'junior' || compact === 'je' || compact === 'juniorengineer';
+  return normalized === 'junior' || compact === 'je' || compact === 'jr' || compact.includes('juniorengineer') || compact.includes('jrengineer');
 };
 
 export const isAssistantEngineer = (designation) => {
   const normalized = normalizeDesignation(designation);
   const compact = compactDesignation(designation);
-  return normalized === 'assistant engineer' || normalized === 'assistant' || compact === 'ae' || compact === 'assistantengineer';
+  return normalized === 'assistant' || compact === 'ae' || compact.includes('assistantengineer');
 };

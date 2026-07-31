@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useProjects } from '../context/ProjectContext';
 import { v4 as uuidv4 } from 'uuid';
 import { Plus, Edit, Trash2, X, Save } from 'lucide-react';
+import { getEngineerDesignation, isJuniorEngineer } from '../utils/engineers';
 
 const empty = { name:'', designation:'Junior Engineer', phone:'', email:'', division:'' };
 
@@ -14,10 +15,10 @@ export default function EngineerManager() {
   const filtered = engineers.filter(e => {
     if (!search) return true;
     const q = search.toLowerCase();
-    return e.name.toLowerCase().includes(q) || e.designation.toLowerCase().includes(q) || e.division.toLowerCase().includes(q);
+    return (e.name || '').toLowerCase().includes(q) || getEngineerDesignation(e).toLowerCase().includes(q) || (e.division || '').toLowerCase().includes(q);
   });
 
-  const startEdit = (e) => { setEditing(e.id); setForm({ name:e.name, designation:e.designation, phone:e.phone, email:e.email, division:e.division }); };
+  const startEdit = (e) => { setEditing(e.id); setForm({ name:e.name, designation:getEngineerDesignation(e), phone:e.phone, email:e.email, division:e.division }); };
   const startNew = () => { setEditing('new'); setForm(empty); };
   const cancel = () => { setEditing(null); setForm(empty); };
 
@@ -78,7 +79,7 @@ export default function EngineerManager() {
             ) : filtered.map((e, i) => (
               <tr key={e.id}>
                 <td>{i+1}</td><td>{e.name}</td>
-                <td><span className={`status-badge ${e.designation==='Junior Engineer'?'in_progress':'completed'}`}>{e.designation}</span></td>
+                <td><span className={`status-badge ${isJuniorEngineer(getEngineerDesignation(e))?'in_progress':'completed'}`}>{getEngineerDesignation(e) || 'Unassigned'}</span></td>
                 <td>{e.phone}</td><td>{e.email}</td><td>{e.division}</td>
                 <td>
                   <div style={{ display:'flex', gap:4 }}>
