@@ -2,14 +2,14 @@ import { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useProjects } from '../context/ProjectContext';
 import { lockSession } from './SessionGate';
-import { LayoutDashboard, FolderKanban, PlusCircle, FileText, Bell, Menu, X, Building2, HardHat, Users, Settings, Cloud, CloudOff, Target, Map, MapPin, Banknote, Tags, LogOut, Sun, Moon, CalendarDays, Columns3, Lock } from 'lucide-react';
+import { LayoutDashboard, FolderKanban, PlusCircle, FileText, Bell, Menu, X, Building2, HardHat, Users, Settings, Cloud, CloudOff, Target, Map, MapPin, Banknote, Tags, LogOut, Sun, Moon, ListChecks, Columns3, Lock } from 'lucide-react';
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/kanban', icon: Columns3, label: 'Kanban Board' },
   { path: '/projects', icon: FolderKanban, label: 'Projects' },
   { path: '/map', icon: Map, label: 'Global Map' },
-  { path: '/timeline', icon: CalendarDays, label: 'Timeline' },
+  { path: '/action-center', icon: ListChecks, label: 'Action Center' },
   { path: '/projects/new', icon: PlusCircle, label: 'Add Project' },
   { path: '/grants', icon: Banknote, label: 'Grants' },
   { path: '/schemes', icon: Target, label: 'Schemes' },
@@ -28,7 +28,7 @@ const pageTitles = {
   '/reports':'Reports', '/alerts':'Alerts', '/contractors':'Contractors',
   '/engineers':'Engineers', '/settings':'Settings', '/schemes':'Schemes',
   '/constituencies':'Constituencies', '/panchayats':'Village Panchayats', '/grants':'Grants', '/categories':'Categories',
-  '/kanban':'Kanban Board', '/map':'Global Map', '/timeline':'Project Timeline'
+  '/kanban':'Kanban Board', '/map':'Global Map', '/action-center':'Action Center'
 };
 
 export default function Layout({ children }) {

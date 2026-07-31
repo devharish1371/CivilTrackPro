@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom'
+import { Navigate, Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
 import Dashboard from './components/Dashboard'
 import ProjectList from './components/ProjectList'
@@ -16,7 +16,7 @@ import CategoryManager from './components/CategoryManager'
 import Settings from './components/Settings'
 import KanbanBoard from './components/KanbanBoard'
 import GlobalMap from './components/GlobalMap'
-import ProjectTimeline from './components/ProjectTimeline'
+import ActionCenter from './components/ActionCenter'
 import SessionGate from './components/SessionGate'
 
 export default function App() {
@@ -41,7 +41,8 @@ export default function App() {
         <Route path="/settings" element={<Settings />} />
         <Route path="/kanban" element={<KanbanBoard />} />
         <Route path="/map" element={<GlobalMap />} />
-        <Route path="/timeline" element={<ProjectTimeline />} />
+        <Route path="/action-center" element={<ActionCenter />} />
+        <Route path="/timeline" element={<Navigate to="/action-center" replace />} />
       </Routes>
       </Layout>
     </SessionGate>

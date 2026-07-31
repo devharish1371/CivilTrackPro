@@ -28,6 +28,7 @@ When you open CivilTrack Pro, you are greeted by the **Dashboard**. This is your
   - All charts and financial totals will instantly recalculate to reflect only your chosen filters.
 - **Visual Analytics**: Interactive charts provide breakdowns of project statuses (Completed, In Progress, Yet to Start), scheme-wise budget distributions, and constituency-wise allocations.
 - **Active Alerts**: A dedicated panel shows urgent items needing attention, such as expiring contractor guarantees or overdue security deposits, highlighted with bright, easy-to-read text.
+- **Action Center**: A prioritized follow-up queue highlights overdue work, upcoming deadlines, compliance items, budget risks, and incomplete project details with direct View and Edit actions.
 
 ---
 
