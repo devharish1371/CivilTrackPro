@@ -3,6 +3,7 @@ import { useProjects } from '../context/ProjectContext';
 import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Building2, IndianRupee, TrendingUp, AlertTriangle, Clock, CheckCircle, MapPin, Filter, X, FileText } from 'lucide-react';
+import { getUcSentStatus } from '../utils/projectStatus';
 
 const COLORS = ['#3a9e7e', '#c07a2a', '#6674a8', '#c9a84c', '#3d6ea8', '#b84455', '#4a5878'];
 const fmt = (n) => { if (n >= 10000000) return `₹${(n/10000000).toFixed(2)} Cr`; if (n >= 100000) return `₹${(n/100000).toFixed(2)} L`; return `₹${n.toLocaleString('en-IN')}`; };
@@ -79,7 +80,7 @@ export default function Dashboard() {
   const inProgress  = filteredProjects.filter(p => p.statusOfWork==='in_progress').length;
   const yetToStart  = filteredProjects.filter(p => p.statusOfWork==='yet_to_start').length;
   const geoTagged   = filteredProjects.filter(p => p.latitude && p.longitude && Number(p.latitude)!==0).length;
-  const ucSentCount = filteredProjects.filter(p => p.ucSent === 'Yes').length;
+  const ucSentCount = filteredProjects.filter(p => getUcSentStatus(p) === 'Yes').length;
 
   const statusData = [
     { name:'Completed', value:completed },

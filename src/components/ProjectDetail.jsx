@@ -5,6 +5,7 @@ import { downloadKML } from '../utils/kmlExport';
 import { ArrowLeft, Edit, Trash2, FileText, Share2, Calendar, IndianRupee, Users, AlertTriangle, Lock, Unlock, MapPin, ExternalLink } from 'lucide-react';
 import { useState } from 'react';
 import { verifyMasterPassword, formatMasterPasswordError } from '../utils/appAuth';
+import { getUcSentStatus } from '../utils/projectStatus';
 
 const fmt = (n) => new Intl.NumberFormat('en-IN', { style:'currency', currency:'INR', maximumFractionDigits:0 }).format(n);
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }) : '—';
@@ -26,6 +27,7 @@ export default function ProjectDetail() {
   const expiryDays = p.expiryDate ? Math.ceil((new Date(p.expiryDate) - now)/86400000) : null;
   const contractDays = p.dateOfCompletionContract && p.statusOfWork !== 'completed' ? Math.ceil((new Date(p.dateOfCompletionContract) - now)/86400000) : null;
   const securityDays = p.securityDepositReleaseDate ? Math.ceil((new Date(p.securityDepositReleaseDate) - now)/86400000) : null;
+  const ucSentStatus = getUcSentStatus(p);
 
   const handleDelete = () => { if (!p.isLocked && confirm('Delete?')) { dispatch({ type:'DELETE_PROJECT', payload:id }); navigate('/projects'); } };
   const handlePDF = () => savePDF(generateProjectDetailPDF(p), `${p.projectName.replace(/\s+/g,'_')}.pdf`);
@@ -208,8 +210,8 @@ export default function ProjectDetail() {
       <div className="card" style={{ marginBottom:16 }}>
         <div className="card-header"><span className="card-title"><FileText size={14} style={{ display:'inline', verticalAlign:'middle' }} /> Utilisation Certificate (UC)</span></div>
         <div className="detail-grid">
-          <D label="UC Sent" value={p.ucSent || 'No'} />
-          {(p.ucSent === 'Yes' || p.ucSentDate) && <D label="UC Sent On" value={fmtDate(p.ucSentDate)} />}
+          <D label="UC Sent" value={ucSentStatus} />
+          {ucSentStatus === 'Yes' && <D label="UC Sent On" value={fmtDate(p.ucSentDate)} />}
         </div>
       </div>
 

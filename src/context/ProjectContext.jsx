@@ -4,6 +4,7 @@ import { db, auth } from '../utils/firebase';
 import { doc, onSnapshot, setDoc, enableNetwork, getDocFromServer } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { isSessionUnlocked } from '../components/SessionGate';
+import { normalizeProject, normalizeProjects } from '../utils/projectStatus';
 
 const FIRESTORE_DOC = doc(db, 'civil_dashboard', 'master_data');
 const SERVER_CHECK_TIMEOUT_MS = 10000;
@@ -168,15 +169,25 @@ function reducer(state, action) {
   };
   for (const [plural, singular] of Object.entries(entities)) {
     const stateKey = plural.toLowerCase();
-    if (type === `SET_${plural}`) return { ...state, [stateKey]: payload };
-    if (type === `ADD_${singular}`) return { ...state, [stateKey]: [...state[stateKey], { ...payload, updatedAt: new Date().toISOString() }] };
-    if (type === `UPDATE_${singular}`) return { ...state, [stateKey]: state[stateKey].map(i => i.id === payload.id ? { ...payload, updatedAt: new Date().toISOString() } : i) };
+    if (type === `SET_${plural}`) return { ...state, [stateKey]: stateKey === 'projects' ? normalizeProjects(payload) : payload };
+    if (type === `ADD_${singular}`) {
+      const item = stateKey === 'projects' ? normalizeProject(payload) : payload;
+      return { ...state, [stateKey]: [...state[stateKey], { ...item, updatedAt: new Date().toISOString() }] };
+    }
+    if (type === `UPDATE_${singular}`) {
+      const item = stateKey === 'projects' ? normalizeProject(payload) : payload;
+      return { ...state, [stateKey]: state[stateKey].map(i => i.id === payload.id ? { ...item, updatedAt: new Date().toISOString() } : i) };
+    }
     if (type === `DELETE_${singular}`) return { ...state, [stateKey]: state[stateKey].filter(i => i.id !== payload) };
   }
 
 
   if (type === 'SET_ALL') {
-    return { ...state, ...payload };
+    return {
+      ...state,
+      ...payload,
+      projects: payload.projects === undefined ? state.projects : normalizeProjects(payload.projects),
+    };
   }
 
   if (type === 'ERASE_ALL') {
@@ -187,7 +198,7 @@ function reducer(state, action) {
 
 export function ProjectProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, null, () => ({
-    projects: load(KEYS.projects, sampleProjects),
+    projects: normalizeProjects(load(KEYS.projects, sampleProjects)),
     contractors: load(KEYS.contractors, sampleContractors),
     engineers: load(KEYS.engineers, sampleEngineers),
     schemes: load(KEYS.schemes, sampleSchemes),

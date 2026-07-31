@@ -6,6 +6,7 @@ import { statusOptions } from '../data/sampleData';
 import { exportProjectsToExcel } from '../utils/excelExport';
 import { generateProjectListPDF, generateProjectDetailPDF, savePDF, sharePDF } from '../utils/pdfExport';
 import { downloadKML } from '../utils/kmlExport';
+import { getUcSentStatus } from '../utils/projectStatus';
 import { Eye, Edit, Trash2, Download, FileText, Share2, Filter, X, Lock, Unlock, MapPin, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 
 const fmt = (n) => new Intl.NumberFormat('en-IN', { style:'currency', currency:'INR', maximumFractionDigits:0 }).format(n);
@@ -90,7 +91,7 @@ export default function ProjectList() {
       if (filters.engineer && p.juniorEngineer !== filters.engineer && p.assistantEngineer !== filters.engineer) return false;
       if (filters.contractor && p.contractorName !== filters.contractor) return false;
       if (filters.geoTagged && (!p.latitude || !p.longitude || Number(p.latitude) === 0)) return false;
-      if (filters.ucSent && p.ucSent !== filters.ucSent) return false;
+      if (filters.ucSent && getUcSentStatus(p) !== filters.ucSent) return false;
       if (filters.search) {
         const q = filters.search.toLowerCase();
         return [p.projectName, p.contractorName, p.juniorEngineer, p.assistantEngineer, p.goNumber, p.mBookNumber, p.constituency, p.scheme, p.category]
@@ -136,7 +137,7 @@ export default function ProjectList() {
     }
   };
 
-  const clearFilters = () => setFilters({ year:'', scheme:'', category:'', phase:'', status:'', constituency:'', search:'', engineer:'', contractor:'', geoTagged: false, ucSent: '' });
+  const clearFilters = () => setFilters({ year:'', scheme:'', category:'', phase:'', status:'', constituency:'', villagePanchayat:'', search:'', engineer:'', contractor:'', geoTagged: false, ucSent: '' });
   const hasFilters = Object.values(filters).some(v => v);
 
   return (

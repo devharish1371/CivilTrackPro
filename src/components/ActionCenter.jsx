@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProjects } from '../context/ProjectContext';
+import { getUcSentStatus } from '../utils/projectStatus';
 import { AlertTriangle, ArrowUpRight, CalendarClock, CheckCircle2, ChevronLeft, ChevronRight, CircleAlert, Edit, Eye, FileWarning, ListChecks, MapPin, ShieldAlert, WalletCards } from 'lucide-react';
 
 const DAY_MS = 86400000;
@@ -25,9 +26,9 @@ const actionMeta = {
   information: { label: 'Data Check', icon: FileWarning, className: 'info' },
 };
 
-function addAction(actions, project, type, title, detail, dueDate = null) {
+function addAction(actions, project, type, code, title, detail, dueDate = null) {
   actions.push({
-    id: `${project.id}-${type}`,
+    id: `${project.id}-${type}-${code}`,
     projectId: project.id,
     projectName: project.projectName || 'Unnamed Project',
     constituency: project.constituency || '',
@@ -49,29 +50,29 @@ function buildActions(projects, today) {
     const isCompleted = project.statusOfWork === 'completed';
 
     if (!isCompleted && completionDays !== null && completionDays < 0) {
-      addAction(actions, project, 'urgent', 'Contract completion overdue', `${Math.abs(completionDays)} day${Math.abs(completionDays) === 1 ? '' : 's'} overdue`, completionDate);
+      addAction(actions, project, 'urgent', 'completion-overdue', 'Contract completion overdue', `${Math.abs(completionDays)} day${Math.abs(completionDays) === 1 ? '' : 's'} overdue`, completionDate);
     } else if (!isCompleted && completionDays !== null && completionDays <= UPCOMING_DAYS) {
-      addAction(actions, project, 'upcoming', 'Contract completion approaching', `Due ${formatDate(completionDate)} (${completionDays} day${completionDays === 1 ? '' : 's'})`, completionDate);
+      addAction(actions, project, 'upcoming', 'completion-upcoming', 'Contract completion approaching', `Due ${formatDate(completionDate)} (${completionDays} day${completionDays === 1 ? '' : 's'})`, completionDate);
     }
 
     const expiryDate = toDate(project.expiryDate);
     const expiryDays = expiryDate ? daysFromToday(expiryDate, today) : null;
     const securityReleased = Boolean(project.securityDepositReleaseDate);
     if (!securityReleased && expiryDays !== null && expiryDays < 0) {
-      addAction(actions, project, 'compliance', 'Performance guarantee expired', `Expired ${Math.abs(expiryDays)} day${Math.abs(expiryDays) === 1 ? '' : 's'} ago`, expiryDate);
+      addAction(actions, project, 'compliance', 'guarantee-expired', 'Performance guarantee expired', `Expired ${Math.abs(expiryDays)} day${Math.abs(expiryDays) === 1 ? '' : 's'} ago`, expiryDate);
     } else if (!securityReleased && expiryDays !== null && expiryDays <= UPCOMING_DAYS) {
-      addAction(actions, project, 'compliance', 'Performance guarantee expiring', `Expires ${formatDate(expiryDate)} (${expiryDays} day${expiryDays === 1 ? '' : 's'})`, expiryDate);
+      addAction(actions, project, 'compliance', 'guarantee-upcoming', 'Performance guarantee expiring', `Expires ${formatDate(expiryDate)} (${expiryDays} day${expiryDays === 1 ? '' : 's'})`, expiryDate);
     }
 
     const sanctioned = Number(project.sanctionedAmount) || 0;
     const expenditure = Number(project.expenditureIncurred) || 0;
     if (sanctioned > 0 && expenditure > sanctioned) {
-      addAction(actions, project, 'financial', 'Budget exceeded', `Expenditure is ₹${(expenditure - sanctioned).toLocaleString('en-IN')} over sanctioned amount`);
+      addAction(actions, project, 'financial', 'budget-exceeded', 'Budget exceeded', `Expenditure is ₹${(expenditure - sanctioned).toLocaleString('en-IN')} over sanctioned amount`);
     }
 
-    const hasUc = project.ucSent === 'Yes' || Boolean(project.ucSentDate);
+    const hasUc = getUcSentStatus(project) === 'Yes';
     if (expenditure > 0 && !hasUc) {
-      addAction(actions, project, 'compliance', 'Utilisation certificate pending', 'Expenditure is recorded but no UC submission date is available');
+      addAction(actions, project, 'compliance', 'uc-pending', 'Utilisation certificate pending', 'Expenditure is recorded but no UC submission date is available');
     }
 
     const missing = [
@@ -81,11 +82,11 @@ function buildActions(projects, today) {
       !project.contractorName && 'Contractor',
     ].filter(Boolean);
     if (missing.length > 0) {
-      addAction(actions, project, 'information', 'Project details incomplete', `Add: ${missing.join(', ')}`);
+      addAction(actions, project, 'information', 'details-incomplete', 'Project details incomplete', `Add: ${missing.join(', ')}`);
     }
 
     if (!isCompleted && project.statusOfWork === 'in_progress' && (Number(project.progress) || 0) === 0) {
-      addAction(actions, project, 'urgent', 'Progress update needed', 'Project is marked in progress but has 0% progress recorded');
+      addAction(actions, project, 'urgent', 'progress-update', 'Progress update needed', 'Project is marked in progress but has 0% progress recorded');
     }
   });
 

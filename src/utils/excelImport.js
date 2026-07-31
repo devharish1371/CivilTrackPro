@@ -1,5 +1,6 @@
 import * as XLSX from 'xlsx';
 import { v4 as uuidv4 } from 'uuid';
+import { normalizeProject } from './projectStatus';
 
 export async function importProjectsFromExcel(file, existingProjects, existingContractors, existingEngineers, existingSchemes, existingConstituencies, existingPanchayats, existingGrants) {
   return new Promise((resolve, reject) => {
@@ -28,7 +29,11 @@ export async function importProjectsFromExcel(file, existingProjects, existingCo
                                : statusStr === 'In Progress' ? 'in_progress' 
                                : 'yet_to_start';
 
-            return {
+            const rawUcSent = String(row['UC Sent'] || '').trim();
+            const legacyUcDate = rawUcSent && rawUcSent.toLowerCase() !== 'yes' && rawUcSent.toLowerCase() !== 'no' ? rawUcSent : '';
+            const ucSentDate = row['UC Sent Date'] || legacyUcDate;
+
+            return normalizeProject({
               id,
               projectName: row['Project Name'] || 'Unnamed Project',
               category: row['Category'] || '',
@@ -56,7 +61,8 @@ export async function importProjectsFromExcel(file, existingProjects, existingCo
               progress: Number(row['Progress (%)']) || 0,
               juniorEngineer: row['JE'] || '',
               assistantEngineer: row['AE'] || '',
-              ucSentDate: row['UC Sent'] || '',
+              ucSent: rawUcSent,
+              ucSentDate,
               securityDepositDeductedDate: row['Security Deducted'] || '',
               securityDepositReleaseDate: row['Security Release'] || '',
               securityAmount: Number(row['Security Amount (₹)']) || 0,
@@ -67,7 +73,7 @@ export async function importProjectsFromExcel(file, existingProjects, existingCo
               physicalParametersNotes: row['Physical Parameters'] || '',
               notes: row['Notes'] || '',
               updatedAt: new Date().toISOString()
-            };
+            });
           });
         }
 

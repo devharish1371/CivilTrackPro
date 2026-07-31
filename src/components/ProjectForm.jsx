@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useProjects } from '../context/ProjectContext';
 import { statusOptions } from '../data/sampleData';
 import { getEngineerDesignation, isAssistantEngineer, isJuniorEngineer } from '../utils/engineers';
+import { normalizeProject } from '../utils/projectStatus';
 import { v4 as uuidv4 } from 'uuid';
 import { Save, ArrowLeft, MapPin, IndianRupee, AlertTriangle, Calendar, Users, FileText } from 'lucide-react';
 
@@ -42,7 +43,7 @@ export default function ProjectForm() {
       const ex = projects.find(p => p.id === id);
       if (ex) {
         if (ex.isLocked) { navigate('/projects'); return; }
-        setForm({ ...ex, physicalParametersNotes: ex.physicalParametersNotes || '' });
+        setForm({ ...normalizeProject(ex), physicalParametersNotes: ex.physicalParametersNotes || '' });
       } else navigate('/projects');
     }
   }, [id, isEdit]);
@@ -100,14 +101,15 @@ export default function ProjectForm() {
     if (dateWarnings.length > 0) {
       if (!confirm(`Date warnings:\n\n${dateWarnings.map(w => '⚠ ' + w).join('\n')}\n\nDo you still want to save?`)) return;
     }
-    const data = { ...form, id: isEdit ? id : uuidv4(),
+    const data = normalizeProject({ ...form, id: isEdit ? id : uuidv4(),
       sanctionedAmount:Number(form.sanctionedAmount)||0, tenderedCost:Number(form.tenderedCost)||0,
       expenditureIncurred:Number(form.expenditureIncurred)||0, progress:Number(form.progress)||0,
       yearOfSanction:Number(form.yearOfSanction)||new Date().getFullYear(),
       deductions:Number(form.deductions)||0,
       securityAmount:Number(form.securityAmount)||0,
       latitude:Number(form.latitude)||0, longitude:Number(form.longitude)||0,
-    };
+      ucSentDate: form.ucSent === 'Yes' ? form.ucSentDate : '',
+    });
     dispatch({ type: isEdit ? 'UPDATE_PROJECT' : 'ADD_PROJECT', payload: data });
     setToast(isEdit ? 'Updated!' : 'Created!');
     setTimeout(() => navigate(isEdit ? `/projects/${id}` : '/projects'), 1000);
@@ -391,7 +393,11 @@ export default function ProjectForm() {
           <div className="form-grid">
             <div className="form-group">
               <label className="form-label">UC Sent</label>
-              <select className="form-select" value={form.ucSent} onChange={e => set('ucSent', e.target.value)}>
+              <select className="form-select" value={form.ucSent} onChange={e => {
+                const value = e.target.value;
+                set('ucSent', value);
+                if (value === 'No') set('ucSentDate', '');
+              }}>
                 <option value="No">No</option>
                 <option value="Yes">Yes</option>
               </select>

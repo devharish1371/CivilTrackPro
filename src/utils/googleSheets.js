@@ -127,6 +127,9 @@ function projectToRow(p) {
 }
 
 function rowToProject(row) {
+  const ucCell = String(row[25] || '').trim();
+  const ucCellStatus = ucCell.toLowerCase();
+  const ucSentDate = ucCellStatus === 'yes' || ucCellStatus === 'no' ? '' : ucCell;
   return {
     id: row[0], projectName: row[1], yearOfSanction: Number(row[2])||0,
     constituency: row[3], villagePanchayat: row[4]||'', scheme: row[5], goDate: row[6]||'', goNumber: row[7]||'',
@@ -138,7 +141,8 @@ function rowToProject(row) {
     expenditureIncurred: Number(row[18])||0, deductions: Number(row[19])||0,
     extensionOfTime: row[20]||'', statusOfWork: row[21]||'yet_to_start',
     progress: Number(row[22])||0, juniorEngineer: row[23]||'', assistantEngineer: row[24]||'',
-    ucSentDate: row[25]||'', securityDepositReleaseDate: row[26]||'',
+    ucSent: ucCellStatus === 'yes' || (ucCell && ucCellStatus !== 'no') ? 'Yes' : 'No',
+    ucSentDate, securityDepositReleaseDate: row[26]||'',
     securityAmount: Number(row[27])||0, mBookNumber: row[28]||'', workAuditRegisterNo: row[29]||'',
     latitude: Number(row[30])||0, longitude: Number(row[31])||0,
     isLocked: row[32]==='TRUE', lockHash: '', notes: row[33]||''
