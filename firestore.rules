@@ -1,0 +1,9 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Only signed-in app users can read or write dashboard data
+    match /civil_dashboard/{doc} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

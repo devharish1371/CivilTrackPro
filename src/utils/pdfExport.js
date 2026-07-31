@@ -154,6 +154,7 @@ export function generateProjectListPDF(projects, filters = {}, selectedColumns =
     { id: 'category', label: 'Category', align: 'left' },
     { id: 'yearOfSanction', label: 'Year', align: 'center' },
     { id: 'constituency', label: 'Constituency', align: 'left' },
+    { id: 'villagePanchayat', label: 'Village Panchayat', align: 'left' },
     { id: 'scheme', label: 'Scheme', align: 'left' },
     { id: 'phase', label: 'Phase', align: 'left' },
     { id: 'contractorName', label: 'Contractor', align: 'left' },
@@ -184,6 +185,7 @@ export function generateProjectListPDF(projects, filters = {}, selectedColumns =
       else if (c.id === 'category') rowData.push(p.category || '-');
       else if (c.id === 'yearOfSanction') rowData.push(p.yearOfSanction || '-');
       else if (c.id === 'constituency') rowData.push(p.constituency || '-');
+      else if (c.id === 'villagePanchayat') rowData.push(p.villagePanchayat || '-');
       else if (c.id === 'scheme') rowData.push(p.scheme || '-');
       else if (c.id === 'phase') rowData.push(p.phase || '-');
       else if (c.id === 'contractorName') rowData.push(p.contractorName || '-');
@@ -468,14 +470,19 @@ export function generateProjectDetailPDF(project) {
 // ═══════════════════════════════════════════════════════════════════════════
 //  ALERTS PDF — Portrait A4, Ink-Saving
 // ═══════════════════════════════════════════════════════════════════════════
-export function generateAlertsPDF(alerts) {
+export function generateAlertsPDF(alerts, filters = {}) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const W = doc.internal.pageSize.getWidth();
   const MW = W - 28;
   const critical = alerts.filter(a => a.type === 'danger');
   const warnings  = alerts.filter(a => a.type !== 'danger');
+  const filterParts = [];
 
-  addHeader(doc, 'Active Alerts Report', `Action Required  |  Generated: ${new Date().toLocaleDateString('en-IN', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}`);
+  if (filters.juniorEngineer) filterParts.push(`JE: ${filters.juniorEngineer}`);
+  if (filters.assistantEngineer) filterParts.push(`AE: ${filters.assistantEngineer}`);
+  const filterText = filterParts.length ? filterParts.join('  |  ') : 'All Alerts';
+
+  addHeader(doc, 'Active Alerts Report', `${filterText}  |  Generated: ${new Date().toLocaleDateString('en-IN', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}`);
 
   addSummaryBar(doc, [
     { label: 'Total Alerts', value: String(alerts.length) },

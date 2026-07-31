@@ -10,13 +10,19 @@ import ContractorManager from './components/ContractorManager'
 import EngineerManager from './components/EngineerManager'
 import SchemeManager from './components/SchemeManager'
 import ConstituencyManager from './components/ConstituencyManager'
+import PanchayatManager from './components/PanchayatManager'
 import GrantManager from './components/GrantManager'
 import CategoryManager from './components/CategoryManager'
 import Settings from './components/Settings'
+import KanbanBoard from './components/KanbanBoard'
+import GlobalMap from './components/GlobalMap'
+import ProjectTimeline from './components/ProjectTimeline'
+import SessionGate from './components/SessionGate'
 
 export default function App() {
   return (
-    <Layout>
+    <SessionGate>
+      <Layout>
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/projects" element={<ProjectList />} />
@@ -29,10 +35,15 @@ export default function App() {
         <Route path="/engineers" element={<EngineerManager />} />
         <Route path="/schemes" element={<SchemeManager />} />
         <Route path="/constituencies" element={<ConstituencyManager />} />
+        <Route path="/panchayats" element={<PanchayatManager />} />
         <Route path="/grants" element={<GrantManager />} />
         <Route path="/categories" element={<CategoryManager />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/kanban" element={<KanbanBoard />} />
+        <Route path="/map" element={<GlobalMap />} />
+        <Route path="/timeline" element={<ProjectTimeline />} />
       </Routes>
-    </Layout>
+      </Layout>
+    </SessionGate>
   )
 }

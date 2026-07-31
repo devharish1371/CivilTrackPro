@@ -35,7 +35,7 @@ async function api(endpoint, method = 'GET', body = null) {
 }
 
 const PROJECT_HEADERS = [
-  'ID','Project Name','Year','Constituency','Scheme','GO Date','GO Number',
+  'ID','Project Name','Year','Constituency','Village Panchayat','Scheme','GO Date','GO Number',
   'Sanctioned Amount','Tendered Cost','Contractor','Work Order Date','Start (Contract)',
   'Completion (Contract)','Actual Start','Actual Completion','Performance Guarantee Date',
   'Expiry Date','Expenditure','Deductions','Extension of Time','Status','Progress',
@@ -46,6 +46,7 @@ const CONTRACTOR_HEADERS = ['ID','Name','Phone','Email','Address','Registration 
 const ENGINEER_HEADERS = ['ID','Name','Designation','Phone','Email','Division'];
 const SCHEME_HEADERS = ['ID', 'Name'];
 const CONSTITUENCY_HEADERS = ['ID', 'Name'];
+const PANCHAYAT_HEADERS = ['ID', 'Name'];
 const GRANT_HEADERS = ['ID', 'Scheme', 'Amount', 'Date', 'GO Number'];
 
 export async function createSheet(title) {
@@ -60,6 +61,7 @@ export async function createSheet(title) {
         { properties: { title: 'Engineers' } },
         { properties: { title: 'Schemes' } },
         { properties: { title: 'Constituencies' } },
+        { properties: { title: 'Panchayats' } },
         { properties: { title: 'Grants' } },
       ]
     })
@@ -75,6 +77,7 @@ export async function createSheet(title) {
       { range: 'Engineers!A1', values: [ENGINEER_HEADERS] },
       { range: 'Schemes!A1', values: [SCHEME_HEADERS] },
       { range: 'Constituencies!A1', values: [CONSTITUENCY_HEADERS] },
+      { range: 'Panchayats!A1', values: [PANCHAYAT_HEADERS] },
       { range: 'Grants!A1', values: [GRANT_HEADERS] },
     ]
   });
@@ -85,7 +88,7 @@ export async function initExistingSheet(sheetId) {
   const info = await api(`${sheetId}`);
   const existingTitles = info.sheets.map(s => s.properties.title);
   
-  const required = ['Projects', 'Contractors', 'Engineers', 'Schemes', 'Constituencies', 'Grants'];
+  const required = ['Projects', 'Contractors', 'Engineers', 'Schemes', 'Constituencies', 'Panchayats', 'Grants'];
   const toCreate = required.filter(r => !existingTitles.includes(r));
   
   if (toCreate.length > 0) {
@@ -101,6 +104,7 @@ export async function initExistingSheet(sheetId) {
       { range: 'Engineers!A1', values: [ENGINEER_HEADERS] },
       { range: 'Schemes!A1', values: [SCHEME_HEADERS] },
       { range: 'Constituencies!A1', values: [CONSTITUENCY_HEADERS] },
+      { range: 'Panchayats!A1', values: [PANCHAYAT_HEADERS] },
       { range: 'Grants!A1', values: [GRANT_HEADERS] },
     ]
   });
@@ -108,7 +112,7 @@ export async function initExistingSheet(sheetId) {
 
 function projectToRow(p) {
   return [
-    p.id, p.projectName, p.yearOfSanction, p.constituency, p.scheme,
+    p.id, p.projectName, p.yearOfSanction, p.constituency, p.villagePanchayat||'', p.scheme,
     p.goDate||'', p.goNumber||'',
     p.sanctionedAmount||0, p.tenderedCost||0, p.contractorName, p.workOrderDate||'',
     p.dateOfStartContract||'', p.dateOfCompletionContract||'',
@@ -125,25 +129,25 @@ function projectToRow(p) {
 function rowToProject(row) {
   return {
     id: row[0], projectName: row[1], yearOfSanction: Number(row[2])||0,
-    constituency: row[3], scheme: row[4], goDate: row[5]||'', goNumber: row[6]||'',
-    sanctionedAmount: Number(row[7])||0, tenderedCost: Number(row[8])||0,
-    contractorName: row[9]||'', workOrderDate: row[10]||'',
-    dateOfStartContract: row[11]||'', dateOfCompletionContract: row[12]||'',
-    actualDateOfStart: row[13]||'', actualDateOfCompletion: row[14]||'',
-    performanceGuaranteeDate: row[15]||'', expiryDate: row[16]||'',
-    expenditureIncurred: Number(row[17])||0, deductions: Number(row[18])||0,
-    extensionOfTime: row[19]||'', statusOfWork: row[20]||'yet_to_start',
-    progress: Number(row[21])||0, juniorEngineer: row[22]||'', assistantEngineer: row[23]||'',
-    ucSentDate: row[24]||'', securityDepositReleaseDate: row[25]||'',
-    securityAmount: Number(row[26])||0, mBookNumber: row[27]||'', workAuditRegisterNo: row[28]||'',
-    latitude: Number(row[29])||0, longitude: Number(row[30])||0,
-    isLocked: row[31]==='TRUE', lockHash: '', notes: row[32]||''
+    constituency: row[3], villagePanchayat: row[4]||'', scheme: row[5], goDate: row[6]||'', goNumber: row[7]||'',
+    sanctionedAmount: Number(row[8])||0, tenderedCost: Number(row[9])||0,
+    contractorName: row[10]||'', workOrderDate: row[11]||'',
+    dateOfStartContract: row[12]||'', dateOfCompletionContract: row[13]||'',
+    actualDateOfStart: row[14]||'', actualDateOfCompletion: row[15]||'',
+    performanceGuaranteeDate: row[16]||'', expiryDate: row[17]||'',
+    expenditureIncurred: Number(row[18])||0, deductions: Number(row[19])||0,
+    extensionOfTime: row[20]||'', statusOfWork: row[21]||'yet_to_start',
+    progress: Number(row[22])||0, juniorEngineer: row[23]||'', assistantEngineer: row[24]||'',
+    ucSentDate: row[25]||'', securityDepositReleaseDate: row[26]||'',
+    securityAmount: Number(row[27])||0, mBookNumber: row[28]||'', workAuditRegisterNo: row[29]||'',
+    latitude: Number(row[30])||0, longitude: Number(row[31])||0,
+    isLocked: row[32]==='TRUE', lockHash: '', notes: row[33]||''
   };
 }
 
-export async function pushToSheet(sheetId, projects, contractors, engineers, schemes, constituencies, grants) {
+export async function pushToSheet(sheetId, projects, contractors, engineers, schemes, constituencies, panchayats, grants) {
   await api(`${sheetId}/values:batchClear`, 'POST', {
-    ranges: ['Projects!A2:AH10000','Contractors!A2:G10000','Engineers!A2:F10000', 'Schemes!A2:B1000', 'Constituencies!A2:B1000', 'Grants!A2:E10000']
+    ranges: ['Projects!A2:AH10000','Contractors!A2:G10000','Engineers!A2:F10000', 'Schemes!A2:B1000', 'Constituencies!A2:B1000', 'Panchayats!A2:B1000', 'Grants!A2:E10000']
   });
   const data = [];
   if (projects.length) data.push({ range: 'Projects!A2', values: projects.map(projectToRow) });
@@ -151,6 +155,7 @@ export async function pushToSheet(sheetId, projects, contractors, engineers, sch
   if (engineers.length) data.push({ range: 'Engineers!A2', values: engineers.map(e => [e.id,e.name,e.designation,e.phone,e.email,e.division]) });
   if (schemes.length) data.push({ range: 'Schemes!A2', values: schemes.map(s => [s.id, s.name]) });
   if (constituencies.length) data.push({ range: 'Constituencies!A2', values: constituencies.map(c => [c.id, c.name]) });
+  if (panchayats.length) data.push({ range: 'Panchayats!A2', values: panchayats.map(p => [p.id, p.name]) });
   if (grants.length) data.push({ range: 'Grants!A2', values: grants.map(g => [g.id, g.scheme, g.amount, g.date, g.goNumber]) });
   
   if (data.length) {
@@ -159,13 +164,14 @@ export async function pushToSheet(sheetId, projects, contractors, engineers, sch
 }
 
 export async function pullFromSheet(sheetId) {
-  const res = await api(`${sheetId}/values:batchGet?ranges=Projects!A2:AH10000&ranges=Contractors!A2:G10000&ranges=Engineers!A2:F10000&ranges=Schemes!A2:B1000&ranges=Constituencies!A2:B1000&ranges=Grants!A2:E10000`);
-  const [pSheet, cSheet, eSheet, sSheet, conSheet, gSheet] = res.valueRanges || [];
+  const res = await api(`${sheetId}/values:batchGet?ranges=Projects!A2:AH10000&ranges=Contractors!A2:G10000&ranges=Engineers!A2:F10000&ranges=Schemes!A2:B1000&ranges=Constituencies!A2:B1000&ranges=Panchayats!A2:B1000&ranges=Grants!A2:E10000`);
+  const [pSheet, cSheet, eSheet, sSheet, conSheet, panSheet, gSheet] = res.valueRanges || [];
   const projects = (pSheet?.values || []).filter(r => r[0]).map(rowToProject);
   const contractors = (cSheet?.values || []).filter(r => r[0]).map(r => ({ id:r[0], name:r[1]||'', phone:r[2]||'', email:r[3]||'', address:r[4]||'', registrationNo:r[5]||'', category:r[6]||'' }));
   const engineers = (eSheet?.values || []).filter(r => r[0]).map(r => ({ id:r[0], name:r[1]||'', designation:r[2]||'', phone:r[3]||'', email:r[4]||'', division:r[5]||'' }));
   const schemes = (sSheet?.values || []).filter(r => r[0]).map(r => ({ id:r[0], name:r[1]||'' }));
   const constituencies = (conSheet?.values || []).filter(r => r[0]).map(r => ({ id:r[0], name:r[1]||'' }));
+  const panchayats = (panSheet?.values || []).filter(r => r[0]).map(r => ({ id:r[0], name:r[1]||'' }));
   const grants = (gSheet?.values || []).filter(r => r[0]).map(r => ({ id:r[0], scheme:r[1]||'', amount:Number(r[2])||0, date:r[3]||'', goNumber:r[4]||'' }));
-  return { projects, contractors, engineers, schemes, constituencies, grants };
+  return { projects, contractors, engineers, schemes, constituencies, panchayats, grants };
 }

@@ -109,7 +109,8 @@ Because internet connectivity at civil project sites can be unreliable, CivilTra
 
 To prevent accidental deletions or unauthorized edits to finalized projects, CivilTrack Pro features robust security mechanisms.
 
-- **Locking a Project**: In the Projects list or Detail view, click the **Lock** button. You will be prompted to enter the administrative master password. Once locked, the project cannot be edited or deleted by anyone without the password.
+- **App access**: Unlock the dashboard with your **6-digit master password** (verified via Firebase Authentication — the password is not stored in the app source code).
+- **Locking a Project**: In the Projects list or Detail view, click the **Lock** button. You will be prompted to enter the 6-digit master password. Once locked, the project cannot be edited or deleted without it.
 - **Unlocking**: Simply click the Lock icon again and enter the master password to unlock the project for further editing.
 - **Exit App**: When you are finished, you can safely close the session by clicking the **Exit App** button at the very bottom of the left sidebar navigation menu. This will prompt a confirmation and safely close the application.
 

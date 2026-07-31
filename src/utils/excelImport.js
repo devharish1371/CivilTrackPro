@@ -1,7 +1,7 @@
 import * as XLSX from 'xlsx';
 import { v4 as uuidv4 } from 'uuid';
 
-export async function importProjectsFromExcel(file, existingProjects, existingContractors, existingEngineers, existingSchemes, existingConstituencies, existingGrants) {
+export async function importProjectsFromExcel(file, existingProjects, existingContractors, existingEngineers, existingSchemes, existingConstituencies, existingPanchayats, existingGrants) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -35,6 +35,7 @@ export async function importProjectsFromExcel(file, existingProjects, existingCo
               phase: row['Phase'] || '',
               yearOfSanction: Number(row['Year']) || new Date().getFullYear(),
               constituency: row['Constituency'] || '',
+              villagePanchayat: row['Village Panchayat'] || '',
               scheme: row['Scheme'] || '',
               goNumber: row['GO Number'] || '',
               goDate: row['GO Date'] || '',
@@ -111,6 +112,17 @@ export async function importProjectsFromExcel(file, existingProjects, existingCo
             name: r['Name'],
             updatedAt: new Date().toISOString()
           })).filter(c => c.name);
+        }
+
+        // Parse Panchayats
+        const panWs = wb.Sheets['Panchayats'];
+        if (panWs) {
+          const rows = XLSX.utils.sheet_to_json(panWs);
+          result.panchayats = rows.map(r => ({
+            id: r['ID'] || uuidv4(),
+            name: r['Name'],
+            updatedAt: new Date().toISOString()
+          })).filter(p => p.name);
         }
 
         // Parse Grants

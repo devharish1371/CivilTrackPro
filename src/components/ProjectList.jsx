@@ -1,11 +1,12 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useProjects, hashPassword } from '../context/ProjectContext';
+import { useProjects } from '../context/ProjectContext';
+import { verifyMasterPassword, formatMasterPasswordError } from '../utils/appAuth';
 import { statusOptions } from '../data/sampleData';
 import { exportProjectsToExcel } from '../utils/excelExport';
 import { generateProjectListPDF, generateProjectDetailPDF, savePDF, sharePDF } from '../utils/pdfExport';
 import { downloadKML } from '../utils/kmlExport';
-import { Eye, Edit, Trash2, Download, FileText, Share2, Filter, X, Lock, Unlock, MapPin, Search } from 'lucide-react';
+import { Eye, Edit, Trash2, Download, FileText, Share2, Filter, X, Lock, Unlock, MapPin, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 
 const fmt = (n) => new Intl.NumberFormat('en-IN', { style:'currency', currency:'INR', maximumFractionDigits:0 }).format(n);
 const fmtL = (n) => {
@@ -22,6 +23,7 @@ const ALL_COLUMNS = [
   { id: 'projectName', label: 'Project Name' },
   { id: 'yearOfSanction', label: 'Year' },
   { id: 'constituency', label: 'Constituency' },
+  { id: 'villagePanchayat', label: 'Village Panchayat' },
   { id: 'scheme', label: 'Scheme' },
   { id: 'phase', label: 'Phase' },
   { id: 'contractorName', label: 'Contractor' },
@@ -39,12 +41,12 @@ const ALL_COLUMNS = [
 ];
 
 export default function ProjectList() {
-  const { projects, contractors, engineers, schemes, constituencies, grants, dispatch } = useProjects();
+  const { projects, contractors, engineers, schemes, constituencies, panchayats, grants, dispatch } = useProjects();
   const navigate = useNavigate();
   const location = useLocation();
 
   const [filters, setFilters] = useState(() => {
-    const defaultFilters = { year:'', scheme:'', category:'', phase:'', status:'', constituency:'', search:'', engineer:'', contractor:'', geoTagged: false, ucSent: '' };
+    const defaultFilters = { year:'', scheme:'', category:'', phase:'', status:'', constituency:'', villagePanchayat:'', search:'', engineer:'', contractor:'', geoTagged: false, ucSent: '' };
     if (location.state && location.state.filters) {
       return { ...defaultFilters, ...location.state.filters };
     }
@@ -60,6 +62,9 @@ export default function ProjectList() {
   }, [filters]);
   
   const [showFilters, setShowFilters] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 25;
+
   const [lockModal, setLockModal] = useState(null); // { projectId, action:'lock'|'unlock' }
   const [lockPw, setLockPw] = useState('');
   const [lockError, setLockError] = useState('');
@@ -81,6 +86,7 @@ export default function ProjectList() {
       if (filters.phase && p.phase !== filters.phase) return false;
       if (filters.status && p.statusOfWork !== filters.status) return false;
       if (filters.constituency && p.constituency !== filters.constituency) return false;
+      if (filters.villagePanchayat && p.villagePanchayat !== filters.villagePanchayat) return false;
       if (filters.engineer && p.juniorEngineer !== filters.engineer && p.assistantEngineer !== filters.engineer) return false;
       if (filters.contractor && p.contractorName !== filters.contractor) return false;
       if (filters.geoTagged && (!p.latitude || !p.longitude || Number(p.latitude) === 0)) return false;
@@ -94,6 +100,16 @@ export default function ProjectList() {
     });
   }, [projects, filters]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters, projects.length]);
+
+  const paginatedProjects = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filtered.slice(start, start + itemsPerPage);
+  }, [filtered, currentPage]);
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+
   const handleDelete = (id, name) => { if (confirm(`Delete "${name}"?`)) dispatch({ type:'DELETE_PROJECT', payload:id }); };
 
   const handleLockToggle = async (p) => {
@@ -102,9 +118,14 @@ export default function ProjectList() {
   };
 
   const confirmLock = async () => {
-    if (!lockPw) { setLockError('Enter password'); return; }
-    if (lockPw !== '1970') { setLockError('Incorrect password'); return; }
-    
+    if (!lockPw) { setLockError('Enter your 6-digit password'); return; }
+    try {
+      await verifyMasterPassword(lockPw);
+    } catch (e) {
+      setLockError(formatMasterPasswordError(e));
+      return;
+    }
+
     const p = projects.find(x => x.id === lockModal.projectId);
     if (lockModal.action === 'lock') {
       dispatch({ type:'UPDATE_PROJECT', payload: { ...p, isLocked:true } });
@@ -182,6 +203,12 @@ export default function ProjectList() {
             </select>
           </div>
           <div className="form-group">
+            <label className="form-label">Village Panchayat</label>
+            <select className="form-select" value={filters.villagePanchayat} onChange={e => setFilters(f => ({...f, villagePanchayat:e.target.value}))}>
+              <option value="">All</option>{panchayats.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+            </select>
+          </div>
+          <div className="form-group">
             <label className="form-label">Engineer</label>
             <select className="form-select" value={filters.engineer} onChange={e => setFilters(f => ({...f, engineer:e.target.value}))}>
               <option value="">All</option>{uniqueEngineers.map(e => <option key={e} value={e}>{e}</option>)}
@@ -209,34 +236,61 @@ export default function ProjectList() {
         <table className="data-table">
           <thead>
             <tr>
-              <th>#</th><th>Project</th><th>Category</th><th>Year</th><th>Constituency</th><th>Scheme</th>
-              <th>Sanctioned</th><th>Expenditure</th><th>Balance</th><th>Progress</th>
-              <th>Status</th><th>JE</th><th>AE</th><th>Updated</th><th>Actions</th>
+              <th>#</th><th>Project</th><th>Details</th><th>Location</th>
+              <th>Financials</th><th>Progress & Status</th>
+              <th>Engineers</th><th>Updated</th><th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 ? (
+            {paginatedProjects.length === 0 ? (
               <tr><td colSpan={13} style={{ textAlign:'center', padding:40, color:'var(--text-muted)' }}>No projects found</td></tr>
-            ) : filtered.map((p, i) => (
+            ) : paginatedProjects.map((p, index) => {
+              const i = (currentPage - 1) * itemsPerPage + index;
+              return (
               <tr key={p.id} style={p.isLocked ? { opacity:0.85 } : {}}>
-                <td data-label="#">{i+1}. {p.isLocked && <Lock size={11} style={{ color:'var(--amber)', marginRight:4, verticalAlign:'middle' }} />}{p.projectName}</td>
-                <td data-label="Category">{p.category}</td>
-                <td data-label="Year">{p.yearOfSanction}</td>
-                <td data-label="Constituency">{p.constituency}</td>
-                <td data-label="Scheme">{p.scheme}</td>
-                <td data-label="Sanctioned" style={{ textAlign:'right' }}>{fmtL(p.sanctionedAmount)}</td>
-                <td data-label="Expenditure" style={{ textAlign:'right' }}>{fmtL(p.expenditureIncurred)}</td>
-                <td data-label="Balance" style={{ textAlign:'right', color:(p.sanctionedAmount - p.expenditureIncurred) < 0 ? 'var(--rose)' : 'var(--emerald)' }}>{fmtL(p.sanctionedAmount - p.expenditureIncurred)}</td>
-                <td data-label="Progress">
-                  <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-                    <div className="progress-bar" style={{ width:50 }}><div className={`progress-fill ${p.progress>=80?'green':p.progress>=40?'amber':'red'}`} style={{ width:`${p.progress}%` }} /></div>
-                    <span style={{ fontSize:11 }}>{p.progress}%</span>
+                <td data-label="#">{i+1}. {p.isLocked && <Lock size={11} style={{ color:'var(--amber)', marginRight:4, verticalAlign:'middle' }} />}</td>
+                <td data-label="Project">
+                  <div style={{ minWidth: 200, maxWidth: 300, whiteSpace: 'normal', lineHeight: 1.4, fontWeight: 500 }}>
+                    {p.projectName}
                   </div>
                 </td>
-                <td data-label="Status"><span className={`status-badge ${p.statusOfWork}`}>{p.statusOfWork==='completed'?'Done':p.statusOfWork==='in_progress'?'Active':'Pending'}</span></td>
-                <td data-label="JE">{p.juniorEngineer}</td>
-                <td data-label="AE">{p.assistantEngineer}</td>
-                <td data-label="Updated" style={{ fontSize:11, color:'var(--text-muted)', whiteSpace:'nowrap' }}>{p.updatedAt ? new Date(p.updatedAt).toLocaleDateString('en-IN') : '—'}</td>
+                <td data-label="Details">
+                  <div style={{ whiteSpace: 'nowrap' }}>
+                    <strong>{p.scheme}</strong> ({p.yearOfSanction})<br />
+                    <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{p.category}</span>
+                  </div>
+                </td>
+                <td data-label="Location">
+                  <div style={{ whiteSpace: 'nowrap' }}>
+                    {p.constituency}<br />
+                    <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{p.villagePanchayat}</span>
+                  </div>
+                </td>
+                <td data-label="Financials">
+                  <div style={{ whiteSpace: 'nowrap', fontSize: 12 }}>
+                    <div><span style={{ color:'var(--text-secondary)' }}>S:</span> {fmtL(p.sanctionedAmount)}</div>
+                    <div><span style={{ color:'var(--text-secondary)' }}>E:</span> {fmtL(p.expenditureIncurred)}</div>
+                    <div><span style={{ color:'var(--text-secondary)' }}>B:</span> <span style={{ color:(p.sanctionedAmount - p.expenditureIncurred) < 0 ? 'var(--rose)' : 'var(--emerald)', fontWeight: 600 }}>{fmtL(p.sanctionedAmount - p.expenditureIncurred)}</span></div>
+                  </div>
+                </td>
+                <td data-label="Progress & Status">
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <div><span className={`status-badge ${p.statusOfWork}`}>{p.statusOfWork==='completed'?'Done':p.statusOfWork==='in_progress'?'Active':'Pending'}</span></div>
+                    <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                      <div className="progress-bar" style={{ width:50 }}><div className={`progress-fill ${p.progress>=80?'green':p.progress>=40?'amber':'red'}`} style={{ width:`${p.progress}%` }} /></div>
+                      <span style={{ fontSize:11 }}>{p.progress}%</span>
+                    </div>
+                  </div>
+                </td>
+                <td data-label="Engineers">
+                  <div style={{ whiteSpace: 'nowrap', fontSize: 12 }}>
+                    <div><span style={{ color:'var(--text-secondary)' }}>JE:</span> {p.juniorEngineer}</div>
+                    <div><span style={{ color:'var(--text-secondary)' }}>AE:</span> {p.assistantEngineer}</div>
+                  </div>
+                </td>
+                <td data-label="Updated" style={{ fontSize:11, color:'var(--text-muted)', whiteSpace:'nowrap' }}>
+                  {p.updatedAt ? new Date(p.updatedAt).toLocaleDateString('en-IN') : '—'}
+                </td>
                 <td>
                   <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
                     <button className="btn btn-secondary btn-sm" onClick={() => navigate(`/projects/${p.id}`)} title="View"><Eye size={14} /> View</button>
@@ -248,10 +302,25 @@ export default function ProjectList() {
                   </div>
                 </td>
               </tr>
-            ))}
+            )})}
           </tbody>
         </table>
       </div>
+
+      {totalPages > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, padding: '0 8px', flexWrap: 'wrap', gap: 12 }}>
+          <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+            Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filtered.length)} of {filtered.length} entries
+          </div>
+          <div className="btn-group">
+            <button className="btn btn-secondary btn-sm btn-icon" onClick={() => setCurrentPage(1)} disabled={currentPage === 1} title="First Page"><ChevronsLeft size={16} /></button>
+            <button className="btn btn-secondary btn-sm btn-icon" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} title="Previous Page"><ChevronLeft size={16} /></button>
+            <span style={{ display: 'inline-flex', alignItems: 'center', padding: '0 12px', fontSize: 13, fontWeight: 500 }}>Page {currentPage} of {totalPages}</span>
+            <button className="btn btn-secondary btn-sm btn-icon" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} title="Next Page"><ChevronRight size={16} /></button>
+            <button className="btn btn-secondary btn-sm btn-icon" onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} title="Last Page"><ChevronsRight size={16} /></button>
+          </div>
+        </div>
+      )}
 
       {/* Lock/Unlock Modal */}
       {lockModal && (
@@ -261,7 +330,7 @@ export default function ProjectList() {
             <p style={{ fontSize:13, color:'var(--text-secondary)', marginBottom:16 }}>
               {lockModal.action==='lock' ? 'Enter master password to lock this project:' : 'Enter master password to unlock:'}
             </p>
-            <input className="form-input" type="password" placeholder="Password" value={lockPw} onChange={e => { setLockPw(e.target.value); setLockError(''); }}
+            <input className="form-input" type="password" inputMode="numeric" maxLength={6} autoComplete="current-password" placeholder="6-digit password" value={lockPw} onChange={e => { setLockPw(e.target.value.replace(/\D/g, '').slice(0, 6)); setLockError(''); }}
               onKeyDown={e => e.key==='Enter' && confirmLock()} autoFocus />
             {lockError && <p style={{ color:'var(--rose)', fontSize:12, marginTop:6 }}>{lockError}</p>}
             <div className="btn-group" style={{ marginTop:16, justifyContent:'flex-end' }}>

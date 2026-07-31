@@ -21,6 +21,11 @@ export const sampleCategories = [
   { id: uuidv4(), name: 'Water Supply' },
   { id: uuidv4(), name: 'Others' }
 ];
+export const samplePanchayats = [
+  { id: uuidv4(), name: 'Gram Panchayat Alpha' },
+  { id: uuidv4(), name: 'Gram Panchayat Beta' },
+  { id: uuidv4(), name: 'Gram Panchayat Gamma' }
+];
 
 export const sampleConstituencies = [
   { id: uuidv4(), name: 'Thiruvananthapuram' },

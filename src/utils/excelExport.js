@@ -2,7 +2,7 @@ import * as XLSX from 'xlsx';
 
 const n = (v) => Number(v) || 0;
 
-export function exportProjectsToExcel(projects, contractors = [], engineers = [], schemes = [], constituencies = [], grants = [], filename = 'CivilTrack_Projects.xlsx', startDate = null, endDate = null) {
+export function exportProjectsToExcel(projects, contractors = [], engineers = [], schemes = [], constituencies = [], panchayats = [], grants = [], filename = 'CivilTrack_Projects.xlsx', startDate = null, endDate = null) {
   const wb = XLSX.utils.book_new();
 
   const filterByDate = (items) => {
@@ -20,13 +20,14 @@ export function exportProjectsToExcel(projects, contractors = [], engineers = []
   const filteredEngineers = filterByDate(engineers);
   const filteredSchemes = filterByDate(schemes);
   const filteredConstituencies = filterByDate(constituencies);
+  const filteredPanchayats = filterByDate(panchayats);
   const filteredGrants = filterByDate(grants);
 
   // Sheet 1: All Projects
   const main = filteredProjects.map((p, i) => ({
     'ID': p.id,
     'S.No': i+1, 'Project Name': p.projectName, 'Category': p.category||'', 'Phase': p.phase||'', 'Year': p.yearOfSanction,
-    'Constituency': p.constituency, 'Scheme': p.scheme,
+    'Constituency': p.constituency, 'Village Panchayat': p.villagePanchayat||'', 'Scheme': p.scheme,
     'GO Number': p.goNumber||'', 'GO Date': p.goDate||'',
     'Sanctioned (₹)': n(p.sanctionedAmount), 'Tendered Cost (₹)': n(p.tenderedCost),
     'Contractor': p.contractorName, 'Work Order Date': p.workOrderDate||'',
@@ -76,10 +77,14 @@ export function exportProjectsToExcel(projects, contractors = [], engineers = []
 
   // Constituencies Sheet
   if (filteredConstituencies.length) {
-    const wsConstituencies = XLSX.utils.json_to_sheet(filteredConstituencies.map(c => ({
-      'ID': c.id, 'Name': c.name
-    })));
+    const wsConstituencies = XLSX.utils.json_to_sheet(filteredConstituencies.map(c => ({ 'ID': c.id, 'Name': c.name })));
     XLSX.utils.book_append_sheet(wb, wsConstituencies, 'Constituencies');
+  }
+
+  // Panchayats Sheet
+  if (filteredPanchayats.length) {
+    const wsPanchayats = XLSX.utils.json_to_sheet(filteredPanchayats.map(p => ({ 'ID': p.id, 'Name': p.name })));
+    XLSX.utils.book_append_sheet(wb, wsPanchayats, 'Panchayats');
   }
 
   // Grants Sheet

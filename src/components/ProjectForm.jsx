@@ -6,7 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Save, ArrowLeft, MapPin, IndianRupee, AlertTriangle, Calendar, Users, FileText } from 'lucide-react';
 
 const empty = {
-  projectName:'', yearOfSanction:new Date().getFullYear(), constituency:'', scheme:'',
+  projectName:'', yearOfSanction:new Date().getFullYear(), constituency:'', villagePanchayat:'', scheme:'',
   goDate:'', goNumber:'',
   sanctionedAmount:'', tenderedCost:'', contractorName:'', workOrderDate:'',
   dateOfStartContract:'', dateOfCompletionContract:'', actualDateOfStart:'',
@@ -24,7 +24,7 @@ const fmt = (n) => new Intl.NumberFormat('en-IN', { style:'currency', currency:'
 export default function ProjectForm() {
   const { id } = useParams();
   const isEdit = Boolean(id);
-  const { projects, contractors, engineers, schemes, constituencies, grants, categories, dispatch } = useProjects();
+  const { projects, contractors, engineers, schemes, constituencies, panchayats, grants, categories, dispatch } = useProjects();
   const navigate = useNavigate();
   const [form, setForm] = useState(empty);
   const [errors, setErrors] = useState({});
@@ -33,6 +33,8 @@ export default function ProjectForm() {
 
   const jeList = engineers.filter(e => e.designation === 'Junior Engineer');
   const aeList = engineers.filter(e => e.designation === 'Assistant Engineer');
+  const hasSavedJuniorEngineer = form.juniorEngineer && !jeList.some(e => e.name === form.juniorEngineer);
+  const hasSavedAssistantEngineer = form.assistantEngineer && !aeList.some(e => e.name === form.assistantEngineer);
 
   useEffect(() => {
     if (isEdit) {
@@ -176,6 +178,13 @@ export default function ProjectForm() {
               <E f="constituency" />
             </div>
             <div className="form-group">
+              <label className="form-label">Village Panchayat</label>
+              <input className="form-input" list="panchayat-list" value={form.villagePanchayat} onChange={e => set('villagePanchayat', e.target.value)} placeholder="Select or type..." />
+              <datalist id="panchayat-list">
+                {panchayats.map(p => <option key={p.id} value={p.name} />)}
+              </datalist>
+            </div>
+            <div className="form-group">
               <label className="form-label">Scheme *</label>
               <select className="form-select" value={form.scheme} onChange={e => set('scheme', e.target.value)}>
                 <option value="">Select</option>{schemes.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
@@ -241,17 +250,31 @@ export default function ProjectForm() {
             <div className="form-group"><label className="form-label">Expiry Date</label><input className="form-input" type="date" value={form.expiryDate} onChange={e => set('expiryDate', e.target.value)} /></div>
             <div className="form-group">
               <label className="form-label">Junior Engineer</label>
-              <input className="form-input" list="je-list" value={form.juniorEngineer} onChange={e => set('juniorEngineer', e.target.value)} placeholder="Select or type..." />
-              <datalist id="je-list">
-                {jeList.map(e => <option key={e.id} value={e.name}>{e.name} — {e.division}</option>)}
-              </datalist>
+              <select className="form-select" value={form.juniorEngineer} onChange={e => set('juniorEngineer', e.target.value)}>
+                <option value="">Select Junior Engineer</option>
+                {hasSavedJuniorEngineer && (
+                  <option value={form.juniorEngineer}>{form.juniorEngineer} (saved value)</option>
+                )}
+                {jeList.map(e => (
+                  <option key={e.id} value={e.name}>
+                    {e.name}{e.division ? ` (${e.division})` : ''}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="form-group">
               <label className="form-label">Assistant Engineer</label>
-              <input className="form-input" list="ae-list" value={form.assistantEngineer} onChange={e => set('assistantEngineer', e.target.value)} placeholder="Select or type..." />
-              <datalist id="ae-list">
-                {aeList.map(e => <option key={e.id} value={e.name}>{e.name} — {e.division}</option>)}
-              </datalist>
+              <select className="form-select" value={form.assistantEngineer} onChange={e => set('assistantEngineer', e.target.value)}>
+                <option value="">Select Assistant Engineer</option>
+                {hasSavedAssistantEngineer && (
+                  <option value={form.assistantEngineer}>{form.assistantEngineer} (saved value)</option>
+                )}
+                {aeList.map(e => (
+                  <option key={e.id} value={e.name}>
+                    {e.name}{e.division ? ` (${e.division})` : ''}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         </div>

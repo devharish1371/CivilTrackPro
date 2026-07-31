@@ -4,6 +4,7 @@ import { generateProjectDetailPDF, savePDF, sharePDF } from '../utils/pdfExport'
 import { downloadKML } from '../utils/kmlExport';
 import { ArrowLeft, Edit, Trash2, FileText, Share2, Calendar, IndianRupee, Users, AlertTriangle, Lock, Unlock, MapPin, ExternalLink } from 'lucide-react';
 import { useState } from 'react';
+import { verifyMasterPassword, formatMasterPasswordError } from '../utils/appAuth';
 
 const fmt = (n) => new Intl.NumberFormat('en-IN', { style:'currency', currency:'INR', maximumFractionDigits:0 }).format(n);
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }) : '—';
@@ -31,10 +32,15 @@ export default function ProjectDetail() {
   const handleShare = () => sharePDF(generateProjectDetailPDF(p), `${p.projectName.replace(/\s+/g,'_')}.pdf`);
 
   const confirmLock = async () => {
-    if (!lockPw) { setLockError('Enter password'); return; }
-    if (lockPw !== '1970') { setLockError('Incorrect password'); return; }
-    
-    dispatch({ type:'UPDATE_PROJECT', payload:{...p, isLocked: !p.isLocked } }); 
+    if (!lockPw) { setLockError('Enter your 6-digit password'); return; }
+    try {
+      await verifyMasterPassword(lockPw);
+    } catch (e) {
+      setLockError(formatMasterPasswordError(e));
+      return;
+    }
+
+    dispatch({ type:'UPDATE_PROJECT', payload:{...p, isLocked: !p.isLocked } });
     setLockModal(false);
   };
 
@@ -96,6 +102,7 @@ export default function ProjectDetail() {
         <div className="detail-grid">
           <D label="Year of Sanction" value={p.yearOfSanction} />
           <D label="Constituency" value={p.constituency} />
+          <D label="Village Panchayat" value={p.villagePanchayat} />
           <D label="Scheme" value={p.scheme} />
           <D label="Category" value={p.category} />
           <D label="Phase" value={p.phase} />
@@ -236,7 +243,7 @@ export default function ProjectDetail() {
           <div className="card" style={{ width:360 }} onClick={e => e.stopPropagation()}>
             <h3 style={{ marginBottom:12 }}>{p.isLocked ? '🔓 Unlock' : '🔒 Lock'}</h3>
             <p style={{ fontSize:13, color:'var(--text-secondary)', marginBottom:16 }}>{p.isLocked ? 'Enter master password to unlock:' : 'Enter master password to lock:'}</p>
-            <input className="form-input" type="password" placeholder="Password" value={lockPw} onChange={e => { setLockPw(e.target.value); setLockError(''); }} onKeyDown={e => e.key==='Enter' && confirmLock()} autoFocus />
+            <input className="form-input" type="password" inputMode="numeric" maxLength={6} autoComplete="current-password" placeholder="6-digit password" value={lockPw} onChange={e => { setLockPw(e.target.value.replace(/\D/g, '').slice(0, 6)); setLockError(''); }} onKeyDown={e => e.key==='Enter' && confirmLock()} autoFocus />
             {lockError && <p style={{ color:'var(--rose)', fontSize:12, marginTop:6 }}>{lockError}</p>}
             <div className="btn-group" style={{ marginTop:16, justifyContent:'flex-end' }}>
               <button className="btn btn-secondary btn-sm" onClick={() => setLockModal(false)}>Cancel</button>
