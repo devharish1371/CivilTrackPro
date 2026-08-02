@@ -269,7 +269,7 @@ export default function ProjectList() {
                 <td data-label="Expense">
                   <div className="project-cell-content project-financials-cell">
                     <div className="project-expense-value" style={{ color: expenseOverBudget ? 'var(--rose)' : 'var(--text-primary)', fontWeight: 600 }}>
-                      {fmtLakhs(expenditure)}
+                      {fmtLakhs(expenditure)} <span className="project-expense-limit">/ {sanctioned > 0 ? fmtLakhs(sanctioned) : 'No limit'}</span>
                     </div>
                     <div className="progress-bar project-expense-bar" role="progressbar" aria-label="Expenditure against sanctioned amount" aria-valuenow={Math.round(expensePercent)} aria-valuemin="0" aria-valuemax="100">
                       <div className={`progress-fill ${expenseOverBudget ? 'red' : 'green'}`} style={{ width:`${expensePercent}%` }} />

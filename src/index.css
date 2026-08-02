@@ -431,6 +431,7 @@ code { background: var(--bg-glass); padding: 2px 6px; border-radius: 4px; font-s
   .project-name-cell { min-width: 0; max-width: 100%; font-weight: 500; }
   .project-financials-cell { font-size: 12px; }
   .project-expense-value { font-size: 13px; }
+  .project-expense-limit { color: var(--text-secondary); font-weight: 400; }
   .project-expense-bar { height: 8px; margin-top: 5px; }
   .project-engineers-cell { font-size: 12px; }
   .project-updated-cell { font-size: 11px; color: var(--text-muted); }
