@@ -5,12 +5,20 @@ export function getUcSentStatus(project) {
   return project?.ucSentDate ? 'Yes' : 'No';
 }
 
+export function getSecurityDepositReleaseStatus(project) {
+  const status = String(project?.securityDepositReleased || '').trim().toLowerCase();
+  if (status === 'yes') return 'Yes';
+  if (status === 'no') return 'No';
+  return project?.securityDepositReleaseDate ? 'Yes' : 'No';
+}
+
 export function normalizeProject(project) {
   const ucSent = getUcSentStatus(project);
   return {
     ...project,
     ucSent,
     ucSentDate: ucSent === 'Yes' ? (project?.ucSentDate || '') : '',
+    securityDepositReleased: getSecurityDepositReleaseStatus(project),
   };
 }
 

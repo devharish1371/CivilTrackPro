@@ -5,7 +5,7 @@ import { downloadKML } from '../utils/kmlExport';
 import { ArrowLeft, Edit, Trash2, FileText, Share2, Calendar, IndianRupee, Users, AlertTriangle, Lock, Unlock, MapPin, ExternalLink } from 'lucide-react';
 import { useState } from 'react';
 import { verifyMasterPassword, formatMasterPasswordError } from '../utils/appAuth';
-import { getUcSentStatus } from '../utils/projectStatus';
+import { getUcSentStatus, getSecurityDepositReleaseStatus } from '../utils/projectStatus';
 
 const fmt = (n) => new Intl.NumberFormat('en-IN', { style:'currency', currency:'INR', maximumFractionDigits:0 }).format(n);
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }) : '—';
@@ -24,9 +24,12 @@ export default function ProjectDetail() {
   const utilised = (p.expenditureIncurred||0) + (p.deductions||0);
   const balance = (p.sanctionedAmount||0) - utilised;
   const now = new Date();
+  const securityDepositReleased = getSecurityDepositReleaseStatus(p);
   const expiryDays = p.expiryDate ? Math.ceil((new Date(p.expiryDate) - now)/86400000) : null;
   const contractDays = p.dateOfCompletionContract && p.statusOfWork !== 'completed' ? Math.ceil((new Date(p.dateOfCompletionContract) - now)/86400000) : null;
-  const securityDays = p.securityDepositReleaseDate ? Math.ceil((new Date(p.securityDepositReleaseDate) - now)/86400000) : null;
+  const securityDays = securityDepositReleased !== 'Yes' && p.securityDepositReleaseDate
+    ? Math.ceil((new Date(p.securityDepositReleaseDate) - now)/86400000)
+    : null;
   const ucSentStatus = getUcSentStatus(p);
 
   const handleDelete = () => { if (!p.isLocked && confirm('Delete?')) { dispatch({ type:'DELETE_PROJECT', payload:id }); navigate('/projects'); } };
@@ -193,6 +196,7 @@ export default function ProjectDetail() {
         <div className="card-header"><span className="card-title">Security Deposit</span></div>
         <div className="detail-grid">
           <D label="Security Amount" value={fmt(p.securityAmount||0)} cls="amount" />
+          <D label="Security Deposit Released" value={securityDepositReleased} />
           <D label="Security Deducted On" value={fmtDate(p.securityDepositDeductedDate)} />
           <D label="Security Deposit Release" value={fmtDate(p.securityDepositReleaseDate)} />
           <D label="M Book Number" value={p.mBookNumber} />

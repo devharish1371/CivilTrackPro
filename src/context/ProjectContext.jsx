@@ -4,7 +4,7 @@ import { db, auth } from '../utils/firebase';
 import { doc, onSnapshot, setDoc, enableNetwork, getDocFromServer } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { isSessionUnlocked } from '../components/SessionGate';
-import { normalizeProject, normalizeProjects } from '../utils/projectStatus';
+import { normalizeProject, normalizeProjects, getSecurityDepositReleaseStatus } from '../utils/projectStatus';
 
 const FIRESTORE_DOC = doc(db, 'civil_dashboard', 'master_data');
 const SERVER_CHECK_TIMEOUT_MS = 10000;
@@ -408,7 +408,7 @@ export function ProjectProvider({ children }) {
           date: p.dateOfCompletionContract
         });
       }
-      if (p.securityDepositReleaseDate) {
+      if (p.securityDepositReleaseDate && getSecurityDepositReleaseStatus(p) !== 'Yes') {
         const d = Math.ceil((new Date(p.securityDepositReleaseDate) - now) / 86400000);
         if (d < 0) alerts.push({
           ...baseAlert,

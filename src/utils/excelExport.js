@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import { getUcSentStatus } from './projectStatus';
+import { getUcSentStatus, getSecurityDepositReleaseStatus } from './projectStatus';
 
 const n = (v) => Number(v) || 0;
 
@@ -41,7 +41,7 @@ export function exportProjectsToExcel(projects, contractors = [], engineers = []
     'Extension': p.extensionOfTime||'None',
     'Status': p.statusOfWork==='completed'?'Completed':p.statusOfWork==='in_progress'?'In Progress':'Yet to Start',
     'Progress (%)': p.progress, 'JE': p.juniorEngineer, 'AE': p.assistantEngineer,
-    'UC Sent': getUcSentStatus(p), 'UC Sent Date': p.ucSentDate||'', 'Security Deducted': p.securityDepositDeductedDate||'', 'Security Release': p.securityDepositReleaseDate||'',
+    'UC Sent': getUcSentStatus(p), 'UC Sent Date': p.ucSentDate||'', 'SD Released': getSecurityDepositReleaseStatus(p), 'Security Deducted': p.securityDepositDeductedDate||'', 'Security Release': p.securityDepositReleaseDate||'',
     'Security Amount (₹)': n(p.securityAmount),
     'M Book No': p.mBookNumber||'', 'Audit Register': p.workAuditRegisterNo||'',
     'Latitude': p.latitude||'', 'Longitude': p.longitude||'',

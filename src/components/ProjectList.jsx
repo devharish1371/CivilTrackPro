@@ -257,11 +257,11 @@ export default function ProjectList() {
                 </td>
                 <td data-label="Details">
                   <div className="project-cell-content">
-                    <strong>{p.scheme}</strong> ({p.yearOfSanction})<br />
-                    <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{p.category}</span>
+                    <strong>{p.scheme}</strong> <span className="project-year-value">({p.yearOfSanction})</span><br />
+                    <span className="project-category-value" style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{p.category}</span>
                   </div>
                 </td>
-                <td data-label="Location">
+                <td data-label="Location" className="mobile-secondary-cell">
                   <div className="project-cell-content">
                     {p.constituency}<br />
                     <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{p.villagePanchayat}</span>
@@ -269,12 +269,12 @@ export default function ProjectList() {
                 </td>
                 <td data-label="Financials">
                   <div className="project-cell-content project-financials-cell">
-                    <div><span style={{ color:'var(--text-secondary)' }}>S:</span> {fmtL(p.sanctionedAmount)}</div>
+                    <div className="project-sanctioned-value"><span style={{ color:'var(--text-secondary)' }}>S:</span> {fmtL(p.sanctionedAmount)}</div>
                     <div><span style={{ color:'var(--text-secondary)' }}>E:</span> {fmtL(p.expenditureIncurred)}</div>
-                    <div><span style={{ color:'var(--text-secondary)' }}>B:</span> <span style={{ color:(p.sanctionedAmount - p.expenditureIncurred) < 0 ? 'var(--rose)' : 'var(--emerald)', fontWeight: 600 }}>{fmtL(p.sanctionedAmount - p.expenditureIncurred)}</span></div>
+                    <div className="project-balance-value"><span style={{ color:'var(--text-secondary)' }}>B:</span> <span style={{ color:(p.sanctionedAmount - p.expenditureIncurred) < 0 ? 'var(--rose)' : 'var(--emerald)', fontWeight: 600 }}>{fmtL(p.sanctionedAmount - p.expenditureIncurred)}</span></div>
                   </div>
                 </td>
-                <td data-label="Progress & Status">
+                <td data-label="Progress & Status" className="mobile-secondary-cell">
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <div><span className={`status-badge ${p.statusOfWork}`}>{p.statusOfWork==='completed'?'Done':p.statusOfWork==='in_progress'?'Active':'Pending'}</span></div>
                     <div style={{ display:'flex', alignItems:'center', gap:6 }}>
@@ -283,13 +283,13 @@ export default function ProjectList() {
                     </div>
                   </div>
                 </td>
-                <td data-label="Engineers">
+                <td data-label="Engineers" className="mobile-secondary-cell">
                   <div className="project-cell-content project-engineers-cell">
                     <div><span style={{ color:'var(--text-secondary)' }}>JE:</span> {p.juniorEngineer}</div>
                     <div><span style={{ color:'var(--text-secondary)' }}>AE:</span> {p.assistantEngineer}</div>
                   </div>
                 </td>
-                <td data-label="Updated" className="project-updated-cell">
+                <td data-label="Updated" className="project-updated-cell mobile-secondary-cell">
                   {p.updatedAt ? new Date(p.updatedAt).toLocaleDateString('en-IN') : '—'}
                 </td>
                 <td>

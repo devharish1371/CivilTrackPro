@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useProjects } from '../context/ProjectContext';
 import { statusOptions } from '../data/sampleData';
 import { getEngineerDesignation, isAssistantEngineer, isJuniorEngineer } from '../utils/engineers';
-import { normalizeProject } from '../utils/projectStatus';
+import { normalizeProject, getSecurityDepositReleaseStatus } from '../utils/projectStatus';
 import { v4 as uuidv4 } from 'uuid';
 import { Save, ArrowLeft, MapPin, IndianRupee, AlertTriangle, Calendar, Users, FileText } from 'lucide-react';
 
@@ -16,7 +16,7 @@ const empty = {
   expenditureIncurred:'', deductions:'',
   extensionOfTime:'', statusOfWork:'yet_to_start', progress:0,
   juniorEngineer:'', assistantEngineer:'',
-  ucSent: 'No', ucSentDate:'', securityDepositReleaseDate:'', securityDepositDeductedDate:'', securityAmount:'',
+  ucSent: 'No', ucSentDate:'', securityDepositReleased:'No', securityDepositReleaseDate:'', securityDepositDeductedDate:'', securityAmount:'',
   mBookNumber:'', workAuditRegisterNo:'', category:'', phase:'',
   latitude:'', longitude:'', physicalParametersNotes:'', isLocked:false, lockHash:'', notes:''
 };
@@ -43,7 +43,8 @@ export default function ProjectForm() {
       const ex = projects.find(p => p.id === id);
       if (ex) {
         if (ex.isLocked) { navigate('/projects'); return; }
-        setForm({ ...normalizeProject(ex), physicalParametersNotes: ex.physicalParametersNotes || '' });
+        const normalized = normalizeProject(ex);
+        setForm({ ...normalized, securityDepositReleased: getSecurityDepositReleaseStatus(normalized), physicalParametersNotes: ex.physicalParametersNotes || '' });
       } else navigate('/projects');
     }
   }, [id, isEdit]);
@@ -371,6 +372,13 @@ export default function ProjectForm() {
         <div className="card" style={{ marginBottom:16 }}>
           <div className="card-header"><span className="card-title">Security Deposit</span></div>
           <div className="form-grid">
+            <div className="form-group">
+              <label className="form-label">Security Deposit Released</label>
+              <select className="form-select" value={form.securityDepositReleased} onChange={e => set('securityDepositReleased', e.target.value)}>
+                <option value="No">No</option>
+                <option value="Yes">Yes</option>
+              </select>
+            </div>
             <div className="form-group"><label className="form-label">Security Amount (₹)</label><input className="form-input" type="number" value={form.securityAmount} onChange={e => set('securityAmount', e.target.value)} /></div>
             <div className="form-group"><label className="form-label">Security Deposit Deducted Date</label><input className="form-input" type="date" value={form.securityDepositDeductedDate} onChange={e => set('securityDepositDeductedDate', e.target.value)} /></div>
             <div className="form-group"><label className="form-label">Security Deposit Release Date</label><input className="form-input" type="date" value={form.securityDepositReleaseDate} onChange={e => set('securityDepositReleaseDate', e.target.value)} /></div>

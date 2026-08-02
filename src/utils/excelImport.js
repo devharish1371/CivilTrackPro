@@ -63,6 +63,7 @@ export async function importProjectsFromExcel(file, existingProjects, existingCo
               assistantEngineer: row['AE'] || '',
               ucSent: rawUcSent,
               ucSentDate,
+              securityDepositReleased: row['SD Released'] || '',
               securityDepositDeductedDate: row['Security Deducted'] || '',
               securityDepositReleaseDate: row['Security Release'] || '',
               securityAmount: Number(row['Security Amount (₹)']) || 0,

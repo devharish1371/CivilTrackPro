@@ -40,7 +40,7 @@ const PROJECT_HEADERS = [
   'Completion (Contract)','Actual Start','Actual Completion','Performance Guarantee Date',
   'Expiry Date','Expenditure','Deductions','Extension of Time','Status','Progress',
   'Junior Engineer','Assistant Engineer','UC Sent Date','Security Release Date',
-  'Security Amount','M Book No','Audit Register No','Latitude','Longitude','Locked','Notes'
+  'Security Amount','M Book No','Audit Register No','Latitude','Longitude','Locked','Notes','SD Released'
 ];
 const CONTRACTOR_HEADERS = ['ID','Name','Phone','Email','Address','Registration No','Category'];
 const ENGINEER_HEADERS = ['ID','Name','Designation','Phone','Email','Division'];
@@ -122,7 +122,7 @@ function projectToRow(p) {
     p.statusOfWork, p.progress||0, p.juniorEngineer||'', p.assistantEngineer||'',
     p.ucSentDate||'', p.securityDepositReleaseDate||'', p.securityAmount||0,
     p.mBookNumber||'', p.workAuditRegisterNo||'',
-    p.latitude||'', p.longitude||'', p.isLocked?'TRUE':'FALSE', p.notes||''
+    p.latitude||'', p.longitude||'', p.isLocked?'TRUE':'FALSE', p.notes||'', p.securityDepositReleased || (p.securityDepositReleaseDate ? 'Yes' : 'No')
   ];
 }
 
@@ -130,6 +130,10 @@ function rowToProject(row) {
   const ucCell = String(row[25] || '').trim();
   const ucCellStatus = ucCell.toLowerCase();
   const ucSentDate = ucCellStatus === 'yes' || ucCellStatus === 'no' ? '' : ucCell;
+  const securityReleaseCell = String(row[34] || '').trim().toLowerCase();
+  const securityDepositReleased = securityReleaseCell === 'yes' || securityReleaseCell === 'no'
+    ? securityReleaseCell[0].toUpperCase() + securityReleaseCell.slice(1)
+    : (row[26] ? 'Yes' : 'No');
   return {
     id: row[0], projectName: row[1], yearOfSanction: Number(row[2])||0,
     constituency: row[3], villagePanchayat: row[4]||'', scheme: row[5], goDate: row[6]||'', goNumber: row[7]||'',
@@ -143,6 +147,7 @@ function rowToProject(row) {
     progress: Number(row[22])||0, juniorEngineer: row[23]||'', assistantEngineer: row[24]||'',
     ucSent: ucCellStatus === 'yes' || (ucCell && ucCellStatus !== 'no') ? 'Yes' : 'No',
     ucSentDate, securityDepositReleaseDate: row[26]||'',
+    securityDepositReleased,
     securityAmount: Number(row[27])||0, mBookNumber: row[28]||'', workAuditRegisterNo: row[29]||'',
     latitude: Number(row[30])||0, longitude: Number(row[31])||0,
     isLocked: row[32]==='TRUE', lockHash: '', notes: row[33]||''
@@ -151,7 +156,7 @@ function rowToProject(row) {
 
 export async function pushToSheet(sheetId, projects, contractors, engineers, schemes, constituencies, panchayats, grants) {
   await api(`${sheetId}/values:batchClear`, 'POST', {
-    ranges: ['Projects!A2:AH10000','Contractors!A2:G10000','Engineers!A2:F10000', 'Schemes!A2:B1000', 'Constituencies!A2:B1000', 'Panchayats!A2:B1000', 'Grants!A2:E10000']
+    ranges: ['Projects!A2:AI10000','Contractors!A2:G10000','Engineers!A2:F10000', 'Schemes!A2:B1000', 'Constituencies!A2:B1000', 'Panchayats!A2:B1000', 'Grants!A2:E10000']
   });
   const data = [];
   if (projects.length) data.push({ range: 'Projects!A2', values: projects.map(projectToRow) });
@@ -168,7 +173,7 @@ export async function pushToSheet(sheetId, projects, contractors, engineers, sch
 }
 
 export async function pullFromSheet(sheetId) {
-  const res = await api(`${sheetId}/values:batchGet?ranges=Projects!A2:AH10000&ranges=Contractors!A2:G10000&ranges=Engineers!A2:F10000&ranges=Schemes!A2:B1000&ranges=Constituencies!A2:B1000&ranges=Panchayats!A2:B1000&ranges=Grants!A2:E10000`);
+  const res = await api(`${sheetId}/values:batchGet?ranges=Projects!A2:AI10000&ranges=Contractors!A2:G10000&ranges=Engineers!A2:F10000&ranges=Schemes!A2:B1000&ranges=Constituencies!A2:B1000&ranges=Panchayats!A2:B1000&ranges=Grants!A2:E10000`);
   const [pSheet, cSheet, eSheet, sSheet, conSheet, panSheet, gSheet] = res.valueRanges || [];
   const projects = (pSheet?.values || []).filter(r => r[0]).map(rowToProject);
   const contractors = (cSheet?.values || []).filter(r => r[0]).map(r => ({ id:r[0], name:r[1]||'', phone:r[2]||'', email:r[3]||'', address:r[4]||'', registrationNo:r[5]||'', category:r[6]||'' }));
