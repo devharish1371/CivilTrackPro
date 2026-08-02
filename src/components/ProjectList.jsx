@@ -10,14 +10,9 @@ import { getUcSentStatus } from '../utils/projectStatus';
 import { Eye, Edit, Trash2, Download, FileText, Share2, Filter, X, Lock, Unlock, MapPin, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 
 const fmt = (n) => new Intl.NumberFormat('en-IN', { style:'currency', currency:'INR', maximumFractionDigits:0 }).format(n);
-const fmtL = (n) => {
-  if (!n) return '₹0.00 L';
-  const num = Number(n);
-  if (isNaN(num)) return '₹0.00 L';
-  const abs = Math.abs(num);
-  const sign = num < 0 ? '-' : '';
-  if (abs >= 10000000) return `${sign}₹${(abs / 10000000).toFixed(2)} Cr`;
-  return `${sign}₹${(abs / 100000).toFixed(2)} L`;
+const fmtLakhs = (value) => {
+  const amount = Number(value) || 0;
+  return `${amount < 0 ? '-' : ''}₹${(Math.abs(amount) / 100000).toFixed(2)} L`;
 };
 
 const ALL_COLUMNS = [
@@ -237,8 +232,8 @@ export default function ProjectList() {
         <table className="data-table">
           <thead>
             <tr>
-              <th>#</th><th>Project</th><th>Details</th><th>Location</th>
-              <th>Financials</th><th>Progress & Status</th>
+              <th>#</th><th>Project</th><th>Scheme</th><th>Location</th>
+              <th>Expense</th><th>Progress & Status</th>
               <th>Engineers</th><th>Updated</th><th>Actions</th>
             </tr>
           </thead>
@@ -247,6 +242,10 @@ export default function ProjectList() {
               <tr><td colSpan={13} style={{ textAlign:'center', padding:40, color:'var(--text-muted)' }}>No projects found</td></tr>
             ) : paginatedProjects.map((p, index) => {
               const i = (currentPage - 1) * itemsPerPage + index;
+              const expenditure = Number(p.expenditureIncurred) || 0;
+              const sanctioned = Number(p.sanctionedAmount) || 0;
+              const expensePercent = sanctioned > 0 ? Math.min(100, Math.max(0, (expenditure / sanctioned) * 100)) : 0;
+              const expenseOverBudget = sanctioned > 0 && expenditure > sanctioned;
               return (
               <tr key={p.id} style={p.isLocked ? { opacity:0.85 } : {}}>
                 <td data-label="#">{i+1}. {p.isLocked && <Lock size={11} style={{ color:'var(--amber)', marginRight:4, verticalAlign:'middle' }} />}</td>
@@ -255,7 +254,7 @@ export default function ProjectList() {
                     {p.projectName}
                   </div>
                 </td>
-                <td data-label="Details">
+                <td data-label="Scheme">
                   <div className="project-cell-content">
                     <strong>{p.scheme}</strong> <span className="project-year-value">({p.yearOfSanction})</span><br />
                     <span className="project-category-value" style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{p.category}</span>
@@ -267,11 +266,14 @@ export default function ProjectList() {
                     <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{p.villagePanchayat}</span>
                   </div>
                 </td>
-                <td data-label="Financials">
+                <td data-label="Expense">
                   <div className="project-cell-content project-financials-cell">
-                    <div className="project-sanctioned-value"><span style={{ color:'var(--text-secondary)' }}>S:</span> {fmtL(p.sanctionedAmount)}</div>
-                    <div><span style={{ color:'var(--text-secondary)' }}>E:</span> {fmtL(p.expenditureIncurred)}</div>
-                    <div className="project-balance-value"><span style={{ color:'var(--text-secondary)' }}>B:</span> <span style={{ color:(p.sanctionedAmount - p.expenditureIncurred) < 0 ? 'var(--rose)' : 'var(--emerald)', fontWeight: 600 }}>{fmtL(p.sanctionedAmount - p.expenditureIncurred)}</span></div>
+                    <div className="project-expense-value" style={{ color: expenseOverBudget ? 'var(--rose)' : 'var(--text-primary)', fontWeight: 600 }}>
+                      {fmtLakhs(expenditure)}
+                    </div>
+                    <div className="progress-bar project-expense-bar" role="progressbar" aria-label="Expenditure against sanctioned amount" aria-valuenow={Math.round(expensePercent)} aria-valuemin="0" aria-valuemax="100">
+                      <div className={`progress-fill ${expenseOverBudget ? 'red' : 'green'}`} style={{ width:`${expensePercent}%` }} />
+                    </div>
                   </div>
                 </td>
                 <td data-label="Progress & Status" className="mobile-secondary-cell">
