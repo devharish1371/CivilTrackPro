@@ -14,13 +14,12 @@ const MAX_DOC_SIZE = 5 * 1024 * 1024;
  */
 export const compressImage = (file, maxDimension = 1200, quality = 0.7) => {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = (event) => {
-      const img = new Image();
-      img.src = event.target.result;
-      img.onload = () => {
-        let { width, height } = img;
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.src = objectUrl;
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      let { width, height } = img;
         if (width > height) {
           if (width > maxDimension) {
             height *= maxDimension / width;
@@ -50,8 +49,6 @@ export const compressImage = (file, maxDimension = 1200, quality = 0.7) => {
         }, 'image/jpeg', quality);
       };
       img.onerror = (error) => reject(error);
-    };
-    reader.onerror = (error) => reject(error);
   });
 };
 
