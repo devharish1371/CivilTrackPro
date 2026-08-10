@@ -546,6 +546,210 @@ export function generateAlertsPDF(alerts, filters = {}) {
   return doc;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+//  COMPLETED WORK BY DATE RANGE PDF — A3 Landscape, Ink-Saving
+//  Filters: actualDateOfCompletion within [fromDate, toDate]
+// ═══════════════════════════════════════════════════════════════════════════
+export function generateCompletedWorkByDateRangePDF(projects, filters = {}) {
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a3' });
+  const W  = doc.internal.pageSize.getWidth();
+  const MW = W - 24;
+
+  const parts = [];
+  if (filters.fromDate) parts.push(`From: ${fmtDate(filters.fromDate)}`);
+  if (filters.toDate)   parts.push(`To: ${fmtDate(filters.toDate)}`);
+  if (filters.scheme)        parts.push(`Scheme: ${filters.scheme}`);
+  if (filters.constituency)  parts.push(`Constituency: ${filters.constituency}`);
+  const filterText = parts.length ? parts.join('  |  ') : 'All Completed Projects';
+
+  const totalS = projects.reduce((s, p) => s + (p.sanctionedAmount || 0), 0);
+  const totalT = projects.reduce((s, p) => s + (p.tenderedCost || 0), 0);
+  const totalE = projects.reduce((s, p) => s + (p.expenditureIncurred || 0), 0);
+  const totalD = projects.reduce((s, p) => s + (p.deductions || 0), 0);
+  const totalU = totalE + totalD;
+
+  addHeader(doc, `Completed Work Report  —  ${filterText}`, `Total Completed Projects: ${projects.length}`);
+
+  addSummaryBar(doc, [
+    { label: 'Completed Projects', value: String(projects.length) },
+    { label: 'Total Sanctioned',   value: fmtL(totalS) },
+    { label: 'Total Tendered',     value: fmtL(totalT) },
+    { label: 'Total Expenditure',  value: fmtL(totalE) },
+    { label: 'Total Deductions',   value: fmtL(totalD) },
+    { label: 'Total Utilised',     value: fmtL(totalU) },
+  ], 40);
+
+  const headers = ['#', 'Project Name', 'Category', 'Constituency', 'Scheme', 'Contractor',
+    'WO Date', 'Contract Comp.', 'Actual Comp.', 'Days Diff',
+    'Sanctioned\n(Cr/L)', 'Tendered\n(Cr/L)', 'Expenditure\n(Cr/L)', 'Utilised\n(Cr/L)', 'UC Date', 'Remarks'];
+
+  const rows = projects.map((p, i) => {
+    const utilised = (p.expenditureIncurred || 0) + (p.deductions || 0);
+    let daysDiff = '-';
+    if (p.dateOfCompletionContract && p.actualDateOfCompletion) {
+      const contract = new Date(p.dateOfCompletionContract);
+      const actual   = new Date(p.actualDateOfCompletion);
+      const diff = Math.round((actual - contract) / (1000 * 60 * 60 * 24));
+      daysDiff = diff === 0 ? 'On time' : diff > 0 ? `+${diff}d` : `${diff}d`;
+    }
+    return [
+      i + 1,
+      p.projectName || '-',
+      p.category || '-',
+      p.constituency || '-',
+      p.scheme || '-',
+      p.contractorName || '-',
+      fmtDate(p.workOrderDate),
+      fmtDate(p.dateOfCompletionContract),
+      fmtDate(p.actualDateOfCompletion),
+      daysDiff,
+      fmtL(p.sanctionedAmount),
+      fmtL(p.tenderedCost),
+      fmtL(p.expenditureIncurred),
+      fmtL(utilised),
+      fmtDate(p.ucSentDate),
+      p.notes || '-',
+    ];
+  });
+
+  autoTable(doc, {
+    startY: 64,
+    head: [headers],
+    body: rows,
+    styles: { ...BS, fontSize: 8, cellPadding: 2.5 },
+    headStyles: { ...HS, fontSize: 8, cellPadding: 3 },
+    alternateRowStyles: AR,
+    tableWidth: MW,
+    margin: { left: 12, right: 12 },
+    columnStyles: {
+      0:  { cellWidth: 8,  halign: 'center' },
+      7:  { halign: 'center' },
+      8:  { halign: 'center' },
+      9:  { halign: 'center', fontStyle: 'bold' },
+      10: { halign: 'right' },
+      11: { halign: 'right' },
+      12: { halign: 'right' },
+      13: { halign: 'right', fontStyle: 'bold' },
+      14: { halign: 'center' },
+    },
+    didParseCell(data) {
+      if (data.section === 'body' && data.column.index === 9) {
+        const v = String(data.cell.raw || '');
+        if (v.startsWith('+')) data.cell.styles.fontStyle = 'bold'; // delayed
+      }
+    },
+  });
+
+  addFooter(doc, `Completed Work Report  —  ${filterText}`);
+  return doc;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  ALL WORK BY TENDERED COST RANGE PDF — A3 Landscape, Ink-Saving
+//  Filters: tenderedCost within [minCost, maxCost]
+// ═══════════════════════════════════════════════════════════════════════════
+export function generateWorkByTenderedCostPDF(projects, filters = {}) {
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a3' });
+  const W  = doc.internal.pageSize.getWidth();
+  const MW = W - 24;
+
+  const fmtRs = (n) => {
+    if (!n) return '-';
+    return `Rs.${Number(n).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
+  };
+
+  const parts = [];
+  if (filters.minCost !== '' && filters.minCost !== undefined) parts.push(`Min: ${fmtRs(filters.minCost)}`);
+  if (filters.maxCost !== '' && filters.maxCost !== undefined) parts.push(`Max: ${fmtRs(filters.maxCost)}`);
+  if (filters.status)       parts.push(`Status: ${filters.status}`);
+  if (filters.scheme)       parts.push(`Scheme: ${filters.scheme}`);
+  if (filters.constituency) parts.push(`Constituency: ${filters.constituency}`);
+  const filterText = parts.length ? parts.join('  |  ') : 'All Projects (Tendered Cost)';
+
+  const totalS = projects.reduce((s, p) => s + (p.sanctionedAmount || 0), 0);
+  const totalT = projects.reduce((s, p) => s + (p.tenderedCost || 0), 0);
+  const totalE = projects.reduce((s, p) => s + (p.expenditureIncurred || 0), 0);
+  const totalD = projects.reduce((s, p) => s + (p.deductions || 0), 0);
+  const totalU = totalE + totalD;
+  const totalBal = totalS - totalU;
+
+  addHeader(doc, `Work Report by Tendered Cost  —  ${filterText}`, `Total Projects: ${projects.length}`);
+
+  addSummaryBar(doc, [
+    { label: 'Projects',           value: String(projects.length) },
+    { label: 'Total Sanctioned',   value: fmtL(totalS) },
+    { label: 'Total Tendered',     value: fmtL(totalT) },
+    { label: 'Total Expenditure',  value: fmtL(totalE) },
+    { label: 'Total Utilised',     value: fmtL(totalU) },
+    { label: 'Total Balance',      value: fmtL(totalBal) },
+  ], 40);
+
+  const headers = ['#', 'Project Name', 'Category', 'Year', 'Constituency', 'Scheme',
+    'Contractor', 'WO Date', 'Comp. Date',
+    'Sanctioned\n(Cr/L)', 'Tendered\n(Cr/L)', 'Var %', 'Expenditure\n(Cr/L)',
+    'Utilised\n(Cr/L)', 'Balance\n(Cr/L)', 'Status'];
+
+  const rows = projects.map((p, i) => {
+    const utilised = (p.expenditureIncurred || 0) + (p.deductions || 0);
+    const balance  = (p.sanctionedAmount || 0) - utilised;
+    const variation = p.sanctionedAmount && p.tenderedCost
+      ? (((p.tenderedCost - p.sanctionedAmount) / p.sanctionedAmount) * 100).toFixed(1) + '%'
+      : '-';
+    return [
+      i + 1,
+      p.projectName || '-',
+      p.category || '-',
+      p.yearOfSanction || '-',
+      p.constituency || '-',
+      p.scheme || '-',
+      p.contractorName || '-',
+      fmtDate(p.workOrderDate),
+      fmtDate(p.dateOfCompletionContract),
+      fmtL(p.sanctionedAmount),
+      fmtL(p.tenderedCost),
+      variation,
+      fmtL(p.expenditureIncurred),
+      fmtL(utilised),
+      fmtL(balance),
+      statusLabel(p.statusOfWork),
+    ];
+  });
+
+  autoTable(doc, {
+    startY: 64,
+    head: [headers],
+    body: rows,
+    styles: { ...BS, fontSize: 8, cellPadding: 2.5 },
+    headStyles: { ...HS, fontSize: 8, cellPadding: 3 },
+    alternateRowStyles: AR,
+    tableWidth: MW,
+    margin: { left: 12, right: 12 },
+    columnStyles: {
+      0:  { cellWidth: 8, halign: 'center' },
+      3:  { cellWidth: 12, halign: 'center' },
+      7:  { halign: 'center' },
+      8:  { halign: 'center' },
+      9:  { halign: 'right' },
+      10: { halign: 'right', fontStyle: 'bold' },
+      11: { halign: 'center' },
+      12: { halign: 'right' },
+      13: { halign: 'right', fontStyle: 'bold' },
+      14: { halign: 'right' },
+      15: { halign: 'center' },
+    },
+    didParseCell(data) {
+      if (data.section === 'body') {
+        if (data.column.index === 13 || data.column.index === 15) {
+          data.cell.styles.fontStyle = 'bold';
+        }
+      }
+    },
+  });
+
+  addFooter(doc, `Work Report by Tendered Cost  —  ${filterText}`);
+  return doc;
+}
+
 // ─── Helpers ────────────────────────────────────────────────────────────────
 export function savePDF(doc, filename)  { doc.save(filename); }
 export function sharePDF(doc, filename) {
