@@ -6,6 +6,7 @@ import {
 } from "firebase/firestore";
 import { getAuth, browserSessionPersistence, setPersistence } from "firebase/auth";
 import { getAnalytics } from "firebase/analytics";
+import { getStorage } from "firebase/storage";
 
 // Shared Firebase Auth account — create in Console → Authentication → Users (6-digit app password)
 export const FIREBASE_AUTH_EMAIL = "civiltrack@civildashboard-fb026.firebaseapp.com";
@@ -38,4 +39,6 @@ try {
   console.log("Firebase Analytics could not be initialized");
 }
 
-export { app, db, auth, analytics };
+const storage = getStorage(app);
+
+export { app, db, auth, analytics, storage };

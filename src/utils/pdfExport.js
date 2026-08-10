@@ -749,6 +749,75 @@ export function generateWorkByTenderedCostPDF(projects, filters = {}) {
   addFooter(doc, `Work Report by Tendered Cost  —  ${filterText}`);
   return doc;
 }
+// ═══════════════════════════════════════════════════════════════════════════
+//  WORK ORDERS BY DATE RANGE PDF — A3 Landscape, Ink-Saving
+//  Filters: workOrderDate within [fromDate, toDate]
+// ═══════════════════════════════════════════════════════════════════════════
+export function generateWorkOrdersByDateRangePDF(projects, filters = {}) {
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a3' });
+  const W  = doc.internal.pageSize.getWidth();
+  const MW = W - 24;
+
+  const parts = [];
+  if (filters.fromDate) parts.push(`From: ${fmtDate(filters.fromDate)}`);
+  if (filters.toDate)   parts.push(`To: ${fmtDate(filters.toDate)}`);
+  if (filters.scheme)        parts.push(`Scheme: ${filters.scheme}`);
+  if (filters.constituency)  parts.push(`Constituency: ${filters.constituency}`);
+  const filterText = parts.length ? parts.join('  |  ') : 'All Work Orders';
+
+  const totalS = projects.reduce((s, p) => s + (p.sanctionedAmount || 0), 0);
+  const totalT = projects.reduce((s, p) => s + (p.tenderedCost || 0), 0);
+
+  addHeader(doc, `Work Orders Issued Report  —  ${filterText}`, `Total Work Orders: ${projects.length}`);
+
+  addSummaryBar(doc, [
+    { label: 'Work Orders',        value: String(projects.length) },
+    { label: 'Total Sanctioned',   value: fmtL(totalS) },
+    { label: 'Total Tendered',     value: fmtL(totalT) },
+  ], 40);
+
+  const headers = ['#', 'Work Order Date', 'Project Name', 'Constituency', 'Scheme', 'Contractor',
+    'Contract Comp.', 'Sanctioned\n(Cr/L)', 'Tendered\n(Cr/L)', 'Status', 'Remarks'];
+
+  const rows = projects.map((p, i) => {
+    return [
+      i + 1,
+      fmtDate(p.workOrderDate),
+      p.projectName || '-',
+      p.constituency || '-',
+      p.scheme || '-',
+      p.contractorName || '-',
+      fmtDate(p.dateOfCompletionContract),
+      fmtL(p.sanctionedAmount),
+      fmtL(p.tenderedCost),
+      statusLabel(p.statusOfWork),
+      p.notes || '-',
+    ];
+  });
+
+  autoTable(doc, {
+    startY: 64,
+    head: [headers],
+    body: rows,
+    styles: { ...BS, fontSize: 9, cellPadding: 2.5 },
+    headStyles: { ...HS, fontSize: 9, cellPadding: 3 },
+    alternateRowStyles: AR,
+    tableWidth: MW,
+    margin: { left: 12, right: 12 },
+    columnStyles: {
+      0:  { cellWidth: 8, halign: 'center' },
+      1:  { cellWidth: 25, halign: 'center', fontStyle: 'bold' },
+      2:  { cellWidth: 80 },
+      6:  { halign: 'center' },
+      7:  { halign: 'right' },
+      8:  { halign: 'right' },
+      9:  { halign: 'center' },
+    },
+  });
+
+  addFooter(doc, `Work Orders Issued Report  —  ${filterText}`);
+  return doc;
+}
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 export function savePDF(doc, filename)  { doc.save(filename); }

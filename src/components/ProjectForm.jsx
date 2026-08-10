@@ -4,8 +4,9 @@ import { useProjects } from '../context/ProjectContext';
 import { statusOptions } from '../data/sampleData';
 import { getEngineerDesignation, isAssistantEngineer, isJuniorEngineer } from '../utils/engineers';
 import { normalizeProject, getSecurityDepositReleaseStatus } from '../utils/projectStatus';
+import { uploadProjectFile, deleteProjectFile } from '../utils/fileUpload';
 import { v4 as uuidv4 } from 'uuid';
-import { Save, ArrowLeft, MapPin, IndianRupee, AlertTriangle, Calendar, Users, FileText } from 'lucide-react';
+import { Save, ArrowLeft, MapPin, IndianRupee, AlertTriangle, Calendar, Users, FileText, Image as ImageIcon, UploadCloud, X, Camera, Paperclip, Loader2 } from 'lucide-react';
 
 const empty = {
   projectName:'', yearOfSanction:new Date().getFullYear(), constituency:'', villagePanchayat:'', scheme:'',
@@ -18,7 +19,8 @@ const empty = {
   juniorEngineer:'', assistantEngineer:'',
   ucSent: 'No', ucSentDate:'', securityDepositReleased:'No', securityDepositReleaseDate:'', securityDepositDeductedDate:'', securityAmount:'',
   mBookNumber:'', workAuditRegisterNo:'', category:'', phase:'',
-  latitude:'', longitude:'', physicalParametersNotes:'', isLocked:false, lockHash:'', notes:''
+  latitude:'', longitude:'', physicalParametersNotes:'', isLocked:false, lockHash:'', notes:'',
+  photos: [], documents: []
 };
 
 const fmt = (n) => new Intl.NumberFormat('en-IN', { style:'currency', currency:'INR', maximumFractionDigits:0 }).format(n);
@@ -28,10 +30,56 @@ export default function ProjectForm() {
   const isEdit = Boolean(id);
   const { projects, contractors, engineers, schemes, constituencies, panchayats, grants, categories, dispatch } = useProjects();
   const navigate = useNavigate();
-  const [form, setForm] = useState(empty);
+  const [form, setForm] = useState(() => ({ ...empty, tempId: isEdit ? '' : uuidv4() }));
   const [errors, setErrors] = useState({});
   const [toast, setToast] = useState('');
   const [dateWarnings, setDateWarnings] = useState([]);
+  const [uploading, setUploading] = useState({});
+
+  const handleFileUpload = async (e, type) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const pid = isEdit ? id : form.tempId;
+    const uploadId = uuidv4();
+    setUploading(prev => ({ ...prev, [uploadId]: 0 }));
+
+    try {
+      const uploadedFile = await uploadProjectFile(pid, file, type, (prog) => {
+        setUploading(prev => ({ ...prev, [uploadId]: prog }));
+      });
+      setForm(prev => {
+        const key = type === 'photo' ? 'photos' : 'documents';
+        return { ...prev, [key]: [...(prev[key] || []), uploadedFile] };
+      });
+      show('Uploaded successfully');
+    } catch (error) {
+      alert(`Upload failed: ${error.message}`);
+    } finally {
+      setUploading(prev => {
+        const next = { ...prev };
+        delete next[uploadId];
+        return next;
+      });
+      e.target.value = null;
+    }
+  };
+
+  const handleFileDelete = async (fileToDelete, type) => {
+    if (!confirm('Are you sure you want to delete this file?')) return;
+    try {
+      await deleteProjectFile(fileToDelete.path);
+      setForm(prev => {
+        const key = type === 'photo' ? 'photos' : 'documents';
+        return { ...prev, [key]: (prev[key] || []).filter(f => f.path !== fileToDelete.path) };
+      });
+      show('File deleted');
+    } catch (error) {
+      alert(`Delete failed: ${error.message}`);
+    }
+  };
+  
+  const show = (msg) => { setToast(msg); setTimeout(() => setToast(''), 2500); };
 
   const jeList = engineers.filter(e => isJuniorEngineer(getEngineerDesignation(e)));
   const aeList = engineers.filter(e => isAssistantEngineer(getEngineerDesignation(e)));
@@ -102,7 +150,10 @@ export default function ProjectForm() {
     if (dateWarnings.length > 0) {
       if (!confirm(`Date warnings:\n\n${dateWarnings.map(w => '⚠ ' + w).join('\n')}\n\nDo you still want to save?`)) return;
     }
-    const data = normalizeProject({ ...form, id: isEdit ? id : uuidv4(),
+    const dataToSave = { ...form, id: isEdit ? id : form.tempId };
+    delete dataToSave.tempId;
+    
+    const data = normalizeProject({ ...dataToSave,
       sanctionedAmount:Number(form.sanctionedAmount)||0, tenderedCost:Number(form.tenderedCost)||0,
       expenditureIncurred:Number(form.expenditureIncurred)||0, progress:Number(form.progress)||0,
       yearOfSanction:Number(form.yearOfSanction)||new Date().getFullYear(),
@@ -441,6 +492,69 @@ export default function ProjectForm() {
         {/* 9. Notes/Remarks */}
         <div className="card" style={{ marginBottom:16 }}>
           <div className="form-group"><label className="form-label">Notes / Remarks</label><textarea className="form-textarea" value={form.notes} onChange={e => set('notes', e.target.value)} placeholder="Additional notes..." /></div>
+        </div>
+
+        {/* 10. Photos */}
+        <div className="card" style={{ marginBottom:16 }}>
+          <div className="card-header"><span className="card-title"><ImageIcon size={14} style={{ display:'inline', verticalAlign:'middle' }} /> Before/After Photos</span></div>
+          <div className="form-grid">
+            <div className="form-group full-width">
+              <label className="form-label">Upload Photo</label>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer' }}>
+                  <Camera size={14} /> Capture/Select
+                  <input type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={(e) => handleFileUpload(e, 'photo')} />
+                </label>
+                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Images are automatically compressed.</span>
+              </div>
+            </div>
+            {Object.keys(uploading).length > 0 && (
+              <div className="form-group full-width" style={{ color: 'var(--cyan)', fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Loader2 size={14} className="spin" /> Uploading... {Object.values(uploading).map(p => Math.round(p)).join(', ')}%
+              </div>
+            )}
+            <div className="form-group full-width" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 10 }}>
+              {(form.photos || []).map((photo, i) => (
+                <div key={i} style={{ position: 'relative', width: 120, height: 120, borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
+                  <img src={photo.url} alt="Project photo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <button type="button" onClick={() => handleFileDelete(photo, 'photo')} style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* 11. Other Files */}
+        <div className="card" style={{ marginBottom:16 }}>
+          <div className="card-header"><span className="card-title"><Paperclip size={14} style={{ display:'inline', verticalAlign:'middle' }} /> Other Files</span></div>
+          <div className="form-grid">
+            <div className="form-group full-width">
+              <label className="form-label">Upload PDF, Excel, or other documents</label>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer' }}>
+                  <UploadCloud size={14} /> Upload File
+                  <input type="file" style={{ display: 'none' }} onChange={(e) => handleFileUpload(e, 'document')} />
+                </label>
+                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Max size: 5MB per file.</span>
+              </div>
+            </div>
+            <div className="form-group full-width" style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10 }}>
+              {(form.documents || []).map((doc, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--bg-elevated)', borderRadius: 6, border: '1px solid var(--border-subtle)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
+                    <FileText size={16} style={{ color: 'var(--text-secondary)' }} />
+                    <span style={{ fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{doc.name}</span>
+                    <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>({(doc.size / 1024 / 1024).toFixed(2)} MB)</span>
+                  </div>
+                  <button type="button" onClick={() => handleFileDelete(doc, 'document')} style={{ background: 'transparent', border: 'none', color: 'var(--rose)', cursor: 'pointer' }}>
+                    <X size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
         <div className="btn-group" style={{ justifyContent:'flex-end' }}>

@@ -5,11 +5,12 @@ import {
   generateProjectListPDF,
   generateCompletedWorkByDateRangePDF,
   generateWorkByTenderedCostPDF,
+  generateWorkOrdersByDateRangePDF,
   savePDF,
 } from '../utils/pdfExport';
 import { exportProjectsToExcel } from '../utils/excelExport';
 import { downloadKML } from '../utils/kmlExport';
-import { FileText, Download, Printer, MapPin, CheckCircle, IndianRupee, SlidersHorizontal } from 'lucide-react';
+import { FileText, Download, Printer, MapPin, CheckCircle, IndianRupee, SlidersHorizontal, Calendar } from 'lucide-react';
 
 /* ─── tiny helpers ─────────────────────────────────────────────── */
 const fmtL = (n) => {
@@ -100,6 +101,9 @@ export default function Reports() {
   /* ── Tendered-cost-range filters ───────────────────── */
   const [costFilters, setCostFilters] = useState({ minCost: '', maxCost: '', scheme: '', constituency: '', status: '' });
 
+  /* ── Work Order date-range filters ─────────────────── */
+  const [woFilters, setWoFilters] = useState({ fromDate: '', toDate: '', scheme: '', constituency: '' });
+
   const years = [...new Set(projects.map(p => p.yearOfSanction))].sort((a, b) => b - a);
   const show = (msg) => { setToast(msg); setTimeout(() => setToast(''), 2500); };
 
@@ -128,6 +132,14 @@ export default function Reports() {
     return true;
   });
 
+  const woFiltered = projects.filter(p => {
+    if (!p.workOrderDate) return false;
+    if (!inDateRange(p.workOrderDate, woFilters.fromDate, woFilters.toDate)) return false;
+    if (woFilters.scheme && p.scheme !== woFilters.scheme) return false;
+    if (woFilters.constituency && p.constituency !== woFilters.constituency) return false;
+    return true;
+  });
+
   /* ── Handlers: standard ─────────────────────────────── */
   const handlePDF     = () => { savePDF(generateProjectListPDF(standardFiltered, filters), 'CivilTrack_Report.pdf'); show('PDF downloaded!'); };
   const handlePrint   = () => { const doc = generateProjectListPDF(standardFiltered, filters); const url = URL.createObjectURL(doc.output('blob')); const w = window.open(url); if (w) w.onload = () => w.print(); };
@@ -144,10 +156,16 @@ export default function Reports() {
   const handleCostPrint = () => { const doc = generateWorkByTenderedCostPDF(costFiltered, costFilters); const url = URL.createObjectURL(doc.output('blob')); const w = window.open(url); if (w) w.onload = () => w.print(); };
   const handleCostExcel = () => { exportProjectsToExcel(costFiltered, grants); show('Excel downloaded!'); };
 
+  /* ── Handlers: work order date range ──────────────── */
+  const handleWoPDF   = () => { savePDF(generateWorkOrdersByDateRangePDF(woFiltered, woFilters), 'CivilTrack_WorkOrders_Report.pdf'); show('Work Orders PDF downloaded!'); };
+  const handleWoPrint = () => { const doc = generateWorkOrdersByDateRangePDF(woFiltered, woFilters); const url = URL.createObjectURL(doc.output('blob')); const w = window.open(url); if (w) w.onload = () => w.print(); };
+  const handleWoExcel = () => { exportProjectsToExcel(woFiltered, grants); show('Excel downloaded!'); };
+
   /* ── Tabs config ─────────────────────────────────── */
   const tabs = [
     { id: 'standard',       label: 'Standard Report',        icon: SlidersHorizontal },
     { id: 'completed_date', label: 'Completed Work by Date', icon: CheckCircle },
+    { id: 'wo_date',        label: 'Work Orders by Date',    icon: Calendar },
     { id: 'tendered_cost',  label: 'Work by Tendered Cost',  icon: IndianRupee },
   ];
 
@@ -346,6 +364,66 @@ export default function Reports() {
             <div className="report-card report-card--amber" onClick={handleCostPDF}><FileText /><h3>Download PDF</h3><p>Tendered cost report with financial details</p></div>
             <div className="report-card report-card--amber" onClick={handleCostPrint}><Printer /><h3>Print Report</h3><p>Open in print dialog</p></div>
             <div className="report-card report-card--amber" onClick={handleCostExcel}><Download /><h3>Export Excel</h3><p>Export to spreadsheet</p></div>
+          </div>
+        </>
+      )}
+
+      {/* ═══ TAB 4 — WORK ORDERS BY DATE RANGE ══════════ */}
+      {activeTab === 'wo_date' && (
+        <>
+          <div className="card" style={{ marginBottom: 24 }}>
+            <div className="card-header">
+              <SectionHeader
+                icon={Calendar}
+                title="Work Orders Issued — Date Range Filter"
+                subtitle="Shows projects whose Work Order Issue Date falls within the selected range"
+                accent="var(--purple)"
+              />
+            </div>
+
+            <div className="report-info-banner" style={{ '--banner-color': 'var(--purple)', '--banner-glow': 'var(--purple-glow)' }}>
+              <Calendar size={14} />
+              Only projects with a recorded <strong>Work Order Date</strong> within your selected range will appear.
+            </div>
+
+            <div className="filter-bar" style={{ marginBottom: 0 }}>
+              <div className="form-group">
+                <label className="form-label">From Date</label>
+                <input type="date" className="form-input" value={woFilters.fromDate} onChange={e => setWoFilters(f => ({ ...f, fromDate: e.target.value }))} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">To Date</label>
+                <input type="date" className="form-input" value={woFilters.toDate} onChange={e => setWoFilters(f => ({ ...f, toDate: e.target.value }))} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Scheme</label>
+                <select className="form-select" value={woFilters.scheme} onChange={e => setWoFilters(f => ({ ...f, scheme: e.target.value }))}>
+                  <option value="">All</option>{schemes.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Constituency</label>
+                <select className="form-select" value={woFilters.constituency} onChange={e => setWoFilters(f => ({ ...f, constituency: e.target.value }))}>
+                  <option value="">All</option>{constituencies.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                </select>
+              </div>
+            </div>
+
+            {woFiltered.length > 0 && (
+              <SummaryStrip accent="var(--purple)" items={[
+                { label: 'Work Orders',       val: woFiltered.length },
+                { label: 'Total Sanctioned',  val: fmtL(woFiltered.reduce((s, p) => s + (p.sanctionedAmount || 0), 0)) },
+                { label: 'Total Tendered',    val: fmtL(woFiltered.reduce((s, p) => s + (p.tenderedCost || 0), 0)) },
+              ]} />
+            )}
+          </div>
+
+          <MatchBadge count={woFiltered.length} />
+
+          <div className="report-options">
+            <div className="report-card" style={{ '--report-accent': 'var(--purple)' }} onClick={handleWoPDF}><FileText /><h3>Download PDF</h3><p>Work order list with contractor details</p></div>
+            <div className="report-card" style={{ '--report-accent': 'var(--purple)' }} onClick={handleWoPrint}><Printer /><h3>Print Report</h3><p>Open in print dialog</p></div>
+            <div className="report-card" style={{ '--report-accent': 'var(--purple)' }} onClick={handleWoExcel}><Download /><h3>Export Excel</h3><p>Export to spreadsheet</p></div>
           </div>
         </>
       )}
