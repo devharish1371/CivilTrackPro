@@ -25,6 +25,72 @@ const fmtL = (n) => {
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
 const statusLabel = (s) => s === 'completed' ? 'Completed' : s === 'in_progress' ? 'In Progress' : 'Yet to Start';
 
+export const REPORT_COLUMNS = [
+  { id: 'projectName', label: 'Project Name', align: 'left' },
+  { id: 'category', label: 'Category', align: 'left' },
+  { id: 'yearOfSanction', label: 'Year', align: 'center' },
+  { id: 'constituency', label: 'Constituency', align: 'left' },
+  { id: 'villagePanchayat', label: 'Village Panchayat', align: 'left' },
+  { id: 'scheme', label: 'Scheme', align: 'left' },
+  { id: 'phase', label: 'Phase', align: 'left' },
+  { id: 'contractorName', label: 'Contractor', align: 'left' },
+  { id: 'workOrderDate', label: 'WO Date', align: 'left' },
+  { id: 'completionDateContract', label: 'Comp (C)', align: 'left' },
+  { id: 'actualCompletionDate', label: 'Act Comp', align: 'left' },
+  { id: 'daysDiff', label: 'Days Diff', align: 'center' },
+  { id: 'sanctionedAmount', label: 'Sanc.\n(Cr/L)', align: 'right' },
+  { id: 'tenderedCost', label: 'Tender\n(Cr/L)', align: 'right' },
+  { id: 'variation', label: 'Var %', align: 'center' },
+  { id: 'expenditureIncurred', label: 'Expend.\n(Cr/L)', align: 'right' },
+  { id: 'utilisedAmount', label: 'Utilised\n(Cr/L)', align: 'right' },
+  { id: 'balanceAmount', label: 'Balance\n(Cr/L)', align: 'right' },
+  { id: 'statusOfWork', label: 'Status', align: 'center' },
+  { id: 'ucSentDate', label: 'UC Date', align: 'center' },
+  { id: 'remarks', label: 'Remarks', align: 'left' }
+];
+
+export const DEFAULT_COLUMNS = {
+  standard: ['projectName', 'yearOfSanction', 'constituency', 'villagePanchayat', 'scheme', 'phase', 'contractorName', 'workOrderDate', 'completionDateContract', 'actualCompletionDate', 'sanctionedAmount', 'tenderedCost', 'expenditureIncurred', 'utilisedAmount', 'balanceAmount', 'statusOfWork', 'ucSentDate', 'remarks'],
+  completed_date: ['projectName', 'category', 'constituency', 'scheme', 'contractorName', 'workOrderDate', 'completionDateContract', 'actualCompletionDate', 'daysDiff', 'sanctionedAmount', 'tenderedCost', 'expenditureIncurred', 'utilisedAmount', 'ucSentDate', 'remarks'],
+  tendered_cost: ['projectName', 'category', 'yearOfSanction', 'constituency', 'scheme', 'contractorName', 'workOrderDate', 'completionDateContract', 'sanctionedAmount', 'tenderedCost', 'variation', 'expenditureIncurred', 'utilisedAmount', 'balanceAmount', 'statusOfWork'],
+  work_orders: ['workOrderDate', 'projectName', 'constituency', 'scheme', 'contractorName', 'completionDateContract', 'sanctionedAmount', 'tenderedCost', 'statusOfWork', 'remarks']
+};
+
+function getProjectRowValue(p, colId) {
+  const utilised = (p.expenditureIncurred || 0) + (p.deductions || 0);
+  const balance  = (p.sanctionedAmount || 0) - utilised;
+  const variation = p.sanctionedAmount && p.tenderedCost ? (((p.tenderedCost - p.sanctionedAmount) / p.sanctionedAmount) * 100).toFixed(1) + '%' : '-';
+  let daysDiff = '-';
+  if (p.dateOfCompletionContract && p.actualDateOfCompletion) {
+    const diff = Math.round((new Date(p.actualDateOfCompletion) - new Date(p.dateOfCompletionContract)) / (1000 * 60 * 60 * 24));
+    daysDiff = diff === 0 ? 'On time' : diff > 0 ? `+${diff}d` : `${diff}d`;
+  }
+  switch(colId) {
+    case 'projectName': return p.projectName || '-';
+    case 'category': return p.category || '-';
+    case 'yearOfSanction': return p.yearOfSanction || '-';
+    case 'constituency': return p.constituency || '-';
+    case 'villagePanchayat': return p.villagePanchayat || '-';
+    case 'scheme': return p.scheme || '-';
+    case 'phase': return p.phase || '-';
+    case 'contractorName': return p.contractorName || '-';
+    case 'workOrderDate': return fmtDate(p.workOrderDate);
+    case 'completionDateContract': return fmtDate(p.dateOfCompletionContract);
+    case 'actualCompletionDate': return fmtDate(p.actualDateOfCompletion);
+    case 'daysDiff': return daysDiff;
+    case 'sanctionedAmount': return fmtL(p.sanctionedAmount);
+    case 'tenderedCost': return fmtL(p.tenderedCost);
+    case 'variation': return variation;
+    case 'expenditureIncurred': return fmtL(p.expenditureIncurred);
+    case 'utilisedAmount': return fmtL(utilised);
+    case 'balanceAmount': return fmtL(balance);
+    case 'statusOfWork': return statusLabel(p.statusOfWork);
+    case 'ucSentDate': return fmtDate(p.ucSentDate);
+    case 'remarks': return p.notes || '-';
+    default: return '-';
+  }
+}
+
 // ─── Ink-saving Header (no fill — just text + bottom rule) ──────────────────
 function addHeader(doc, title, subtitle = '') {
   const W = doc.internal.pageSize.getWidth();
@@ -149,72 +215,22 @@ export function generateProjectListPDF(projects, filters = {}, selectedColumns =
     { label: 'Total Balance',    value: fmtL(totalBal) },
   ], 40);
 
-  const ALL_COLS = [
-    { id: 'projectName', label: 'Project Name', align: 'left' },
-    { id: 'category', label: 'Category', align: 'left' },
-    { id: 'yearOfSanction', label: 'Year', align: 'center' },
-    { id: 'constituency', label: 'Constituency', align: 'left' },
-    { id: 'villagePanchayat', label: 'Village Panchayat', align: 'left' },
-    { id: 'scheme', label: 'Scheme', align: 'left' },
-    { id: 'phase', label: 'Phase', align: 'left' },
-    { id: 'contractorName', label: 'Contractor', align: 'left' },
-    { id: 'workOrderDate', label: 'WO Date', align: 'left' },
-    { id: 'completionDateContract', label: 'Comp (C)', align: 'left' },
-    { id: 'actualCompletionDate', label: 'Act Comp', align: 'left' },
-    { id: 'sanctionedAmount', label: 'Sanc.\n(Cr/L)', align: 'right' },
-    { id: 'tenderedCost', label: 'Tender\n(Cr/L)', align: 'right' },
-    { id: 'expenditureIncurred', label: 'Expend.\n(Cr/L)', align: 'right' },
-    { id: 'utilisedAmount', label: 'Utilised\n(Cr/L)', align: 'right' },
-    { id: 'balanceAmount', label: 'Balance\n(Cr/L)', align: 'right' },
-    { id: 'statusOfWork', label: 'Status', align: 'center' },
-    { id: 'ucSentDate', label: 'UC Date', align: 'center' },
-    { id: 'remarks', label: 'Remarks', align: 'left' }
-  ];
+  const selectedColIds = selectedColumns || DEFAULT_COLUMNS.standard;
+  const orderedCols = selectedColIds.map(id => REPORT_COLUMNS.find(c => c.id === id)).filter(Boolean);
 
-  const cols = selectedColumns 
-    ? ALL_COLS.filter(c => selectedColumns.includes(c.id))
-    : ALL_COLS.filter(c => c.id !== 'category');
+  const rows = projects.map((p, i) => [i + 1, ...orderedCols.map(c => getProjectRowValue(p, c.id))]);
 
-  const rows = projects.map((p, i) => {
-    const utilised = (p.expenditureIncurred || 0) + (p.deductions || 0);
-    const balance  = (p.sanctionedAmount || 0) - utilised;
-    
-    const rowData = [i + 1];
-    cols.forEach(c => {
-      if (c.id === 'projectName') rowData.push(p.projectName || '-');
-      else if (c.id === 'category') rowData.push(p.category || '-');
-      else if (c.id === 'yearOfSanction') rowData.push(p.yearOfSanction || '-');
-      else if (c.id === 'constituency') rowData.push(p.constituency || '-');
-      else if (c.id === 'villagePanchayat') rowData.push(p.villagePanchayat || '-');
-      else if (c.id === 'scheme') rowData.push(p.scheme || '-');
-      else if (c.id === 'phase') rowData.push(p.phase || '-');
-      else if (c.id === 'contractorName') rowData.push(p.contractorName || '-');
-      else if (c.id === 'workOrderDate') rowData.push(fmtDate(p.workOrderDate));
-      else if (c.id === 'completionDateContract') rowData.push(fmtDate(p.dateOfCompletionContract));
-      else if (c.id === 'actualCompletionDate') rowData.push(fmtDate(p.actualDateOfCompletion));
-      else if (c.id === 'sanctionedAmount') rowData.push(fmtL(p.sanctionedAmount));
-      else if (c.id === 'tenderedCost') rowData.push(fmtL(p.tenderedCost));
-      else if (c.id === 'expenditureIncurred') rowData.push(fmtL(p.expenditureIncurred));
-      else if (c.id === 'utilisedAmount') rowData.push(fmtL(utilised));
-      else if (c.id === 'balanceAmount') rowData.push(fmtL(balance));
-      else if (c.id === 'statusOfWork') rowData.push(statusLabel(p.statusOfWork));
-      else if (c.id === 'ucSentDate') rowData.push(fmtDate(p.ucSentDate));
-      else if (c.id === 'remarks') rowData.push(p.notes || '-');
-    });
-    return rowData;
-  });
-
-  const headers = ['#', ...cols.map(c => c.label)];
+  const headers = ['#', ...orderedCols.map(c => c.label)];
   const colStyles = { 0: { cellWidth: 8, halign: 'center' } };
-  cols.forEach((c, idx) => {
+  orderedCols.forEach((c, idx) => {
     colStyles[idx + 1] = { halign: c.align };
     if (c.id === 'remarks') colStyles[idx + 1].cellWidth = 'wrap';
   });
 
   let dynamicFontSize = 8;
-  if (cols.length <= 6) dynamicFontSize = 11;
-  else if (cols.length <= 10) dynamicFontSize = 10;
-  else if (cols.length <= 14) dynamicFontSize = 9;
+  if (orderedCols.length <= 6) dynamicFontSize = 11;
+  else if (orderedCols.length <= 10) dynamicFontSize = 10;
+  else if (orderedCols.length <= 14) dynamicFontSize = 9;
 
   autoTable(doc, {
     startY: 64,
@@ -228,7 +244,7 @@ export function generateProjectListPDF(projects, filters = {}, selectedColumns =
     columnStyles: colStyles,
     didParseCell(data) {
       if (data.section === 'body') {
-        const colId = cols[data.column.index - 1]?.id;
+        const colId = orderedCols[data.column.index - 1]?.id;
         if (colId === 'utilisedAmount' || colId === 'statusOfWork') {
           data.cell.styles.fontStyle = 'bold';
         }
@@ -550,7 +566,7 @@ export function generateAlertsPDF(alerts, filters = {}) {
 //  COMPLETED WORK BY DATE RANGE PDF — A3 Landscape, Ink-Saving
 //  Filters: actualDateOfCompletion within [fromDate, toDate]
 // ═══════════════════════════════════════════════════════════════════════════
-export function generateCompletedWorkByDateRangePDF(projects, filters = {}) {
+export function generateCompletedWorkByDateRangePDF(projects, filters = {}, selectedColumns = null) {
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a3' });
   const W  = doc.internal.pageSize.getWidth();
   const MW = W - 24;
@@ -579,63 +595,40 @@ export function generateCompletedWorkByDateRangePDF(projects, filters = {}) {
     { label: 'Total Utilised',     value: fmtL(totalU) },
   ], 40);
 
-  const headers = ['#', 'Project Name', 'Category', 'Constituency', 'Scheme', 'Contractor',
-    'WO Date', 'Contract Comp.', 'Actual Comp.', 'Days Diff',
-    'Sanctioned\n(Cr/L)', 'Tendered\n(Cr/L)', 'Expenditure\n(Cr/L)', 'Utilised\n(Cr/L)', 'UC Date', 'Remarks'];
+  const selectedColIds = selectedColumns || DEFAULT_COLUMNS.completed_date;
+  const orderedCols = selectedColIds.map(id => REPORT_COLUMNS.find(c => c.id === id)).filter(Boolean);
 
-  const rows = projects.map((p, i) => {
-    const utilised = (p.expenditureIncurred || 0) + (p.deductions || 0);
-    let daysDiff = '-';
-    if (p.dateOfCompletionContract && p.actualDateOfCompletion) {
-      const contract = new Date(p.dateOfCompletionContract);
-      const actual   = new Date(p.actualDateOfCompletion);
-      const diff = Math.round((actual - contract) / (1000 * 60 * 60 * 24));
-      daysDiff = diff === 0 ? 'On time' : diff > 0 ? `+${diff}d` : `${diff}d`;
-    }
-    return [
-      i + 1,
-      p.projectName || '-',
-      p.category || '-',
-      p.constituency || '-',
-      p.scheme || '-',
-      p.contractorName || '-',
-      fmtDate(p.workOrderDate),
-      fmtDate(p.dateOfCompletionContract),
-      fmtDate(p.actualDateOfCompletion),
-      daysDiff,
-      fmtL(p.sanctionedAmount),
-      fmtL(p.tenderedCost),
-      fmtL(p.expenditureIncurred),
-      fmtL(utilised),
-      fmtDate(p.ucSentDate),
-      p.notes || '-',
-    ];
+  const headers = ['#', ...orderedCols.map(c => c.label)];
+  const rows = projects.map((p, i) => [i + 1, ...orderedCols.map(c => getProjectRowValue(p, c.id))]);
+
+  const colStyles = { 0: { cellWidth: 8, halign: 'center' } };
+  orderedCols.forEach((c, idx) => {
+    colStyles[idx + 1] = { halign: c.align };
+    if (c.id === 'remarks') colStyles[idx + 1].cellWidth = 'wrap';
   });
+
+  let dynamicFontSize = 8;
+  if (orderedCols.length <= 6) dynamicFontSize = 11;
+  else if (orderedCols.length <= 10) dynamicFontSize = 10;
+  else if (orderedCols.length <= 14) dynamicFontSize = 9;
 
   autoTable(doc, {
     startY: 64,
     head: [headers],
     body: rows,
-    styles: { ...BS, fontSize: 8, cellPadding: 2.5 },
-    headStyles: { ...HS, fontSize: 8, cellPadding: 3 },
+    styles: { ...BS, fontSize: dynamicFontSize, cellPadding: 2.5 },
+    headStyles: { ...HS, fontSize: dynamicFontSize, cellPadding: 3 },
     alternateRowStyles: AR,
     tableWidth: MW,
     margin: { left: 12, right: 12 },
-    columnStyles: {
-      0:  { cellWidth: 8,  halign: 'center' },
-      7:  { halign: 'center' },
-      8:  { halign: 'center' },
-      9:  { halign: 'center', fontStyle: 'bold' },
-      10: { halign: 'right' },
-      11: { halign: 'right' },
-      12: { halign: 'right' },
-      13: { halign: 'right', fontStyle: 'bold' },
-      14: { halign: 'center' },
-    },
+    columnStyles: colStyles,
     didParseCell(data) {
-      if (data.section === 'body' && data.column.index === 9) {
-        const v = String(data.cell.raw || '');
-        if (v.startsWith('+')) data.cell.styles.fontStyle = 'bold'; // delayed
+      if (data.section === 'body') {
+        const colId = orderedCols[data.column.index - 1]?.id;
+        if (colId === 'daysDiff') {
+          const v = String(data.cell.raw || '');
+          if (v.startsWith('+')) data.cell.styles.fontStyle = 'bold'; // delayed
+        }
       }
     },
   });
@@ -648,7 +641,7 @@ export function generateCompletedWorkByDateRangePDF(projects, filters = {}) {
 //  ALL WORK BY TENDERED COST RANGE PDF — A3 Landscape, Ink-Saving
 //  Filters: tenderedCost within [minCost, maxCost]
 // ═══════════════════════════════════════════════════════════════════════════
-export function generateWorkByTenderedCostPDF(projects, filters = {}) {
+export function generateWorkByTenderedCostPDF(projects, filters = {}, selectedColumns = null) {
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a3' });
   const W  = doc.internal.pageSize.getWidth();
   const MW = W - 24;
@@ -684,62 +677,37 @@ export function generateWorkByTenderedCostPDF(projects, filters = {}) {
     { label: 'Total Balance',      value: fmtL(totalBal) },
   ], 40);
 
-  const headers = ['#', 'Project Name', 'Category', 'Year', 'Constituency', 'Scheme',
-    'Contractor', 'WO Date', 'Comp. Date',
-    'Sanctioned\n(Cr/L)', 'Tendered\n(Cr/L)', 'Var %', 'Expenditure\n(Cr/L)',
-    'Utilised\n(Cr/L)', 'Balance\n(Cr/L)', 'Status'];
+  const selectedColIds = selectedColumns || DEFAULT_COLUMNS.tendered_cost;
+  const orderedCols = selectedColIds.map(id => REPORT_COLUMNS.find(c => c.id === id)).filter(Boolean);
 
-  const rows = projects.map((p, i) => {
-    const utilised = (p.expenditureIncurred || 0) + (p.deductions || 0);
-    const balance  = (p.sanctionedAmount || 0) - utilised;
-    const variation = p.sanctionedAmount && p.tenderedCost
-      ? (((p.tenderedCost - p.sanctionedAmount) / p.sanctionedAmount) * 100).toFixed(1) + '%'
-      : '-';
-    return [
-      i + 1,
-      p.projectName || '-',
-      p.category || '-',
-      p.yearOfSanction || '-',
-      p.constituency || '-',
-      p.scheme || '-',
-      p.contractorName || '-',
-      fmtDate(p.workOrderDate),
-      fmtDate(p.dateOfCompletionContract),
-      fmtL(p.sanctionedAmount),
-      fmtL(p.tenderedCost),
-      variation,
-      fmtL(p.expenditureIncurred),
-      fmtL(utilised),
-      fmtL(balance),
-      statusLabel(p.statusOfWork),
-    ];
+  const headers = ['#', ...orderedCols.map(c => c.label)];
+  const rows = projects.map((p, i) => [i + 1, ...orderedCols.map(c => getProjectRowValue(p, c.id))]);
+
+  const colStyles = { 0: { cellWidth: 8, halign: 'center' } };
+  orderedCols.forEach((c, idx) => {
+    colStyles[idx + 1] = { halign: c.align };
+    if (c.id === 'remarks') colStyles[idx + 1].cellWidth = 'wrap';
   });
+
+  let dynamicFontSize = 8;
+  if (orderedCols.length <= 6) dynamicFontSize = 11;
+  else if (orderedCols.length <= 10) dynamicFontSize = 10;
+  else if (orderedCols.length <= 14) dynamicFontSize = 9;
 
   autoTable(doc, {
     startY: 64,
     head: [headers],
     body: rows,
-    styles: { ...BS, fontSize: 8, cellPadding: 2.5 },
-    headStyles: { ...HS, fontSize: 8, cellPadding: 3 },
+    styles: { ...BS, fontSize: dynamicFontSize, cellPadding: 2.5 },
+    headStyles: { ...HS, fontSize: dynamicFontSize, cellPadding: 3 },
     alternateRowStyles: AR,
     tableWidth: MW,
     margin: { left: 12, right: 12 },
-    columnStyles: {
-      0:  { cellWidth: 8, halign: 'center' },
-      3:  { cellWidth: 12, halign: 'center' },
-      7:  { halign: 'center' },
-      8:  { halign: 'center' },
-      9:  { halign: 'right' },
-      10: { halign: 'right', fontStyle: 'bold' },
-      11: { halign: 'center' },
-      12: { halign: 'right' },
-      13: { halign: 'right', fontStyle: 'bold' },
-      14: { halign: 'right' },
-      15: { halign: 'center' },
-    },
+    columnStyles: colStyles,
     didParseCell(data) {
       if (data.section === 'body') {
-        if (data.column.index === 13 || data.column.index === 15) {
+        const colId = orderedCols[data.column.index - 1]?.id;
+        if (colId === 'utilisedAmount' || colId === 'statusOfWork') {
           data.cell.styles.fontStyle = 'bold';
         }
       }
@@ -753,7 +721,7 @@ export function generateWorkByTenderedCostPDF(projects, filters = {}) {
 //  WORK ORDERS BY DATE RANGE PDF — A3 Landscape, Ink-Saving
 //  Filters: workOrderDate within [fromDate, toDate]
 // ═══════════════════════════════════════════════════════════════════════════
-export function generateWorkOrdersByDateRangePDF(projects, filters = {}) {
+export function generateWorkOrdersByDateRangePDF(projects, filters = {}, selectedColumns = null) {
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a3' });
   const W  = doc.internal.pageSize.getWidth();
   const MW = W - 24;
@@ -776,43 +744,33 @@ export function generateWorkOrdersByDateRangePDF(projects, filters = {}) {
     { label: 'Total Tendered',     value: fmtL(totalT) },
   ], 40);
 
-  const headers = ['#', 'Work Order Date', 'Project Name', 'Constituency', 'Scheme', 'Contractor',
-    'Contract Comp.', 'Sanctioned\n(Cr/L)', 'Tendered\n(Cr/L)', 'Status', 'Remarks'];
+  const selectedColIds = selectedColumns || DEFAULT_COLUMNS.work_orders;
+  const orderedCols = selectedColIds.map(id => REPORT_COLUMNS.find(c => c.id === id)).filter(Boolean);
 
-  const rows = projects.map((p, i) => {
-    return [
-      i + 1,
-      fmtDate(p.workOrderDate),
-      p.projectName || '-',
-      p.constituency || '-',
-      p.scheme || '-',
-      p.contractorName || '-',
-      fmtDate(p.dateOfCompletionContract),
-      fmtL(p.sanctionedAmount),
-      fmtL(p.tenderedCost),
-      statusLabel(p.statusOfWork),
-      p.notes || '-',
-    ];
+  const headers = ['#', ...orderedCols.map(c => c.label)];
+  const rows = projects.map((p, i) => [i + 1, ...orderedCols.map(c => getProjectRowValue(p, c.id))]);
+
+  const colStyles = { 0: { cellWidth: 8, halign: 'center' } };
+  orderedCols.forEach((c, idx) => {
+    colStyles[idx + 1] = { halign: c.align };
+    if (c.id === 'remarks') colStyles[idx + 1].cellWidth = 'wrap';
+    if (c.id === 'workOrderDate') colStyles[idx + 1].fontStyle = 'bold';
   });
+
+  let dynamicFontSize = 9;
+  if (orderedCols.length <= 6) dynamicFontSize = 11;
+  else if (orderedCols.length <= 10) dynamicFontSize = 10;
 
   autoTable(doc, {
     startY: 64,
     head: [headers],
     body: rows,
-    styles: { ...BS, fontSize: 9, cellPadding: 2.5 },
-    headStyles: { ...HS, fontSize: 9, cellPadding: 3 },
+    styles: { ...BS, fontSize: dynamicFontSize, cellPadding: 2.5 },
+    headStyles: { ...HS, fontSize: dynamicFontSize, cellPadding: 3 },
     alternateRowStyles: AR,
     tableWidth: MW,
     margin: { left: 12, right: 12 },
-    columnStyles: {
-      0:  { cellWidth: 8, halign: 'center' },
-      1:  { cellWidth: 25, halign: 'center', fontStyle: 'bold' },
-      2:  { cellWidth: 80 },
-      6:  { halign: 'center' },
-      7:  { halign: 'right' },
-      8:  { halign: 'right' },
-      9:  { halign: 'center' },
-    },
+    columnStyles: colStyles,
   });
 
   addFooter(doc, `Work Orders Issued Report  —  ${filterText}`);

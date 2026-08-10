@@ -11,6 +11,7 @@ import {
 import { exportProjectsToExcel } from '../utils/excelExport';
 import { downloadKML } from '../utils/kmlExport';
 import { FileText, Download, Printer, MapPin, CheckCircle, IndianRupee, SlidersHorizontal, Calendar } from 'lucide-react';
+import ExportModal from './ExportModal';
 
 /* ─── tiny helpers ─────────────────────────────────────────────── */
 const fmtL = (n) => {
@@ -104,6 +105,8 @@ export default function Reports() {
   /* ── Work Order date-range filters ─────────────────── */
   const [woFilters, setWoFilters] = useState({ fromDate: '', toDate: '', scheme: '', constituency: '' });
 
+  const [exportModal, setExportModal] = useState({ isOpen: false, type: null });
+
   const years = [...new Set(projects.map(p => p.yearOfSanction))].sort((a, b) => b - a);
   const show = (msg) => { setToast(msg); setTimeout(() => setToast(''), 2500); };
 
@@ -141,25 +144,43 @@ export default function Reports() {
   });
 
   /* ── Handlers: standard ─────────────────────────────── */
-  const handlePDF     = () => { savePDF(generateProjectListPDF(standardFiltered, filters), 'CivilTrack_Report.pdf'); show('PDF downloaded!'); };
+  const handlePDF     = () => setExportModal({ isOpen: true, type: 'standard' });
   const handlePrint   = () => { const doc = generateProjectListPDF(standardFiltered, filters); const url = URL.createObjectURL(doc.output('blob')); const w = window.open(url); if (w) w.onload = () => w.print(); };
   const handleExcel   = () => { exportProjectsToExcel(standardFiltered, grants); show('Excel downloaded!'); };
   const handleKML     = () => { downloadKML(standardFiltered); show('KML downloaded!'); };
 
   /* ── Handlers: completed date range ───────────────── */
-  const handleCompletedPDF   = () => { savePDF(generateCompletedWorkByDateRangePDF(completedFiltered, dateFilters), 'CivilTrack_CompletedWork_Report.pdf'); show('Completed Work PDF downloaded!'); };
+  const handleCompletedPDF   = () => setExportModal({ isOpen: true, type: 'completed_date' });
   const handleCompletedPrint = () => { const doc = generateCompletedWorkByDateRangePDF(completedFiltered, dateFilters); const url = URL.createObjectURL(doc.output('blob')); const w = window.open(url); if (w) w.onload = () => w.print(); };
   const handleCompletedExcel = () => { exportProjectsToExcel(completedFiltered, grants); show('Excel downloaded!'); };
 
   /* ── Handlers: tendered cost range ────────────────── */
-  const handleCostPDF   = () => { savePDF(generateWorkByTenderedCostPDF(costFiltered, costFilters), 'CivilTrack_TenderedCost_Report.pdf'); show('Tendered Cost PDF downloaded!'); };
+  const handleCostPDF   = () => setExportModal({ isOpen: true, type: 'tendered_cost' });
   const handleCostPrint = () => { const doc = generateWorkByTenderedCostPDF(costFiltered, costFilters); const url = URL.createObjectURL(doc.output('blob')); const w = window.open(url); if (w) w.onload = () => w.print(); };
   const handleCostExcel = () => { exportProjectsToExcel(costFiltered, grants); show('Excel downloaded!'); };
 
   /* ── Handlers: work order date range ──────────────── */
-  const handleWoPDF   = () => { savePDF(generateWorkOrdersByDateRangePDF(woFiltered, woFilters), 'CivilTrack_WorkOrders_Report.pdf'); show('Work Orders PDF downloaded!'); };
+  const handleWoPDF   = () => setExportModal({ isOpen: true, type: 'work_orders' });
   const handleWoPrint = () => { const doc = generateWorkOrdersByDateRangePDF(woFiltered, woFilters); const url = URL.createObjectURL(doc.output('blob')); const w = window.open(url); if (w) w.onload = () => w.print(); };
   const handleWoExcel = () => { exportProjectsToExcel(woFiltered, grants); show('Excel downloaded!'); };
+
+  const executeExport = (columns) => {
+    switch (exportModal.type) {
+      case 'standard':
+        savePDF(generateProjectListPDF(standardFiltered, filters, columns), 'CivilTrack_Report.pdf');
+        break;
+      case 'completed_date':
+        savePDF(generateCompletedWorkByDateRangePDF(completedFiltered, dateFilters, columns), 'CivilTrack_CompletedWork_Report.pdf');
+        break;
+      case 'tendered_cost':
+        savePDF(generateWorkByTenderedCostPDF(costFiltered, costFilters, columns), 'CivilTrack_TenderedCost_Report.pdf');
+        break;
+      case 'work_orders':
+        savePDF(generateWorkOrdersByDateRangePDF(woFiltered, woFilters, columns), 'CivilTrack_WorkOrders_Report.pdf');
+        break;
+    }
+    show('PDF downloaded!');
+  };
 
   /* ── Tabs config ─────────────────────────────────── */
   const tabs = [
@@ -250,9 +271,11 @@ export default function Reports() {
             </div>
 
             <div className="report-info-banner" style={{ '--banner-color': 'var(--emerald)', '--banner-glow': 'var(--emerald-glow)' }}>
-              <CheckCircle size={14} />
-              Only projects with <strong style={{ marginLeft: 3 }}>Status = Completed</strong>&nbsp;
-              and a recorded <strong>Actual Completion Date</strong> within your selected range will appear.
+              <CheckCircle size={14} style={{ flexShrink: 0 }} />
+              <span>
+                Only projects with <strong style={{ marginLeft: 3 }}>Status = Completed</strong>&nbsp;
+                and a recorded <strong>Actual Completion Date</strong> within your selected range will appear.
+              </span>
             </div>
 
             <div className="filter-bar" style={{ marginBottom: 0 }}>
@@ -312,9 +335,11 @@ export default function Reports() {
             </div>
 
             <div className="report-info-banner" style={{ '--banner-color': 'var(--amber)', '--banner-glow': 'var(--amber-glow)' }}>
-              <IndianRupee size={14} />
-              Enter costs in <strong style={{ marginLeft: 3 }}>Rupees</strong>. Leave Min or Max blank to apply an open-ended range.
-              All statuses are included unless filtered below.
+              <IndianRupee size={14} style={{ flexShrink: 0 }} />
+              <span>
+                Enter costs in <strong style={{ marginLeft: 3 }}>Rupees</strong>. Leave Min or Max blank to apply an open-ended range.
+                All statuses are included unless filtered below.
+              </span>
             </div>
 
             <div className="filter-bar" style={{ marginBottom: 0 }}>
@@ -382,8 +407,10 @@ export default function Reports() {
             </div>
 
             <div className="report-info-banner" style={{ '--banner-color': 'var(--purple)', '--banner-glow': 'var(--purple-glow)' }}>
-              <Calendar size={14} />
-              Only projects with a recorded <strong>Work Order Date</strong> within your selected range will appear.
+              <Calendar size={14} style={{ flexShrink: 0 }} />
+              <span>
+                Only projects with a recorded <strong>Work Order Date</strong> within your selected range will appear.
+              </span>
             </div>
 
             <div className="filter-bar" style={{ marginBottom: 0 }}>
@@ -427,6 +454,13 @@ export default function Reports() {
           </div>
         </>
       )}
+
+      <ExportModal
+        isOpen={exportModal.isOpen}
+        reportType={exportModal.type}
+        onClose={() => setExportModal({ isOpen: false, type: null })}
+        onExport={executeExport}
+      />
 
       {toast && <div className="toast success">{toast}</div>}
     </div>
