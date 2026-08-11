@@ -243,40 +243,6 @@ export default function ProjectDetail() {
         </div>
       )}
 
-      {/* Photos */}
-      {p.photos && p.photos.length > 0 && (
-        <div className="card" style={{ marginBottom: 16 }}>
-          <div className="card-header"><span className="card-title"><ImageIcon size={14} style={{ display:'inline', verticalAlign:'middle' }} /> Before/After Photos</span></div>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            {p.photos.map((photo, i) => (
-              <a key={i} href={photo.url} target="_blank" rel="noopener noreferrer" style={{ display: 'block', width: 140, height: 140, borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
-                <img src={photo.url} alt={`Project photo ${i+1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              </a>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Documents */}
-      {p.documents && p.documents.length > 0 && (
-        <div className="card" style={{ marginBottom: 16 }}>
-          <div className="card-header"><span className="card-title"><Paperclip size={14} style={{ display:'inline', verticalAlign:'middle' }} /> Other Files</span></div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {p.documents.map((doc, i) => (
-              <a key={i} href={doc.url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'var(--bg-elevated)', borderRadius: 6, border: '1px solid var(--border-subtle)', textDecoration: 'none', color: 'inherit', transition: 'all 0.2s ease' }} onMouseOver={e => e.currentTarget.style.borderColor='var(--cyan)'} onMouseOut={e => e.currentTarget.style.borderColor='var(--border-subtle)'}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, overflow: 'hidden' }}>
-                  <FileText size={18} style={{ color: 'var(--cyan)' }} />
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontSize: 13, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{doc.name}</span>
-                    <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{(doc.size / 1024 / 1024).toFixed(2)} MB</span>
-                  </div>
-                </div>
-                <Download size={16} style={{ color: 'var(--text-muted)' }} />
-              </a>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Lock Modal */}
       {lockModal && (
