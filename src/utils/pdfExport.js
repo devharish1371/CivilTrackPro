@@ -46,6 +46,7 @@ export const REPORT_COLUMNS = [
   { id: 'balanceAmount', label: 'Balance\n(Cr/L)', align: 'right' },
   { id: 'statusOfWork', label: 'Status', align: 'center' },
   { id: 'ucSentDate', label: 'UC Date', align: 'center' },
+  { id: 'physicalParametersNotes', label: 'Physical Parameters', align: 'left' },
   { id: 'remarks', label: 'Remarks', align: 'left' }
 ];
 
@@ -86,6 +87,7 @@ function getProjectRowValue(p, colId) {
     case 'balanceAmount': return fmtL(balance);
     case 'statusOfWork': return statusLabel(p.statusOfWork);
     case 'ucSentDate': return fmtDate(p.ucSentDate);
+    case 'physicalParametersNotes': return p.physicalParametersNotes || '-';
     case 'remarks': return p.notes || '-';
     default: return '-';
   }

@@ -141,7 +141,7 @@ export default function ProjectList() {
         <div><h1>Projects</h1><p>{filtered.length} of {projects.length} projects</p></div>
         <div className="btn-group">
           <button className="btn btn-secondary btn-sm" onClick={() => setShowFilters(!showFilters)}><Filter size={14} /> Filters</button>
-          <button className="btn btn-secondary btn-sm" onClick={() => exportProjectsToExcel(filtered, grants)}><Download size={14} /> Excel</button>
+          <button className="btn btn-secondary btn-sm" onClick={() => exportProjectsToExcel(filtered, { grants })}><Download size={14} /> Excel</button>
           <button className="btn btn-secondary btn-sm" onClick={() => setPdfModal(true)}><FileText size={14} /> PDF</button>
           <button className="btn btn-secondary btn-sm" onClick={() => sharePDF(generateProjectListPDF(filtered, filters, selectedColumns),'Report.pdf')}><Share2 size={14} /> Share</button>
           <button className="btn btn-secondary btn-sm" onClick={() => downloadKML(filtered)}><MapPin size={14} /> KML</button>

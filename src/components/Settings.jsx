@@ -27,7 +27,7 @@ export default function Settings() {
 
   const handleExportExcel = () => {
     try {
-      exportProjectsToExcel(projects, contractors, engineers, schemes, constituencies, panchayats, grants, 'CivilTrack_Sync.xlsx', exportStart, exportEnd);
+      exportProjectsToExcel(projects, { contractors, engineers, schemes, constituencies, panchayats, grants, filename: 'CivilTrack_Sync.xlsx', startDate: exportStart, endDate: exportEnd });
       setStatus(`Exported Excel ${exportStart || exportEnd ? 'for selected dates' : 'for all data'} ✓`);
     } catch (e) { setError('Export failed: ' + e.message); }
   };

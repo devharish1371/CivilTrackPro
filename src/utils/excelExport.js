@@ -1,9 +1,16 @@
 import * as XLSX from 'xlsx';
 import { getUcSentStatus, getSecurityDepositReleaseStatus } from './projectStatus';
+import { REPORT_COLUMNS } from './pdfExport';
 
 const n = (v) => Number(v) || 0;
 
-export function exportProjectsToExcel(projects, contractors = [], engineers = [], schemes = [], constituencies = [], panchayats = [], grants = [], filename = 'CivilTrack_Projects.xlsx', startDate = null, endDate = null) {
+export function exportProjectsToExcel(projects, options = {}) {
+  const {
+    contractors = [], engineers = [], schemes = [], constituencies = [],
+    panchayats = [], grants = [], filename = 'CivilTrack_Projects.xlsx',
+    startDate = null, endDate = null, columns = null
+  } = options;
+
   const wb = XLSX.utils.book_new();
 
   const filterByDate = (items) => {
@@ -24,29 +31,86 @@ export function exportProjectsToExcel(projects, contractors = [], engineers = []
   const filteredPanchayats = filterByDate(panchayats);
   const filteredGrants = filterByDate(grants);
 
+  // Helper to extract values dynamically if columns are specified
+  const getExcelValue = (p, colId) => {
+    const utilised = n(p.expenditureIncurred) + n(p.deductions);
+    const balance = n(p.sanctionedAmount) - utilised;
+    const variation = p.sanctionedAmount && p.tenderedCost ? (((p.tenderedCost - p.sanctionedAmount) / p.sanctionedAmount) * 100).toFixed(1) + '%' : '-';
+    let daysDiff = '-';
+    if (p.dateOfCompletionContract && p.actualDateOfCompletion) {
+      const diff = Math.round((new Date(p.actualDateOfCompletion) - new Date(p.dateOfCompletionContract)) / (1000 * 60 * 60 * 24));
+      daysDiff = diff === 0 ? 'On time' : diff > 0 ? `+${diff}d` : `${diff}d`;
+    }
+
+    switch (colId) {
+      case 'projectName': return p.projectName || '';
+      case 'category': return p.category || '';
+      case 'yearOfSanction': return p.yearOfSanction || '';
+      case 'constituency': return p.constituency || '';
+      case 'villagePanchayat': return p.villagePanchayat || '';
+      case 'scheme': return p.scheme || '';
+      case 'phase': return p.phase || '';
+      case 'contractorName': return p.contractorName || '';
+      case 'workOrderDate': return p.workOrderDate || '';
+      case 'completionDateContract': return p.dateOfCompletionContract || '';
+      case 'actualCompletionDate': return p.actualDateOfCompletion || '';
+      case 'daysDiff': return daysDiff;
+      case 'sanctionedAmount': return n(p.sanctionedAmount);
+      case 'tenderedCost': return n(p.tenderedCost);
+      case 'variation': return variation;
+      case 'expenditureIncurred': return n(p.expenditureIncurred);
+      case 'utilisedAmount': return utilised;
+      case 'balanceAmount': return balance;
+      case 'statusOfWork': return p.statusOfWork === 'completed' ? 'Completed' : p.statusOfWork === 'in_progress' ? 'In Progress' : 'Yet to Start';
+      case 'ucSentDate': return p.ucSentDate || '';
+      case 'physicalParametersNotes': return p.physicalParametersNotes || '';
+      case 'remarks': return p.notes || '';
+      default: return '';
+    }
+  };
+
   // Sheet 1: All Projects
-  const main = filteredProjects.map((p, i) => ({
-    'ID': p.id,
-    'S.No': i+1, 'Project Name': p.projectName, 'Category': p.category||'', 'Phase': p.phase||'', 'Year': p.yearOfSanction,
-    'Constituency': p.constituency, 'Village Panchayat': p.villagePanchayat||'', 'Scheme': p.scheme,
-    'GO Number': p.goNumber||'', 'GO Date': p.goDate||'',
-    'Sanctioned (₹)': n(p.sanctionedAmount), 'Tendered Cost (₹)': n(p.tenderedCost),
-    'Contractor': p.contractorName, 'Work Order Date': p.workOrderDate||'',
-    'Start (Contract)': p.dateOfStartContract||'', 'Completion (Contract)': p.dateOfCompletionContract||'',
-    'Actual Start': p.actualDateOfStart||'', 'Actual Completion': p.actualDateOfCompletion||'',
-    'Performance Guarantee': p.performanceGuaranteeDate||'', 'Expiry Date': p.expiryDate||'',
-    'Expenditure (₹)': n(p.expenditureIncurred), 'Deductions (₹)': n(p.deductions),
-    'Utilised (₹)': n(p.expenditureIncurred) + n(p.deductions),
-    'Balance (₹)': n(p.sanctionedAmount) - n(p.expenditureIncurred) - n(p.deductions),
-    'Extension': p.extensionOfTime||'None',
-    'Status': p.statusOfWork==='completed'?'Completed':p.statusOfWork==='in_progress'?'In Progress':'Yet to Start',
-    'Progress (%)': p.progress, 'JE': p.juniorEngineer, 'AE': p.assistantEngineer,
-    'UC Sent': getUcSentStatus(p), 'UC Sent Date': p.ucSentDate||'', 'SD Released': getSecurityDepositReleaseStatus(p), 'Security Deducted': p.securityDepositDeductedDate||'', 'Security Release': p.securityDepositReleaseDate||'',
-    'Security Amount (₹)': n(p.securityAmount),
-    'M Book No': p.mBookNumber||'', 'Audit Register': p.workAuditRegisterNo||'',
-    'Latitude': p.latitude||'', 'Longitude': p.longitude||'',
-    'Physical Parameters': p.physicalParametersNotes||'', 'Notes': p.notes||''
-  }));
+  let sortedProjects = [...filteredProjects];
+  // Arrange projects in ascending order by project name if column selection is active
+  if (columns) {
+    sortedProjects.sort((a, b) => (a.projectName || '').localeCompare(b.projectName || ''));
+  }
+
+  const main = sortedProjects.map((p, i) => {
+    if (columns) {
+      const row = { 'S.No': i + 1 };
+      columns.forEach(colId => {
+        const colDef = REPORT_COLUMNS.find(c => c.id === colId);
+        if (colDef) {
+          row[colDef.label.replace('\n', ' ')] = getExcelValue(p, colId);
+        }
+      });
+      return row;
+    }
+
+    return {
+      'ID': p.id,
+      'S.No': i+1, 'Project Name': p.projectName, 'Category': p.category||'', 'Phase': p.phase||'', 'Year': p.yearOfSanction,
+      'Constituency': p.constituency, 'Village Panchayat': p.villagePanchayat||'', 'Scheme': p.scheme,
+      'GO Number': p.goNumber||'', 'GO Date': p.goDate||'',
+      'Sanctioned (₹)': n(p.sanctionedAmount), 'Tendered Cost (₹)': n(p.tenderedCost),
+      'Contractor': p.contractorName, 'Work Order Date': p.workOrderDate||'',
+      'Start (Contract)': p.dateOfStartContract||'', 'Completion (Contract)': p.dateOfCompletionContract||'',
+      'Actual Start': p.actualDateOfStart||'', 'Actual Completion': p.actualDateOfCompletion||'',
+      'Performance Guarantee': p.performanceGuaranteeDate||'', 'Expiry Date': p.expiryDate||'',
+      'Expenditure (₹)': n(p.expenditureIncurred), 'Deductions (₹)': n(p.deductions),
+      'Utilised (₹)': n(p.expenditureIncurred) + n(p.deductions),
+      'Balance (₹)': n(p.sanctionedAmount) - n(p.expenditureIncurred) - n(p.deductions),
+      'Extension': p.extensionOfTime||'None',
+      'Status': p.statusOfWork==='completed'?'Completed':p.statusOfWork==='in_progress'?'In Progress':'Yet to Start',
+      'Progress (%)': p.progress, 'JE': p.juniorEngineer, 'AE': p.assistantEngineer,
+      'UC Sent': getUcSentStatus(p), 'UC Sent Date': p.ucSentDate||'', 'SD Released': getSecurityDepositReleaseStatus(p), 'Security Deducted': p.securityDepositDeductedDate||'', 'Security Release': p.securityDepositReleaseDate||'',
+      'Security Amount (₹)': n(p.securityAmount),
+      'M Book No': p.mBookNumber||'', 'Audit Register': p.workAuditRegisterNo||'',
+      'Latitude': p.latitude||'', 'Longitude': p.longitude||'',
+      'Physical Parameters': p.physicalParametersNotes||'', 'Notes': p.notes||''
+    };
+  });
   const ws1 = XLSX.utils.json_to_sheet(main);
   ws1['!cols'] = Array(34).fill({ wch:16 });
   ws1['!cols'][1] = { wch:40 };

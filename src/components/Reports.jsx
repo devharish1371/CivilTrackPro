@@ -144,42 +144,53 @@ export default function Reports() {
   });
 
   /* ── Handlers: standard ─────────────────────────────── */
-  const handlePDF     = () => setExportModal({ isOpen: true, type: 'standard' });
+  const handlePDF     = () => setExportModal({ isOpen: true, type: 'standard', format: 'pdf' });
   const handlePrint   = () => { const doc = generateProjectListPDF(standardFiltered, filters); const url = URL.createObjectURL(doc.output('blob')); const w = window.open(url); if (w) w.onload = () => w.print(); };
-  const handleExcel   = () => { exportProjectsToExcel(standardFiltered, grants); show('Excel downloaded!'); };
+  const handleExcel   = () => setExportModal({ isOpen: true, type: 'standard', format: 'excel' });
   const handleKML     = () => { downloadKML(standardFiltered); show('KML downloaded!'); };
 
   /* ── Handlers: completed date range ───────────────── */
-  const handleCompletedPDF   = () => setExportModal({ isOpen: true, type: 'completed_date' });
+  const handleCompletedPDF   = () => setExportModal({ isOpen: true, type: 'completed_date', format: 'pdf' });
   const handleCompletedPrint = () => { const doc = generateCompletedWorkByDateRangePDF(completedFiltered, dateFilters); const url = URL.createObjectURL(doc.output('blob')); const w = window.open(url); if (w) w.onload = () => w.print(); };
-  const handleCompletedExcel = () => { exportProjectsToExcel(completedFiltered, grants); show('Excel downloaded!'); };
+  const handleCompletedExcel = () => setExportModal({ isOpen: true, type: 'completed_date', format: 'excel' });
 
   /* ── Handlers: tendered cost range ────────────────── */
-  const handleCostPDF   = () => setExportModal({ isOpen: true, type: 'tendered_cost' });
+  const handleCostPDF   = () => setExportModal({ isOpen: true, type: 'tendered_cost', format: 'pdf' });
   const handleCostPrint = () => { const doc = generateWorkByTenderedCostPDF(costFiltered, costFilters); const url = URL.createObjectURL(doc.output('blob')); const w = window.open(url); if (w) w.onload = () => w.print(); };
-  const handleCostExcel = () => { exportProjectsToExcel(costFiltered, grants); show('Excel downloaded!'); };
+  const handleCostExcel = () => setExportModal({ isOpen: true, type: 'tendered_cost', format: 'excel' });
 
   /* ── Handlers: work order date range ──────────────── */
-  const handleWoPDF   = () => setExportModal({ isOpen: true, type: 'work_orders' });
+  const handleWoPDF   = () => setExportModal({ isOpen: true, type: 'work_orders', format: 'pdf' });
   const handleWoPrint = () => { const doc = generateWorkOrdersByDateRangePDF(woFiltered, woFilters); const url = URL.createObjectURL(doc.output('blob')); const w = window.open(url); if (w) w.onload = () => w.print(); };
-  const handleWoExcel = () => { exportProjectsToExcel(woFiltered, grants); show('Excel downloaded!'); };
+  const handleWoExcel = () => setExportModal({ isOpen: true, type: 'work_orders', format: 'excel' });
 
   const executeExport = (columns) => {
-    switch (exportModal.type) {
-      case 'standard':
-        savePDF(generateProjectListPDF(standardFiltered, filters, columns), 'CivilTrack_Report.pdf');
-        break;
-      case 'completed_date':
-        savePDF(generateCompletedWorkByDateRangePDF(completedFiltered, dateFilters, columns), 'CivilTrack_CompletedWork_Report.pdf');
-        break;
-      case 'tendered_cost':
-        savePDF(generateWorkByTenderedCostPDF(costFiltered, costFilters, columns), 'CivilTrack_TenderedCost_Report.pdf');
-        break;
-      case 'work_orders':
-        savePDF(generateWorkOrdersByDateRangePDF(woFiltered, woFilters, columns), 'CivilTrack_WorkOrders_Report.pdf');
-        break;
+    if (exportModal.format === 'excel') {
+      let dataToExport = standardFiltered;
+      let filename = 'CivilTrack_Report.xlsx';
+      if (exportModal.type === 'completed_date') { dataToExport = completedFiltered; filename = 'CivilTrack_CompletedWork.xlsx'; }
+      else if (exportModal.type === 'tendered_cost') { dataToExport = costFiltered; filename = 'CivilTrack_TenderedCost.xlsx'; }
+      else if (exportModal.type === 'work_orders') { dataToExport = woFiltered; filename = 'CivilTrack_WorkOrders.xlsx'; }
+      
+      exportProjectsToExcel(dataToExport, { grants, filename, columns });
+      show('Excel downloaded!');
+    } else {
+      switch (exportModal.type) {
+        case 'standard':
+          savePDF(generateProjectListPDF(standardFiltered, filters, columns), 'CivilTrack_Report.pdf');
+          break;
+        case 'completed_date':
+          savePDF(generateCompletedWorkByDateRangePDF(completedFiltered, dateFilters, columns), 'CivilTrack_CompletedWork_Report.pdf');
+          break;
+        case 'tendered_cost':
+          savePDF(generateWorkByTenderedCostPDF(costFiltered, costFilters, columns), 'CivilTrack_TenderedCost_Report.pdf');
+          break;
+        case 'work_orders':
+          savePDF(generateWorkOrdersByDateRangePDF(woFiltered, woFilters, columns), 'CivilTrack_WorkOrders_Report.pdf');
+          break;
+      }
+      show('PDF downloaded!');
     }
-    show('PDF downloaded!');
   };
 
   /* ── Tabs config ─────────────────────────────────── */
@@ -455,10 +466,11 @@ export default function Reports() {
         </>
       )}
 
-      <ExportModal
-        isOpen={exportModal.isOpen}
+      <ExportModal 
+        isOpen={exportModal.isOpen} 
+        onClose={() => setExportModal({ isOpen: false, type: '', format: 'pdf' })}
         reportType={exportModal.type}
-        onClose={() => setExportModal({ isOpen: false, type: null })}
+        exportFormat={exportModal.format}
         onExport={executeExport}
       />
 
