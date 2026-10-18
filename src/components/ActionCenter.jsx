@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProjects } from '../context/ProjectContext';
-import { getUcSentStatus, getContractCompletionDate } from '../utils/projectStatus';
+import { getUcSentStatus, getContractCompletionDate, getTotalExpenditure } from '../utils/projectStatus';
 import { AlertTriangle, ArrowUpRight, CalendarClock, CheckCircle2, ChevronLeft, ChevronRight, CircleAlert, Edit, Eye, FileWarning, ListChecks, MapPin, ShieldAlert, WalletCards } from 'lucide-react';
 
 const DAY_MS = 86400000;
@@ -65,7 +65,7 @@ function buildActions(projects, today) {
     }
 
     const sanctioned = Number(project.sanctionedAmount) || 0;
-    const expenditure = Number(project.expenditureIncurred) || 0;
+    const expenditure = getTotalExpenditure(project);
     if (sanctioned > 0 && expenditure > sanctioned) {
       addAction(actions, project, 'financial', 'budget-exceeded', 'Budget exceeded', `Expenditure is ₹${(expenditure - sanctioned).toLocaleString('en-IN')} over sanctioned amount`);
     }

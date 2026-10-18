@@ -6,7 +6,7 @@ import { statusOptions } from '../data/sampleData';
 import { exportProjectsToExcel } from '../utils/excelExport';
 import { generateProjectListPDF, generateProjectDetailPDF, savePDF, sharePDF } from '../utils/pdfExport';
 import { downloadKML } from '../utils/kmlExport';
-import { getUcSentStatus } from '../utils/projectStatus';
+import { getUcSentStatus, getTotalExpenditure } from '../utils/projectStatus';
 import { Eye, Edit, Trash2, Download, FileText, Share2, Filter, X, Lock, Unlock, MapPin, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 
 const fmt = (n) => new Intl.NumberFormat('en-IN', { style:'currency', currency:'INR', maximumFractionDigits:0 }).format(n);
@@ -28,8 +28,11 @@ const ALL_COLUMNS = [
   { id: 'actualCompletionDate', label: 'Act Comp' },
   { id: 'sanctionedAmount', label: 'Sanc.' },
   { id: 'tenderedCost', label: 'Tender' },
-  { id: 'expenditureIncurred', label: 'Expend.' },
-  { id: 'utilisedAmount', label: 'Utilised' },
+  { id: 'tenderPercentage', label: 'Tender %' },
+  { id: 'expenditureSanctionAmount', label: 'Exp. Sanction' },
+  { id: 'expenditureIncurred', label: 'Work Exp.' },
+  { id: 'contingencyExpenditure', label: 'Contingency' },
+  { id: 'utilisedAmount', label: 'Total Exp.' },
   { id: 'balanceAmount', label: 'Balance' },
   { id: 'statusOfWork', label: 'Status' },
   { id: 'ucSentDate', label: 'UC Date' },
@@ -252,7 +255,7 @@ export default function ProjectList() {
               <tr><td colSpan={13} style={{ textAlign:'center', padding:40, color:'var(--text-muted)' }}>No projects found</td></tr>
             ) : paginatedProjects.map((p, index) => {
               const i = (currentPage - 1) * itemsPerPage + index;
-              const expenditure = Number(p.expenditureIncurred) || 0;
+              const expenditure = getTotalExpenditure(p);
               const sanctioned = Number(p.sanctionedAmount) || 0;
               const expensePercent = sanctioned > 0 ? Math.min(100, Math.max(0, (expenditure / sanctioned) * 100)) : 0;
               const expenseOverBudget = sanctioned > 0 && expenditure > sanctioned;

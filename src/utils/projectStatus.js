@@ -12,6 +12,14 @@ export function getSecurityDepositReleaseStatus(project) {
   return project?.securityDepositReleaseDate ? 'Yes' : 'No';
 }
 
+export function getTotalExpenditure(project) {
+  return (Number(project?.expenditureIncurred) || 0) + (Number(project?.contingencyExpenditure) || 0);
+}
+
+export function getBalanceAmount(project) {
+  return (Number(project?.sanctionedAmount) || 0) - getTotalExpenditure(project);
+}
+
 // Keep the original contract date for records, but use a valid later extension
 // as the current deadline for alerts and follow-ups.
 export function getContractCompletionDate(project) {

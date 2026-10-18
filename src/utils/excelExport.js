@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import { getUcSentStatus, getSecurityDepositReleaseStatus } from './projectStatus';
+import { getUcSentStatus, getSecurityDepositReleaseStatus, getTotalExpenditure, getBalanceAmount } from './projectStatus';
 import { REPORT_COLUMNS } from './pdfExport';
 
 const n = (v) => Number(v) || 0;
@@ -33,8 +33,8 @@ export function exportProjectsToExcel(projects, options = {}) {
 
   // Helper to extract values dynamically if columns are specified
   const getExcelValue = (p, colId) => {
-    const utilised = n(p.expenditureIncurred) + n(p.deductions);
-    const balance = n(p.sanctionedAmount) - utilised;
+    const totalExpenditure = getTotalExpenditure(p);
+    const balance = getBalanceAmount(p);
     const variation = p.sanctionedAmount && p.tenderedCost ? (((p.tenderedCost - p.sanctionedAmount) / p.sanctionedAmount) * 100).toFixed(1) + '%' : '-';
     let daysDiff = '-';
     if (p.dateOfCompletionContract && p.actualDateOfCompletion) {
@@ -57,9 +57,12 @@ export function exportProjectsToExcel(projects, options = {}) {
       case 'daysDiff': return daysDiff;
       case 'sanctionedAmount': return n(p.sanctionedAmount);
       case 'tenderedCost': return n(p.tenderedCost);
+      case 'tenderPercentage': return p.tenderPercentage ?? '';
+      case 'expenditureSanctionAmount': return n(p.expenditureSanctionAmount);
+      case 'contingencyExpenditure': return n(p.contingencyExpenditure);
       case 'variation': return variation;
       case 'expenditureIncurred': return n(p.expenditureIncurred);
-      case 'utilisedAmount': return utilised;
+      case 'utilisedAmount': return totalExpenditure;
       case 'balanceAmount': return balance;
       case 'statusOfWork': return p.statusOfWork === 'completed' ? 'Completed' : p.statusOfWork === 'in_progress' ? 'In Progress' : 'Yet to Start';
       case 'ucSentDate': return p.ucSentDate || '';
@@ -96,13 +99,13 @@ export function exportProjectsToExcel(projects, options = {}) {
       'Technical Sanction Amount (₹)': n(p.technicalSanctionAmount), 'Technical Sanction No.': p.technicalSanctionNo||'',
       'Date of Tender': p.dateOfTender||'', 'Cost Put to Tender (₹)': n(p.costPutToTender),
       'Sanctioned (₹)': n(p.sanctionedAmount), 'Tendered Cost (₹)': n(p.tenderedCost),
+      'Tender Percentage (%)': p.tenderPercentage ?? '', 'Expenditure Sanction Amount (₹)': n(p.expenditureSanctionAmount),
       'Contractor': p.contractorName, 'Work Order Date': p.workOrderDate||'',
       'Start (Contract)': p.dateOfStartContract||'', 'Completion (Contract)': p.dateOfCompletionContract||'',
       'Actual Start': p.actualDateOfStart||'', 'Actual Completion': p.actualDateOfCompletion||'',
       'Performance Guarantee': p.performanceGuaranteeDate||'', 'Expiry Date': p.expiryDate||'',
-      'Expenditure (₹)': n(p.expenditureIncurred), 'Deductions (₹)': n(p.deductions),
-      'Utilised (₹)': n(p.expenditureIncurred) + n(p.deductions),
-      'Balance (₹)': n(p.sanctionedAmount) - n(p.expenditureIncurred) - n(p.deductions),
+      'Expenditure on Work (₹)': n(p.expenditureIncurred), 'Contingency Expenditure (₹)': n(p.contingencyExpenditure),
+      'Total Expenditure (₹)': getTotalExpenditure(p), 'Balance (₹)': getBalanceAmount(p),
       'Extension': p.extensionOfTime||'None',
       'Extended Completion Date': p.extendedCompletionDate||'',
       'Status': p.statusOfWork==='completed'?'Completed':p.statusOfWork==='in_progress'?'In Progress':'Yet to Start',
@@ -115,7 +118,7 @@ export function exportProjectsToExcel(projects, options = {}) {
     };
   });
   const ws1 = XLSX.utils.json_to_sheet(main);
-  ws1['!cols'] = Array(34).fill({ wch:16 });
+  ws1['!cols'] = Array(Object.keys(main[0] || {}).length).fill({ wch:16 });
   ws1['!cols'][1] = { wch:40 };
   XLSX.utils.book_append_sheet(wb, ws1, 'All Projects');
 
@@ -166,19 +169,20 @@ export function exportProjectsToExcel(projects, options = {}) {
   // Summaries
   const sm = {};
   projects.forEach(p => {
-    if (!sm[p.scheme]) sm[p.scheme] = { count:0, sanctioned:0, expenditure:0, grant:0, deductions:0 };
+    if (!sm[p.scheme]) sm[p.scheme] = { count:0, sanctioned:0, workExpenditure:0, contingencyExpenditure:0, grant:0 };
     sm[p.scheme].count++; sm[p.scheme].sanctioned += n(p.sanctionedAmount);
-    sm[p.scheme].expenditure += n(p.expenditureIncurred);
-    sm[p.scheme].deductions += n(p.deductions);
+    sm[p.scheme].workExpenditure += n(p.expenditureIncurred);
+    sm[p.scheme].contingencyExpenditure += n(p.contingencyExpenditure);
   });
   grants.forEach(g => {
-    if (!sm[g.scheme]) sm[g.scheme] = { count:0, sanctioned:0, expenditure:0, grant:0, deductions:0 };
+    if (!sm[g.scheme]) sm[g.scheme] = { count:0, sanctioned:0, workExpenditure:0, contingencyExpenditure:0, grant:0 };
     sm[g.scheme].grant += n(g.amount);
   });
   const ws2 = XLSX.utils.json_to_sheet(Object.entries(sm).map(([k,v]) => ({
     'Scheme':k, 'Projects':v.count, 'Grant (₹)':v.grant, 'Sanctioned (₹)':v.sanctioned,
-    'Expenditure (₹)':v.expenditure, 'Deductions (₹)':v.deductions,
-    'Utilised (₹)':v.expenditure+v.deductions, 'Balance (₹)':v.sanctioned-v.expenditure-v.deductions
+    'Expenditure on Work (₹)':v.workExpenditure, 'Contingency Expenditure (₹)':v.contingencyExpenditure,
+    'Total Expenditure (₹)':v.workExpenditure+v.contingencyExpenditure,
+    'Balance (₹)':v.sanctioned-v.workExpenditure-v.contingencyExpenditure
   })));
   XLSX.utils.book_append_sheet(wb, ws2, 'Summary By Scheme');
 
@@ -186,21 +190,21 @@ export function exportProjectsToExcel(projects, options = {}) {
   projects.forEach(p => {
     const s = p.statusOfWork;
     if (!st[s]) st[s] = { count:0, sanctioned:0, expenditure:0 };
-    st[s].count++; st[s].sanctioned += n(p.sanctionedAmount); st[s].expenditure += n(p.expenditureIncurred);
+    st[s].count++; st[s].sanctioned += n(p.sanctionedAmount); st[s].expenditure += getTotalExpenditure(p);
   });
   const ws3 = XLSX.utils.json_to_sheet(Object.entries(st).map(([k,v]) => ({
     'Status': k==='completed'?'Completed':k==='in_progress'?'In Progress':'Yet to Start',
-    'Projects':v.count, 'Sanctioned (₹)':v.sanctioned, 'Expenditure (₹)':v.expenditure, 'Balance (₹)':v.sanctioned-v.expenditure
+    'Projects':v.count, 'Sanctioned (₹)':v.sanctioned, 'Total Expenditure (₹)':v.expenditure, 'Balance (₹)':v.sanctioned-v.expenditure
   })));
   XLSX.utils.book_append_sheet(wb, ws3, 'Summary By Status');
 
   const cm = {};
   projects.forEach(p => {
     if (!cm[p.constituency]) cm[p.constituency] = { count:0, sanctioned:0, expenditure:0 };
-    cm[p.constituency].count++; cm[p.constituency].sanctioned += n(p.sanctionedAmount); cm[p.constituency].expenditure += n(p.expenditureIncurred);
+    cm[p.constituency].count++; cm[p.constituency].sanctioned += n(p.sanctionedAmount); cm[p.constituency].expenditure += getTotalExpenditure(p);
   });
   const ws4 = XLSX.utils.json_to_sheet(Object.entries(cm).map(([k,v]) => ({
-    'Constituency':k, 'Projects':v.count, 'Sanctioned (₹)':v.sanctioned, 'Expenditure (₹)':v.expenditure, 'Balance (₹)':v.sanctioned-v.expenditure
+    'Constituency':k, 'Projects':v.count, 'Sanctioned (₹)':v.sanctioned, 'Total Expenditure (₹)':v.expenditure, 'Balance (₹)':v.sanctioned-v.expenditure
   })));
   XLSX.utils.book_append_sheet(wb, ws4, 'Summary By Constituency');
 

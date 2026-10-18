@@ -3,7 +3,7 @@ import { useProjects } from '../context/ProjectContext';
 import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Building2, IndianRupee, TrendingUp, AlertTriangle, Clock, CheckCircle, MapPin, Filter, X, FileText } from 'lucide-react';
-import { getUcSentStatus } from '../utils/projectStatus';
+import { getUcSentStatus, getTotalExpenditure } from '../utils/projectStatus';
 
 const COLORS = ['#3a9e7e', '#c07a2a', '#6674a8', '#c9a84c', '#3d6ea8', '#b84455', '#4a5878'];
 const fmt = (n) => { if (n >= 10000000) return `₹${(n/10000000).toFixed(2)} Cr`; if (n >= 100000) return `₹${(n/100000).toFixed(2)} L`; return `₹${n.toLocaleString('en-IN')}`; };
@@ -87,11 +87,9 @@ export default function Dashboard() {
   const optsPhase = useMemo(() => getOpts('phase', 'phase'), [projects, grants, filters.constituency, filters.scheme, filters.year]);
 
   const totalSanctioned = filteredProjects.reduce((s,p) => s + (p.sanctionedAmount||0), 0);
-  const totalExpenditure = filteredProjects.reduce((s,p) => s + (p.expenditureIncurred||0), 0);
+  const totalExpenditure = filteredProjects.reduce((s,p) => s + getTotalExpenditure(p), 0);
   const totalGrant = filteredGrants.reduce((s,g) => s + (g.amount||0), 0);
-  const totalDeductions = filteredProjects.reduce((s,p) => s + (p.deductions||0), 0);
-  const totalUtilised = totalExpenditure + totalDeductions;
-  const totalBalance = totalSanctioned - totalUtilised;
+  const totalBalance = totalSanctioned - totalExpenditure;
   const completed  = filteredProjects.filter(p => p.statusOfWork==='completed').length;
   const inProgress  = filteredProjects.filter(p => p.statusOfWork==='in_progress').length;
   const yetToStart  = filteredProjects.filter(p => p.statusOfWork==='yet_to_start').length;
@@ -108,7 +106,7 @@ export default function Dashboard() {
   filteredProjects.forEach(p => {
     if (!schemeMap[p.scheme]) schemeMap[p.scheme] = { name:p.scheme, sanctioned:0, expenditure:0, grant:0 };
     schemeMap[p.scheme].sanctioned += p.sanctionedAmount||0;
-    schemeMap[p.scheme].expenditure += p.expenditureIncurred||0;
+    schemeMap[p.scheme].expenditure += getTotalExpenditure(p);
   });
   filteredGrants.forEach(g => {
     if (!schemeMap[g.scheme]) schemeMap[g.scheme] = { name:g.scheme, sanctioned:0, expenditure:0, grant:0 };
@@ -207,7 +205,7 @@ export default function Dashboard() {
         </div>
         <div className="stat-card amber">
           <div className="stat-icon amber"><Clock size={20} /></div>
-          <div className="stat-value">{fmt(totalUtilised)}</div><div className="stat-label">Total Utilised</div>
+          <div className="stat-value">{fmt(totalExpenditure)}</div><div className="stat-label">Total Expenditure</div>
         </div>
         <div className="stat-card rose" onClick={() => navigate('/alerts')} style={{ cursor:'pointer' }}>
           <div className="stat-icon rose"><AlertTriangle size={20} /></div>

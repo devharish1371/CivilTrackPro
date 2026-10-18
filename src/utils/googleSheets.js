@@ -1,3 +1,5 @@
+import { getTotalExpenditure, getBalanceAmount } from './projectStatus.js';
+
 const SHEETS_API = 'https://sheets.googleapis.com/v4/spreadsheets';
 let accessToken = null;
 
@@ -38,10 +40,11 @@ const PROJECT_HEADERS = [
   'ID','Project Name','Year','Constituency','Village Panchayat','Scheme','GO Date','GO Number',
   'Sanctioned Amount','Tendered Cost','Contractor','Work Order Date','Start (Contract)',
   'Completion (Contract)','Actual Start','Actual Completion','Performance Guarantee Date',
-  'Expiry Date','Expenditure','Deductions','Extension of Time','Status','Progress',
+  'Expiry Date','Expenditure on Work','','Extension of Time','Status','Progress',
   'Junior Engineer','Assistant Engineer','UC Sent Date','Security Release Date',
   'Security Amount','M Book No','Audit Register No','Latitude','Longitude','Locked','Notes','SD Released','Extended Completion Date',
-  'Technical Sanction Amount','Technical Sanction No.','Date of Tender','Cost Put to Tender'
+  'Technical Sanction Amount','Technical Sanction No.','Date of Tender','Cost Put to Tender',
+  'Tender Percentage','Expenditure Sanction Amount','Contingency Expenditure','Total Expenditure','Balance Amount'
 ];
 const CONTRACTOR_HEADERS = ['ID','Name','Phone','Email','Address','Registration No','Category'];
 const ENGINEER_HEADERS = ['ID','Name','Designation','Phone','Email','Division'];
@@ -119,12 +122,14 @@ function projectToRow(p) {
     p.dateOfStartContract||'', p.dateOfCompletionContract||'',
     p.actualDateOfStart||'', p.actualDateOfCompletion||'',
     p.performanceGuaranteeDate||'', p.expiryDate||'',
-    p.expenditureIncurred||0, p.deductions||0, p.extensionOfTime||'',
+    p.expenditureIncurred||0, '', p.extensionOfTime||'',
     p.statusOfWork, p.progress||0, p.juniorEngineer||'', p.assistantEngineer||'',
     p.ucSentDate||'', p.securityDepositReleaseDate||'', p.securityAmount||0,
     p.mBookNumber||'', p.workAuditRegisterNo||'',
     p.latitude||'', p.longitude||'', p.isLocked?'TRUE':'FALSE', p.notes||'', p.securityDepositReleased || (p.securityDepositReleaseDate ? 'Yes' : 'No'), p.extendedCompletionDate||'',
-    p.technicalSanctionAmount||0, p.technicalSanctionNo||'', p.dateOfTender||'', p.costPutToTender||0
+    p.technicalSanctionAmount||0, p.technicalSanctionNo||'', p.dateOfTender||'', p.costPutToTender||0,
+    p.tenderPercentage === '' || p.tenderPercentage == null ? '' : Number(p.tenderPercentage),
+    p.expenditureSanctionAmount||0, p.contingencyExpenditure||0, getTotalExpenditure(p), getBalanceAmount(p)
   ];
 }
 
@@ -144,7 +149,7 @@ function rowToProject(row) {
     dateOfStartContract: row[12]||'', dateOfCompletionContract: row[13]||'',
     actualDateOfStart: row[14]||'', actualDateOfCompletion: row[15]||'',
     performanceGuaranteeDate: row[16]||'', expiryDate: row[17]||'',
-    expenditureIncurred: Number(row[18])||0, deductions: Number(row[19])||0,
+    expenditureIncurred: Number(row[18])||0,
     extensionOfTime: row[20]||'', statusOfWork: row[21]||'yet_to_start',
     progress: Number(row[22])||0, juniorEngineer: row[23]||'', assistantEngineer: row[24]||'',
     ucSent: ucCellStatus === 'yes' || (ucCell && ucCellStatus !== 'no') ? 'Yes' : 'No',
@@ -154,13 +159,15 @@ function rowToProject(row) {
     latitude: Number(row[30])||0, longitude: Number(row[31])||0,
     isLocked: row[32]==='TRUE', lockHash: '', notes: row[33]||'', extendedCompletionDate: row[35]||'',
     technicalSanctionAmount: Number(row[36])||0, technicalSanctionNo: row[37]||'',
-    dateOfTender: row[38]||'', costPutToTender: Number(row[39])||0
+    dateOfTender: row[38]||'', costPutToTender: Number(row[39])||0,
+    tenderPercentage: row[40] === '' || row[40] == null ? '' : Number(row[40]),
+    expenditureSanctionAmount: Number(row[41])||0, contingencyExpenditure: Number(row[42])||0
   };
 }
 
 export async function pushToSheet(sheetId, projects, contractors, engineers, schemes, constituencies, panchayats, grants) {
   await api(`${sheetId}/values:batchClear`, 'POST', {
-    ranges: ['Projects!A2:AN10000','Contractors!A2:G10000','Engineers!A2:F10000', 'Schemes!A2:B1000', 'Constituencies!A2:B1000', 'Panchayats!A2:B1000', 'Grants!A2:E10000']
+    ranges: ['Projects!A2:AS10000','Contractors!A2:G10000','Engineers!A2:F10000', 'Schemes!A2:B1000', 'Constituencies!A2:B1000', 'Panchayats!A2:B1000', 'Grants!A2:E10000']
   });
   const data = [];
   if (projects.length) data.push({ range: 'Projects!A2', values: projects.map(projectToRow) });
@@ -177,7 +184,7 @@ export async function pushToSheet(sheetId, projects, contractors, engineers, sch
 }
 
 export async function pullFromSheet(sheetId) {
-  const res = await api(`${sheetId}/values:batchGet?ranges=Projects!A2:AN10000&ranges=Contractors!A2:G10000&ranges=Engineers!A2:F10000&ranges=Schemes!A2:B1000&ranges=Constituencies!A2:B1000&ranges=Panchayats!A2:B1000&ranges=Grants!A2:E10000`);
+  const res = await api(`${sheetId}/values:batchGet?ranges=Projects!A2:AS10000&ranges=Contractors!A2:G10000&ranges=Engineers!A2:F10000&ranges=Schemes!A2:B1000&ranges=Constituencies!A2:B1000&ranges=Panchayats!A2:B1000&ranges=Grants!A2:E10000`);
   const [pSheet, cSheet, eSheet, sSheet, conSheet, panSheet, gSheet] = res.valueRanges || [];
   const projects = (pSheet?.values || []).filter(r => r[0]).map(rowToProject);
   const contractors = (cSheet?.values || []).filter(r => r[0]).map(r => ({ id:r[0], name:r[1]||'', phone:r[2]||'', email:r[3]||'', address:r[4]||'', registrationNo:r[5]||'', category:r[6]||'' }));

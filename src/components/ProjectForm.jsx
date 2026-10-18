@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useProjects } from '../context/ProjectContext';
 import { statusOptions } from '../data/sampleData';
 import { getEngineerDesignation, isAssistantEngineer, isJuniorEngineer } from '../utils/engineers';
-import { normalizeProject, getSecurityDepositReleaseStatus } from '../utils/projectStatus';
+import { normalizeProject, getSecurityDepositReleaseStatus, getTotalExpenditure, getBalanceAmount } from '../utils/projectStatus';
 import { v4 as uuidv4 } from 'uuid';
 import { Save, ArrowLeft, MapPin, IndianRupee, AlertTriangle, Calendar, Users, FileText } from 'lucide-react';
 
@@ -14,7 +14,7 @@ const empty = {
   sanctionedAmount:'', tenderedCost:'', contractorName:'', workOrderDate:'',
   dateOfStartContract:'', dateOfCompletionContract:'', actualDateOfStart:'',
   actualDateOfCompletion:'', performanceGuaranteeDate:'', expiryDate:'',
-  expenditureIncurred:'', deductions:'',
+  tenderPercentage:'', expenditureSanctionAmount:'', expenditureIncurred:'', contingencyExpenditure:'',
   extensionOfTime:'', extendedCompletionDate:'', statusOfWork:'yet_to_start', progress:0,
   juniorEngineer:'', assistantEngineer:'',
   ucSent: 'No', ucSentDate:'', securityDepositReleased:'No', securityDepositReleaseDate:'', securityDepositDeductedDate:'', securityAmount:'',
@@ -114,9 +114,11 @@ export default function ProjectForm() {
     const data = normalizeProject({ ...dataToSave,
       sanctionedAmount:Number(form.sanctionedAmount)||0, tenderedCost:Number(form.tenderedCost)||0,
       technicalSanctionAmount:Number(form.technicalSanctionAmount)||0, costPutToTender:Number(form.costPutToTender)||0,
-      expenditureIncurred:Number(form.expenditureIncurred)||0, progress:Number(form.progress)||0,
+      tenderPercentage: form.tenderPercentage === '' ? '' : Number(form.tenderPercentage),
+      expenditureSanctionAmount:Number(form.expenditureSanctionAmount)||0,
+      expenditureIncurred:Number(form.expenditureIncurred)||0,
+      contingencyExpenditure:Number(form.contingencyExpenditure)||0, progress:Number(form.progress)||0,
       yearOfSanction:Number(form.yearOfSanction)||new Date().getFullYear(),
-      deductions:Number(form.deductions)||0,
       securityAmount:Number(form.securityAmount)||0,
       latitude:Number(form.latitude)||0, longitude:Number(form.longitude)||0,
       ucSentDate: form.ucSent === 'Yes' ? form.ucSentDate : '',
@@ -135,11 +137,9 @@ export default function ProjectForm() {
   };
 
   const sanctioned = Number(form.sanctionedAmount)||0;
-  const expenditure = Number(form.expenditureIncurred)||0;
-  const deductions = Number(form.deductions)||0;
-  const utilised = expenditure + deductions;
-  const balance = sanctioned - utilised;
-  const utilisationPct = sanctioned > 0 ? Math.round((utilised / sanctioned) * 100) : 0;
+  const totalExpenditure = getTotalExpenditure(form);
+  const balance = getBalanceAmount(form);
+  const utilisationPct = sanctioned > 0 ? Math.round((totalExpenditure / sanctioned) * 100) : 0;
 
   const schemeGrantTotal = grants.filter(g => g.scheme === form.scheme).reduce((sum, g) => sum + (g.amount || 0), 0);
   const schemeProjectTotal = projects.filter(p => p.scheme === form.scheme && p.id !== id).reduce((sum, p) => sum + (p.sanctionedAmount || 0), 0);
@@ -350,16 +350,24 @@ export default function ProjectForm() {
               <input className="form-input" type="number" value={form.tenderedCost} onChange={e => set('tenderedCost', e.target.value)} />
             </div>
             <div className="form-group">
-              <label className="form-label">Expenditure Incurred (₹)</label>
-              <input className="form-input" type="number" value={form.expenditureIncurred} onChange={e => set('expenditureIncurred', e.target.value)} />
+              <label className="form-label">Tender Percentage (%)</label>
+              <input className="form-input" type="number" step="any" value={form.tenderPercentage ?? ''} onChange={e => set('tenderPercentage', e.target.value)} />
             </div>
             <div className="form-group">
-              <label className="form-label">Deductions (₹)</label>
-              <input className="form-input" type="number" value={form.deductions} onChange={e => set('deductions', e.target.value)} />
+              <label className="form-label">Expenditure Sanction Amount (₹)</label>
+              <input className="form-input" type="number" min="0" value={form.expenditureSanctionAmount ?? ''} onChange={e => set('expenditureSanctionAmount', e.target.value)} />
             </div>
             <div className="form-group">
-              <label className="form-label">Utilised Amount (₹)</label>
-              <input className="form-input" readOnly value={utilised.toLocaleString('en-IN')} style={{ opacity:0.7, color:'var(--amber)' }} />
+              <label className="form-label">Expenditure on Work (₹)</label>
+              <input className="form-input" type="number" min="0" value={form.expenditureIncurred ?? ''} onChange={e => set('expenditureIncurred', e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Contingency Expenditure (₹)</label>
+              <input className="form-input" type="number" min="0" value={form.contingencyExpenditure ?? ''} onChange={e => set('contingencyExpenditure', e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Total Expenditure (₹)</label>
+              <input className="form-input" readOnly value={totalExpenditure.toLocaleString('en-IN')} style={{ opacity:0.7, color:'var(--amber)' }} />
             </div>
             <div className="form-group">
               <label className="form-label">Balance Amount (₹)</label>

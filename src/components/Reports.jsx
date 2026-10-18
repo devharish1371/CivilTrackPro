@@ -9,6 +9,7 @@ import {
   savePDF,
 } from '../utils/pdfExport';
 import { exportProjectsToExcel } from '../utils/excelExport';
+import { getTotalExpenditure } from '../utils/projectStatus';
 import { downloadKML } from '../utils/kmlExport';
 import { FileText, Download, Printer, MapPin, CheckCircle, IndianRupee, SlidersHorizontal, Calendar, X } from 'lucide-react';
 import ExportModal from './ExportModal';
@@ -323,7 +324,7 @@ export default function Reports() {
                 { label: 'Projects',          val: completedFiltered.length },
                 { label: 'Total Sanctioned',  val: fmtL(completedFiltered.reduce((s, p) => s + (p.sanctionedAmount || 0), 0)) },
                 { label: 'Total Tendered',    val: fmtL(completedFiltered.reduce((s, p) => s + (p.tenderedCost || 0), 0)) },
-                { label: 'Total Expenditure', val: fmtL(completedFiltered.reduce((s, p) => s + (p.expenditureIncurred || 0), 0)) },
+                { label: 'Total Expenditure', val: fmtL(completedFiltered.reduce((s, p) => s + getTotalExpenditure(p), 0)) },
               ]} />
             )}
           </div>
@@ -396,7 +397,7 @@ export default function Reports() {
                 { label: 'Projects',          val: costFiltered.length },
                 { label: 'Total Tendered',    val: fmtL(costFiltered.reduce((s, p) => s + (p.tenderedCost || 0), 0)) },
                 { label: 'Total Sanctioned',  val: fmtL(costFiltered.reduce((s, p) => s + (p.sanctionedAmount || 0), 0)) },
-                { label: 'Total Expenditure', val: fmtL(costFiltered.reduce((s, p) => s + (p.expenditureIncurred || 0), 0)) },
+                { label: 'Total Expenditure', val: fmtL(costFiltered.reduce((s, p) => s + getTotalExpenditure(p), 0)) },
                 { label: 'Completed',         val: costFiltered.filter(p => p.statusOfWork === 'completed').length },
                 { label: 'In Progress',       val: costFiltered.filter(p => p.statusOfWork === 'in_progress').length },
               ]} />

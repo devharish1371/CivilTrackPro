@@ -5,7 +5,7 @@ import { downloadKML } from '../utils/kmlExport';
 import { ArrowLeft, Edit, Trash2, FileText, Share2, Calendar, IndianRupee, Users, AlertTriangle, Lock, Unlock, MapPin, ExternalLink, Image as ImageIcon, Paperclip, Download } from 'lucide-react';
 import { useState } from 'react';
 import { verifyMasterPassword, formatMasterPasswordError } from '../utils/appAuth';
-import { getUcSentStatus, getSecurityDepositReleaseStatus, getContractCompletionDate } from '../utils/projectStatus';
+import { getUcSentStatus, getSecurityDepositReleaseStatus, getContractCompletionDate, getTotalExpenditure, getBalanceAmount } from '../utils/projectStatus';
 
 const fmt = (n) => new Intl.NumberFormat('en-IN', { style:'currency', currency:'INR', maximumFractionDigits:0 }).format(n);
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }) : '—';
@@ -21,8 +21,8 @@ export default function ProjectDetail() {
 
   if (!p) return <div className="empty-state"><h3>Project not found</h3><button className="btn btn-primary" onClick={() => navigate('/projects')}>Back</button></div>;
 
-  const utilised = (p.expenditureIncurred||0) + (p.deductions||0);
-  const balance = (p.sanctionedAmount||0) - utilised;
+  const totalExpenditure = getTotalExpenditure(p);
+  const balance = getBalanceAmount(p);
   const now = new Date();
   const securityDepositReleased = getSecurityDepositReleaseStatus(p);
   const expiryDays = p.expiryDate ? Math.ceil((new Date(p.expiryDate) - now)/86400000) : null;
@@ -160,15 +160,17 @@ export default function ProjectDetail() {
         <div className="detail-grid">
           <D label="Sanctioned Amount" value={fmt(p.sanctionedAmount)} cls="amount" />
           <D label="Tendered Cost" value={fmt(p.tenderedCost)} cls="amount" />
-          <D label="Expenditure Incurred" value={fmt(p.expenditureIncurred)} cls="highlight" />
-          <D label="Deductions" value={fmt(p.deductions||0)} cls="highlight" />
-          <D label="Utilised Amount" value={fmt(utilised)} cls="highlight" />
+          <D label="Tender Percentage" value={p.tenderPercentage !== '' && p.tenderPercentage != null ? `${p.tenderPercentage}%` : '—'} />
+          <D label="Expenditure Sanction Amount" value={fmt(p.expenditureSanctionAmount||0)} cls="amount" />
+          <D label="Expenditure on Work" value={fmt(p.expenditureIncurred||0)} cls="highlight" />
+          <D label="Contingency Expenditure" value={fmt(p.contingencyExpenditure||0)} cls="highlight" />
+          <D label="Total Expenditure" value={fmt(totalExpenditure)} cls="highlight" />
           <D label="Balance Amount" value={fmt(balance)} cls={balance<0?'danger':'amount'} />
         </div>
         
         {/* Financial Percentage Visualisation */}
         {p.sanctionedAmount > 0 && (() => {
-          const utilisationPct = Math.round((utilised / p.sanctionedAmount) * 100);
+          const utilisationPct = Math.round((totalExpenditure / p.sanctionedAmount) * 100);
           return (
             <div style={{ marginTop:16 }}>
               <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>

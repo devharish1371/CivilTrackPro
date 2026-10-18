@@ -4,7 +4,7 @@ import { db, auth } from '../utils/firebase';
 import { doc, onSnapshot, setDoc, enableNetwork, getDocFromServer } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { isSessionUnlocked } from '../components/SessionGate';
-import { normalizeProject, normalizeProjects, getSecurityDepositReleaseStatus, getContractCompletionDate } from '../utils/projectStatus';
+import { normalizeProject, normalizeProjects, getSecurityDepositReleaseStatus, getContractCompletionDate, getTotalExpenditure } from '../utils/projectStatus';
 
 const FIRESTORE_DOC = doc(db, 'civil_dashboard', 'master_data');
 const SERVER_CHECK_TIMEOUT_MS = 10000;
@@ -354,13 +354,14 @@ export function ProjectProvider({ children }) {
       };
 
       // Financial Alert: Over-budget
-      if (p.expenditureIncurred > p.sanctionedAmount && p.sanctionedAmount > 0) {
+      const totalExpenditure = getTotalExpenditure(p);
+      if (totalExpenditure > p.sanctionedAmount && p.sanctionedAmount > 0) {
         alerts.push({
           ...baseAlert,
           id: p.id+'_fin',
           type:'danger',
           title:'Budget Exceeded',
-          delayText: `Exceeded by ₹${(p.expenditureIncurred - p.sanctionedAmount).toLocaleString('en-IN')}`,
+          delayText: `Exceeded by ₹${(totalExpenditure - p.sanctionedAmount).toLocaleString('en-IN')}`,
           message:`${p.projectName} — Over budget`,
           date: p.updatedAt
         });

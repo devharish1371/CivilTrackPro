@@ -1,5 +1,6 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { getTotalExpenditure, getBalanceAmount } from './projectStatus';
 
 // ─── Formatters ────────────────────────────────────────────────────────────
 const fmt = (n) => {
@@ -40,9 +41,12 @@ export const REPORT_COLUMNS = [
   { id: 'daysDiff', label: 'Days Diff', align: 'center' },
   { id: 'sanctionedAmount', label: 'Sanc.\n(Cr/L)', align: 'right' },
   { id: 'tenderedCost', label: 'Tender\n(Cr/L)', align: 'right' },
+  { id: 'tenderPercentage', label: 'Tender %', align: 'right' },
+  { id: 'expenditureSanctionAmount', label: 'Exp. Sanc.\n(Cr/L)', align: 'right' },
   { id: 'variation', label: 'Var %', align: 'center' },
-  { id: 'expenditureIncurred', label: 'Expend.\n(Cr/L)', align: 'right' },
-  { id: 'utilisedAmount', label: 'Utilised\n(Cr/L)', align: 'right' },
+  { id: 'expenditureIncurred', label: 'Work Exp.\n(Cr/L)', align: 'right' },
+  { id: 'contingencyExpenditure', label: 'Contingency\n(Cr/L)', align: 'right' },
+  { id: 'utilisedAmount', label: 'Total Exp.\n(Cr/L)', align: 'right' },
   { id: 'balanceAmount', label: 'Balance\n(Cr/L)', align: 'right' },
   { id: 'statusOfWork', label: 'Status', align: 'center' },
   { id: 'ucSentDate', label: 'UC Date', align: 'center' },
@@ -58,8 +62,8 @@ export const DEFAULT_COLUMNS = {
 };
 
 function getProjectRowValue(p, colId) {
-  const utilised = (p.expenditureIncurred || 0) + (p.deductions || 0);
-  const balance  = (p.sanctionedAmount || 0) - utilised;
+  const totalExpenditure = getTotalExpenditure(p);
+  const balance  = getBalanceAmount(p);
   const variation = p.sanctionedAmount && p.tenderedCost ? (((p.tenderedCost - p.sanctionedAmount) / p.sanctionedAmount) * 100).toFixed(1) + '%' : '-';
   let daysDiff = '-';
   if (p.dateOfCompletionContract && p.actualDateOfCompletion) {
@@ -81,9 +85,12 @@ function getProjectRowValue(p, colId) {
     case 'daysDiff': return daysDiff;
     case 'sanctionedAmount': return fmtL(p.sanctionedAmount);
     case 'tenderedCost': return fmtL(p.tenderedCost);
+    case 'tenderPercentage': return p.tenderPercentage === '' || p.tenderPercentage == null ? '-' : `${p.tenderPercentage}%`;
+    case 'expenditureSanctionAmount': return fmtL(p.expenditureSanctionAmount);
     case 'variation': return variation;
     case 'expenditureIncurred': return fmtL(p.expenditureIncurred);
-    case 'utilisedAmount': return fmtL(utilised);
+    case 'contingencyExpenditure': return fmtL(p.contingencyExpenditure);
+    case 'utilisedAmount': return fmtL(totalExpenditure);
     case 'balanceAmount': return fmtL(balance);
     case 'statusOfWork': return statusLabel(p.statusOfWork);
     case 'ucSentDate': return fmtDate(p.ucSentDate);
@@ -201,10 +208,8 @@ export function generateProjectListPDF(projects, filters = {}, selectedColumns =
   const filterText = parts.length ? parts.join('  |  ') : 'All Projects';
 
   const totalS = projects.reduce((s, p) => s + (p.sanctionedAmount || 0), 0);
-  const totalE = projects.reduce((s, p) => s + (p.expenditureIncurred || 0), 0);
-  const totalD = projects.reduce((s, p) => s + (p.deductions || 0), 0);
-  const totalU = totalE + totalD;
-  const totalBal = totalS - totalU;
+  const totalE = projects.reduce((s, p) => s + getTotalExpenditure(p), 0);
+  const totalBal = totalS - totalE;
 
   addHeader(doc, `Project Report  —  ${filterText}`, `Total Projects: ${projects.length}`);
 
@@ -212,8 +217,6 @@ export function generateProjectListPDF(projects, filters = {}, selectedColumns =
     { label: 'Projects',         value: String(projects.length) },
     { label: 'Total Sanctioned', value: fmtL(totalS) },
     { label: 'Total Expenditure',value: fmtL(totalE) },
-    { label: 'Total Deductions', value: fmtL(totalD) },
-    { label: 'Total Utilised',   value: fmtL(totalU) },
     { label: 'Total Balance',    value: fmtL(totalBal) },
   ], 40);
 
@@ -328,9 +331,9 @@ export function generateProjectDetailPDF(project) {
   const H = doc.internal.pageSize.getHeight(); // 297
   const MW = W - 28;
   const FOOTER_MARGIN = 20; // keep this many mm above footer
-  const utilised = (p.expenditureIncurred || 0) + (p.deductions || 0);
-  const balance  = (p.sanctionedAmount || 0) - utilised;
-  const pct      = p.sanctionedAmount > 0 ? Math.min(Math.round((utilised / p.sanctionedAmount) * 100), 100) : 0;
+  const totalExpenditure = getTotalExpenditure(p);
+  const balance  = getBalanceAmount(p);
+  const pct      = p.sanctionedAmount > 0 ? Math.min(Math.round((totalExpenditure / p.sanctionedAmount) * 100), 100) : 0;
 
   addHeader(doc, 'Project Detail Report', p.projectName || '');
 
@@ -413,9 +416,11 @@ export function generateProjectDetailPDF(project) {
   section('3. FINANCIAL DETAILS', [
     ['Sanctioned Amount',    fmt(p.sanctionedAmount)],
     ['Tendered Cost',        fmt(p.tenderedCost)],
-    ['Expenditure Incurred', fmt(p.expenditureIncurred)],
-    ['Deductions',           fmt(p.deductions || 0)],
-    ['Total Utilised',       fmt(utilised)],
+    ['Tender Percentage',    p.tenderPercentage === '' || p.tenderPercentage == null ? '-' : `${p.tenderPercentage}%`],
+    ['Expenditure Sanction', fmt(p.expenditureSanctionAmount || 0)],
+    ['Expenditure on Work',  fmt(p.expenditureIncurred || 0)],
+    ['Contingency Expenditure', fmt(p.contingencyExpenditure || 0)],
+    ['Total Expenditure',   fmt(totalExpenditure)],
     ['Balance',              fmt(balance)],
     ['Security Amount',      fmt(p.securityAmount || 0)],
     ['Utilisation %',        `${pct}%`],
@@ -591,9 +596,7 @@ export function generateCompletedWorkByDateRangePDF(projects, filters = {}, sele
 
   const totalS = projects.reduce((s, p) => s + (p.sanctionedAmount || 0), 0);
   const totalT = projects.reduce((s, p) => s + (p.tenderedCost || 0), 0);
-  const totalE = projects.reduce((s, p) => s + (p.expenditureIncurred || 0), 0);
-  const totalD = projects.reduce((s, p) => s + (p.deductions || 0), 0);
-  const totalU = totalE + totalD;
+  const totalE = projects.reduce((s, p) => s + getTotalExpenditure(p), 0);
 
   addHeader(doc, `Completed Work Report  —  ${filterText}`, `Total Completed Projects: ${projects.length}`);
 
@@ -602,8 +605,6 @@ export function generateCompletedWorkByDateRangePDF(projects, filters = {}, sele
     { label: 'Total Sanctioned',   value: fmtL(totalS) },
     { label: 'Total Tendered',     value: fmtL(totalT) },
     { label: 'Total Expenditure',  value: fmtL(totalE) },
-    { label: 'Total Deductions',   value: fmtL(totalD) },
-    { label: 'Total Utilised',     value: fmtL(totalU) },
   ], 40);
 
   const selectedColIds = selectedColumns || DEFAULT_COLUMNS.completed_date;
@@ -672,10 +673,8 @@ export function generateWorkByTenderedCostPDF(projects, filters = {}, selectedCo
 
   const totalS = projects.reduce((s, p) => s + (p.sanctionedAmount || 0), 0);
   const totalT = projects.reduce((s, p) => s + (p.tenderedCost || 0), 0);
-  const totalE = projects.reduce((s, p) => s + (p.expenditureIncurred || 0), 0);
-  const totalD = projects.reduce((s, p) => s + (p.deductions || 0), 0);
-  const totalU = totalE + totalD;
-  const totalBal = totalS - totalU;
+  const totalE = projects.reduce((s, p) => s + getTotalExpenditure(p), 0);
+  const totalBal = totalS - totalE;
 
   addHeader(doc, `Work Report by Tendered Cost  —  ${filterText}`, `Total Projects: ${projects.length}`);
 
@@ -684,7 +683,6 @@ export function generateWorkByTenderedCostPDF(projects, filters = {}, selectedCo
     { label: 'Total Sanctioned',   value: fmtL(totalS) },
     { label: 'Total Tendered',     value: fmtL(totalT) },
     { label: 'Total Expenditure',  value: fmtL(totalE) },
-    { label: 'Total Utilised',     value: fmtL(totalU) },
     { label: 'Total Balance',      value: fmtL(totalBal) },
   ], 40);
 
