@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useProjects } from '../context/ProjectContext';
 import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
@@ -13,8 +13,24 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const alerts = getAlerts();
 
-  const [filters, setFilters] = useState({ constituency: '', scheme: '', phase: '', year: '' });
-  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState(() => {
+    const saved = sessionStorage.getItem('ct-dashboard-filters');
+    if (saved) {
+      try { return { constituency: '', scheme: '', phase: '', year: '', ...JSON.parse(saved) }; } catch (e) {}
+    }
+    return { constituency: '', scheme: '', phase: '', year: '' };
+  });
+  const [showFilters, setShowFilters] = useState(() => {
+    return sessionStorage.getItem('ct-dashboard-filters-open') === 'true';
+  });
+
+  useEffect(() => {
+    sessionStorage.setItem('ct-dashboard-filters', JSON.stringify(filters));
+  }, [filters]);
+
+  useEffect(() => {
+    sessionStorage.setItem('ct-dashboard-filters-open', showFilters);
+  }, [showFilters]);
 
   const filteredProjects = useMemo(() => {
     return projects.filter(p => {
@@ -114,7 +130,11 @@ export default function Dashboard() {
   });
   const conData = Object.values(conMap).sort((a,b) => (b.total+b.grant) - (a.total+a.grant));
 
-  const clearFilters = () => setFilters({ constituency: '', scheme: '', phase: '', year: '' });
+  const clearFilters = () => {
+    const reset = { constituency: '', scheme: '', phase: '', year: '' };
+    setFilters(reset);
+    sessionStorage.setItem('ct-dashboard-filters', JSON.stringify(reset));
+  };
   const hasFilters = Object.values(filters).some(v => v);
 
   const Tip = ({ active, payload, label }) => {
