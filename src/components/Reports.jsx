@@ -6,10 +6,13 @@ import {
   generateCompletedWorkByDateRangePDF,
   generateWorkByTenderedCostPDF,
   generateWorkOrdersByDateRangePDF,
+  generateTenderDateRangePDF,
+  generateTenderPercentagePDF,
   savePDF,
 } from '../utils/pdfExport';
 import { exportProjectsToExcel } from '../utils/excelExport';
 import { getTotalExpenditure } from '../utils/projectStatus';
+import { matchesTenderDate, matchesTenderPercentage } from '../utils/reportFilters';
 import { downloadKML } from '../utils/kmlExport';
 import { FileText, Download, Printer, MapPin, CheckCircle, IndianRupee, SlidersHorizontal, Calendar, X } from 'lucide-react';
 import ExportModal from './ExportModal';
@@ -106,6 +109,10 @@ export default function Reports() {
   /* ── Work Order date-range filters ─────────────────── */
   const [woFilters, setWoFilters] = useState({ fromDate: '', toDate: '', scheme: '', constituency: '' });
 
+  /* ── Tender date and percentage filters ────────────── */
+  const [tenderDateFilters, setTenderDateFilters] = useState({ fromDate: '', toDate: '', scheme: '', constituency: '' });
+  const [tenderPctFilters, setTenderPctFilters] = useState({ direction: 'above', percentage: '', scheme: '', constituency: '', status: '' });
+
   const [exportModal, setExportModal] = useState({ isOpen: false, type: null });
 
   const years = [...new Set(projects.map(p => p.yearOfSanction))].sort((a, b) => b - a);
@@ -144,6 +151,21 @@ export default function Reports() {
     return true;
   });
 
+  const tenderDateFiltered = projects.filter(p => {
+    if (!matchesTenderDate(p, tenderDateFilters.fromDate, tenderDateFilters.toDate)) return false;
+    if (tenderDateFilters.scheme && p.scheme !== tenderDateFilters.scheme) return false;
+    if (tenderDateFilters.constituency && p.constituency !== tenderDateFilters.constituency) return false;
+    return true;
+  });
+
+  const tenderPctFiltered = projects.filter(p => {
+    if (!matchesTenderPercentage(p, tenderPctFilters.direction, tenderPctFilters.percentage)) return false;
+    if (tenderPctFilters.scheme && p.scheme !== tenderPctFilters.scheme) return false;
+    if (tenderPctFilters.constituency && p.constituency !== tenderPctFilters.constituency) return false;
+    if (tenderPctFilters.status && p.statusOfWork !== tenderPctFilters.status) return false;
+    return true;
+  });
+
   /* ── Handlers: standard ─────────────────────────────── */
   const handlePDF     = () => setExportModal({ isOpen: true, type: 'standard', format: 'pdf' });
   const handlePrint   = () => { const doc = generateProjectListPDF(standardFiltered, filters); const url = URL.createObjectURL(doc.output('blob')); const w = window.open(url); if (w) w.onload = () => w.print(); };
@@ -165,6 +187,16 @@ export default function Reports() {
   const handleWoPrint = () => { const doc = generateWorkOrdersByDateRangePDF(woFiltered, woFilters); const url = URL.createObjectURL(doc.output('blob')); const w = window.open(url); if (w) w.onload = () => w.print(); };
   const handleWoExcel = () => setExportModal({ isOpen: true, type: 'work_orders', format: 'excel' });
 
+  /* ── Handlers: tender date range ───────────────────── */
+  const handleTenderDatePDF = () => setExportModal({ isOpen: true, type: 'tender_date', format: 'pdf' });
+  const handleTenderDatePrint = () => { const doc = generateTenderDateRangePDF(tenderDateFiltered, tenderDateFilters); const url = URL.createObjectURL(doc.output('blob')); const w = window.open(url); if (w) w.onload = () => w.print(); };
+  const handleTenderDateExcel = () => setExportModal({ isOpen: true, type: 'tender_date', format: 'excel' });
+
+  /* ── Handlers: tender percentage ───────────────────── */
+  const handleTenderPctPDF = () => setExportModal({ isOpen: true, type: 'tender_percentage', format: 'pdf' });
+  const handleTenderPctPrint = () => { const doc = generateTenderPercentagePDF(tenderPctFiltered, tenderPctFilters); const url = URL.createObjectURL(doc.output('blob')); const w = window.open(url); if (w) w.onload = () => w.print(); };
+  const handleTenderPctExcel = () => setExportModal({ isOpen: true, type: 'tender_percentage', format: 'excel' });
+
   const executeExport = (columns) => {
     if (exportModal.format === 'excel') {
       let dataToExport = standardFiltered;
@@ -172,6 +204,8 @@ export default function Reports() {
       if (exportModal.type === 'completed_date') { dataToExport = completedFiltered; filename = 'CivilTrack_CompletedWork.xlsx'; }
       else if (exportModal.type === 'tendered_cost') { dataToExport = costFiltered; filename = 'CivilTrack_TenderedCost.xlsx'; }
       else if (exportModal.type === 'work_orders') { dataToExport = woFiltered; filename = 'CivilTrack_WorkOrders.xlsx'; }
+      else if (exportModal.type === 'tender_date') { dataToExport = tenderDateFiltered; filename = 'CivilTrack_TenderDate.xlsx'; }
+      else if (exportModal.type === 'tender_percentage') { dataToExport = tenderPctFiltered; filename = 'CivilTrack_TenderPercentage.xlsx'; }
       
       exportProjectsToExcel(dataToExport, { grants, filename, columns });
       show('Excel downloaded!');
@@ -189,6 +223,12 @@ export default function Reports() {
         case 'work_orders':
           savePDF(generateWorkOrdersByDateRangePDF(woFiltered, woFilters, columns), 'CivilTrack_WorkOrders_Report.pdf');
           break;
+        case 'tender_date':
+          savePDF(generateTenderDateRangePDF(tenderDateFiltered, tenderDateFilters, columns), 'CivilTrack_TenderDate_Report.pdf');
+          break;
+        case 'tender_percentage':
+          savePDF(generateTenderPercentagePDF(tenderPctFiltered, tenderPctFilters, columns), 'CivilTrack_TenderPercentage_Report.pdf');
+          break;
       }
       show('PDF downloaded!');
     }
@@ -200,6 +240,8 @@ export default function Reports() {
     { id: 'completed_date', label: 'Completed Work by Date', icon: CheckCircle },
     { id: 'wo_date',        label: 'Work Orders by Date',    icon: Calendar },
     { id: 'tendered_cost',  label: 'Work by Tendered Cost',  icon: IndianRupee },
+    { id: 'tender_date',    label: 'Projects by Tender Date', icon: Calendar },
+    { id: 'tender_percentage', label: 'Projects by Tender %', icon: SlidersHorizontal },
   ];
 
   return (
@@ -475,6 +517,130 @@ export default function Reports() {
             <div className="report-card" style={{ '--report-accent': 'var(--purple)' }} onClick={handleWoPDF}><FileText /><h3>Download PDF</h3><p>Work order list with contractor details</p></div>
             <div className="report-card" style={{ '--report-accent': 'var(--purple)' }} onClick={handleWoPrint}><Printer /><h3>Print Report</h3><p>Open in print dialog</p></div>
             <div className="report-card" style={{ '--report-accent': 'var(--purple)' }} onClick={handleWoExcel}><Download /><h3>Export Excel</h3><p>Export to spreadsheet</p></div>
+          </div>
+        </>
+      )}
+
+      {/* ═══ PROJECTS BY TENDER DATE ════════════════════ */}
+      {activeTab === 'tender_date' && (
+        <>
+          <div className="card" style={{ marginBottom: 24 }}>
+            <div className="card-header">
+              <SectionHeader icon={Calendar} title="Projects — Tender Date Range" subtitle="Filter projects by their recorded Date of Tender" accent="var(--purple)" />
+            </div>
+            <div className="report-info-banner" style={{ '--banner-color': 'var(--purple)', '--banner-glow': 'var(--purple-glow)' }}>
+              <Calendar size={14} style={{ flexShrink: 0 }} />
+              <span>Projects without a <strong>Date of Tender</strong> are excluded. Leave either date blank for an open-ended range.</span>
+            </div>
+            <div className="filter-bar" style={{ marginBottom: 0 }}>
+              <div className="form-group">
+                <label className="form-label">From Tender Date</label>
+                <input type="date" className="form-input" value={tenderDateFilters.fromDate} onChange={e => setTenderDateFilters(f => ({ ...f, fromDate: e.target.value }))} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">To Tender Date</label>
+                <input type="date" className="form-input" value={tenderDateFilters.toDate} onChange={e => setTenderDateFilters(f => ({ ...f, toDate: e.target.value }))} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Scheme</label>
+                <select className="form-select" value={tenderDateFilters.scheme} onChange={e => setTenderDateFilters(f => ({ ...f, scheme: e.target.value }))}>
+                  <option value="">All</option>{schemes.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Constituency</label>
+                <select className="form-select" value={tenderDateFilters.constituency} onChange={e => setTenderDateFilters(f => ({ ...f, constituency: e.target.value }))}>
+                  <option value="">All</option>{constituencies.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                </select>
+              </div>
+              <button className="btn btn-danger btn-sm" onClick={() => setTenderDateFilters({ fromDate: '', toDate: '', scheme: '', constituency: '' })} style={{ alignSelf: 'flex-end' }} title="Reset filters">
+                <X size={14} /> Reset
+              </button>
+            </div>
+            {tenderDateFiltered.length > 0 && (
+              <SummaryStrip accent="var(--purple)" items={[
+                { label: 'Projects', val: tenderDateFiltered.length },
+                { label: 'Cost Put to Tender', val: fmtL(tenderDateFiltered.reduce((sum, p) => sum + (Number(p.costPutToTender) || 0), 0)) },
+                { label: 'Total Tendered', val: fmtL(tenderDateFiltered.reduce((sum, p) => sum + (Number(p.tenderedCost) || 0), 0)) },
+              ]} />
+            )}
+          </div>
+          <MatchBadge count={tenderDateFiltered.length} />
+          <div className="report-options">
+            <div className="report-card" style={{ '--report-accent': 'var(--purple)' }} onClick={handleTenderDatePDF}><FileText /><h3>Download PDF</h3><p>Tender dates and cost details</p></div>
+            <div className="report-card" style={{ '--report-accent': 'var(--purple)' }} onClick={handleTenderDatePrint}><Printer /><h3>Print Report</h3><p>Open in print dialog</p></div>
+            <div className="report-card" style={{ '--report-accent': 'var(--purple)' }} onClick={handleTenderDateExcel}><Download /><h3>Export Excel</h3><p>Export to spreadsheet</p></div>
+          </div>
+        </>
+      )}
+
+      {/* ═══ PROJECTS BY TENDER PERCENTAGE ════════════ */}
+      {activeTab === 'tender_percentage' && (
+        <>
+          <div className="card" style={{ marginBottom: 24 }}>
+            <div className="card-header">
+              <SectionHeader icon={SlidersHorizontal} title="Projects — Tender Percentage" subtitle="Find projects above a positive or below a negative tender percentage" accent="var(--amber)" />
+            </div>
+            <div className="report-info-banner" style={{ '--banner-color': 'var(--amber)', '--banner-glow': 'var(--amber-glow)' }}>
+              <SlidersHorizontal size={14} style={{ flexShrink: 0 }} />
+              <span>
+                Enter a positive number. For example, <strong>Above 3</strong> includes +3% and higher; <strong>Below 3</strong> includes −3% and lower.
+              </span>
+            </div>
+            <div className="filter-bar" style={{ marginBottom: 0 }}>
+              <div className="form-group">
+                <label className="form-label">Direction</label>
+                <select className="form-select" value={tenderPctFilters.direction} onChange={e => setTenderPctFilters(f => ({ ...f, direction: e.target.value }))}>
+                  <option value="above">Above (positive)</option>
+                  <option value="below">Below (negative)</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Percentage (%)</label>
+                <input type="number" className="form-input" min="0" step="any" placeholder="e.g. 3" value={tenderPctFilters.percentage} onChange={e => {
+                  const value = e.target.value;
+                  if (value === '' || Number(value) >= 0) setTenderPctFilters(f => ({ ...f, percentage: value }));
+                }} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Status</label>
+                <select className="form-select" value={tenderPctFilters.status} onChange={e => setTenderPctFilters(f => ({ ...f, status: e.target.value }))}>
+                  <option value="">All</option>{statusOptions.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Scheme</label>
+                <select className="form-select" value={tenderPctFilters.scheme} onChange={e => setTenderPctFilters(f => ({ ...f, scheme: e.target.value }))}>
+                  <option value="">All</option>{schemes.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Constituency</label>
+                <select className="form-select" value={tenderPctFilters.constituency} onChange={e => setTenderPctFilters(f => ({ ...f, constituency: e.target.value }))}>
+                  <option value="">All</option>{constituencies.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                </select>
+              </div>
+              <button className="btn btn-danger btn-sm" onClick={() => setTenderPctFilters({ direction: 'above', percentage: '', scheme: '', constituency: '', status: '' })} style={{ alignSelf: 'flex-end' }} title="Reset filters">
+                <X size={14} /> Reset
+              </button>
+            </div>
+            <div style={{ marginTop: 12, fontSize: 12, color: 'var(--text-secondary)' }}>
+              Showing tender percentages {tenderPctFilters.direction === 'below' ? 'at or below' : 'at or above'}{' '}
+              <strong>{tenderPctFilters.direction === 'below' ? '−' : '+'}{tenderPctFilters.percentage || '0'}%</strong>.
+            </div>
+            {tenderPctFiltered.length > 0 && (
+              <SummaryStrip accent="var(--amber)" items={[
+                { label: 'Projects', val: tenderPctFiltered.length },
+                { label: 'Cost Put to Tender', val: fmtL(tenderPctFiltered.reduce((sum, p) => sum + (Number(p.costPutToTender) || 0), 0)) },
+                { label: 'Total Tendered', val: fmtL(tenderPctFiltered.reduce((sum, p) => sum + (Number(p.tenderedCost) || 0), 0)) },
+              ]} />
+            )}
+          </div>
+          <MatchBadge count={tenderPctFiltered.length} />
+          <div className="report-options">
+            <div className="report-card report-card--amber" onClick={handleTenderPctPDF}><FileText /><h3>Download PDF</h3><p>Positive or negative tender percentages</p></div>
+            <div className="report-card report-card--amber" onClick={handleTenderPctPrint}><Printer /><h3>Print Report</h3><p>Open in print dialog</p></div>
+            <div className="report-card report-card--amber" onClick={handleTenderPctExcel}><Download /><h3>Export Excel</h3><p>Export to spreadsheet</p></div>
           </div>
         </>
       )}

@@ -35,12 +35,14 @@ export const REPORT_COLUMNS = [
   { id: 'scheme', label: 'Scheme', align: 'left' },
   { id: 'phase', label: 'Phase', align: 'left' },
   { id: 'contractorName', label: 'Contractor', align: 'left' },
+  { id: 'dateOfTender', label: 'Tender Date', align: 'center' },
   { id: 'workOrderDate', label: 'WO Date', align: 'left' },
   { id: 'completionDateContract', label: 'Comp (C)', align: 'left' },
   { id: 'actualCompletionDate', label: 'Act Comp', align: 'left' },
   { id: 'daysDiff', label: 'Days Diff', align: 'center' },
   { id: 'sanctionedAmount', label: 'Sanc.\n(Cr/L)', align: 'right' },
   { id: 'tenderedCost', label: 'Tender\n(Cr/L)', align: 'right' },
+  { id: 'costPutToTender', label: 'Cost Put to Tender\n(Cr/L)', align: 'right' },
   { id: 'tenderPercentage', label: 'Tender %', align: 'right' },
   { id: 'expenditureSanctionAmount', label: 'Exp. Sanc.\n(Cr/L)', align: 'right' },
   { id: 'variation', label: 'Var %', align: 'center' },
@@ -58,7 +60,9 @@ export const DEFAULT_COLUMNS = {
   standard: ['projectName', 'yearOfSanction', 'constituency', 'villagePanchayat', 'scheme', 'phase', 'contractorName', 'workOrderDate', 'completionDateContract', 'actualCompletionDate', 'sanctionedAmount', 'tenderedCost', 'expenditureIncurred', 'utilisedAmount', 'balanceAmount', 'statusOfWork', 'ucSentDate', 'remarks'],
   completed_date: ['projectName', 'category', 'constituency', 'scheme', 'contractorName', 'workOrderDate', 'completionDateContract', 'actualCompletionDate', 'daysDiff', 'sanctionedAmount', 'tenderedCost', 'expenditureIncurred', 'utilisedAmount', 'ucSentDate', 'remarks'],
   tendered_cost: ['projectName', 'category', 'yearOfSanction', 'constituency', 'scheme', 'contractorName', 'workOrderDate', 'completionDateContract', 'sanctionedAmount', 'tenderedCost', 'variation', 'expenditureIncurred', 'utilisedAmount', 'balanceAmount', 'statusOfWork'],
-  work_orders: ['workOrderDate', 'projectName', 'constituency', 'scheme', 'contractorName', 'completionDateContract', 'sanctionedAmount', 'tenderedCost', 'statusOfWork', 'remarks']
+  work_orders: ['workOrderDate', 'projectName', 'constituency', 'scheme', 'contractorName', 'completionDateContract', 'sanctionedAmount', 'tenderedCost', 'statusOfWork', 'remarks'],
+  tender_date: ['dateOfTender', 'projectName', 'constituency', 'scheme', 'costPutToTender', 'tenderedCost', 'tenderPercentage', 'statusOfWork'],
+  tender_percentage: ['projectName', 'dateOfTender', 'constituency', 'scheme', 'costPutToTender', 'tenderedCost', 'tenderPercentage', 'statusOfWork']
 };
 
 function getProjectRowValue(p, colId) {
@@ -79,12 +83,14 @@ function getProjectRowValue(p, colId) {
     case 'scheme': return p.scheme || '-';
     case 'phase': return p.phase || '-';
     case 'contractorName': return p.contractorName || '-';
+    case 'dateOfTender': return fmtDate(p.dateOfTender);
     case 'workOrderDate': return fmtDate(p.workOrderDate);
     case 'completionDateContract': return fmtDate(p.dateOfCompletionContract);
     case 'actualCompletionDate': return fmtDate(p.actualDateOfCompletion);
     case 'daysDiff': return daysDiff;
     case 'sanctionedAmount': return fmtL(p.sanctionedAmount);
     case 'tenderedCost': return fmtL(p.tenderedCost);
+    case 'costPutToTender': return fmtL(p.costPutToTender);
     case 'tenderPercentage': return p.tenderPercentage === '' || p.tenderPercentage == null ? '-' : `${p.tenderPercentage}%`;
     case 'expenditureSanctionAmount': return fmtL(p.expenditureSanctionAmount);
     case 'variation': return variation;
@@ -782,6 +788,68 @@ export function generateWorkOrdersByDateRangePDF(projects, filters = {}, selecte
 
   addFooter(doc, `Work Orders Issued Report  —  ${filterText}`);
   return doc;
+}
+
+function generateTenderReportPDF(projects, title, filterText, reportType, selectedColumns) {
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a3' });
+  const W = doc.internal.pageSize.getWidth();
+  const MW = W - 24;
+  const totalPutToTender = projects.reduce((sum, p) => sum + (Number(p.costPutToTender) || 0), 0);
+  const totalTendered = projects.reduce((sum, p) => sum + (Number(p.tenderedCost) || 0), 0);
+
+  addHeader(doc, `${title}  —  ${filterText}`, `Total Projects: ${projects.length}`);
+  addSummaryBar(doc, [
+    { label: 'Projects', value: String(projects.length) },
+    { label: 'Cost Put to Tender', value: fmtL(totalPutToTender) },
+    { label: 'Total Tendered', value: fmtL(totalTendered) },
+  ], 40);
+
+  const orderedCols = (selectedColumns || DEFAULT_COLUMNS[reportType])
+    .map(id => REPORT_COLUMNS.find(column => column.id === id)).filter(Boolean);
+  const columnStyles = { 0: { cellWidth: 8, halign: 'center' } };
+  orderedCols.forEach((column, index) => {
+    columnStyles[index + 1] = { halign: column.align };
+  });
+
+  let fontSize = 8;
+  if (orderedCols.length <= 6) fontSize = 11;
+  else if (orderedCols.length <= 10) fontSize = 10;
+  else if (orderedCols.length <= 14) fontSize = 9;
+
+  autoTable(doc, {
+    startY: 64,
+    head: [['#', ...orderedCols.map(column => column.label)]],
+    body: projects.map((project, index) => [index + 1, ...orderedCols.map(column => getProjectRowValue(project, column.id))]),
+    styles: { ...BS, fontSize, cellPadding: 2.5 },
+    headStyles: { ...HS, fontSize, cellPadding: 3 },
+    alternateRowStyles: AR,
+    tableWidth: MW,
+    margin: { left: 12, right: 12 },
+    columnStyles,
+  });
+
+  addFooter(doc, `${title}  —  ${filterText}`);
+  return doc;
+}
+
+export function generateTenderDateRangePDF(projects, filters = {}, selectedColumns = null) {
+  const parts = [];
+  if (filters.fromDate) parts.push(`From: ${fmtDate(filters.fromDate)}`);
+  if (filters.toDate) parts.push(`To: ${fmtDate(filters.toDate)}`);
+  if (filters.scheme) parts.push(`Scheme: ${filters.scheme}`);
+  if (filters.constituency) parts.push(`Constituency: ${filters.constituency}`);
+  return generateTenderReportPDF(projects, 'Projects by Tender Date', parts.join('  |  ') || 'All Tender Dates', 'tender_date', selectedColumns);
+}
+
+export function generateTenderPercentagePDF(projects, filters = {}, selectedColumns = null) {
+  const threshold = filters.percentage === '' ? 0 : Number(filters.percentage);
+  const direction = filters.direction === 'below' ? 'Below' : 'Above';
+  const signedThreshold = filters.direction === 'below' ? -threshold : threshold;
+  const parts = [`${direction} ${signedThreshold}%`];
+  if (filters.scheme) parts.push(`Scheme: ${filters.scheme}`);
+  if (filters.constituency) parts.push(`Constituency: ${filters.constituency}`);
+  if (filters.status) parts.push(`Status: ${statusLabel(filters.status)}`);
+  return generateTenderReportPDF(projects, 'Projects by Tender Percentage', parts.join('  |  '), 'tender_percentage', selectedColumns);
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────

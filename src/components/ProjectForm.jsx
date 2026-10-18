@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useProjects } from '../context/projectStore';
 import { statusOptions } from '../data/sampleData';
 import { getEngineerDesignation, isAssistantEngineer, isJuniorEngineer } from '../utils/engineers';
-import { normalizeProject, getSecurityDepositReleaseStatus, getTotalExpenditure, getBalanceAmount } from '../utils/projectStatus';
+import { normalizeProject, getSecurityDepositReleaseStatus, getTotalExpenditure, getBalanceAmount, getTenderPercentage } from '../utils/projectStatus';
 import { v4 as uuidv4 } from 'uuid';
 import { Save, ArrowLeft, MapPin, IndianRupee, AlertTriangle, Calendar, Users, FileText } from 'lucide-react';
 
@@ -113,7 +113,6 @@ function ProjectFormContent({ id }) {
     const data = normalizeProject({ ...dataToSave,
       sanctionedAmount:Number(form.sanctionedAmount)||0, tenderedCost:Number(form.tenderedCost)||0,
       technicalSanctionAmount:Number(form.technicalSanctionAmount)||0, costPutToTender:Number(form.costPutToTender)||0,
-      tenderPercentage: form.tenderPercentage === '' ? '' : Number(form.tenderPercentage),
       expenditureSanctionAmount:Number(form.expenditureSanctionAmount)||0,
       expenditureIncurred:Number(form.expenditureIncurred)||0,
       contingencyExpenditure:Number(form.contingencyExpenditure)||0, progress:Number(form.progress)||0,
@@ -138,6 +137,7 @@ function ProjectFormContent({ id }) {
   const sanctioned = Number(form.sanctionedAmount)||0;
   const totalExpenditure = getTotalExpenditure(form);
   const balance = getBalanceAmount(form);
+  const tenderPercentage = getTenderPercentage(form);
   const utilisationPct = sanctioned > 0 ? Math.round((totalExpenditure / sanctioned) * 100) : 0;
 
   const schemeGrantTotal = grants.filter(g => g.scheme === form.scheme).reduce((sum, g) => sum + (g.amount || 0), 0);
@@ -348,7 +348,8 @@ function ProjectFormContent({ id }) {
             </div>
             <div className="form-group">
               <label className="form-label">Tender Percentage (%)</label>
-              <input className="form-input" type="number" step="any" value={form.tenderPercentage ?? ''} onChange={e => set('tenderPercentage', e.target.value)} />
+              <input className="form-input" readOnly value={tenderPercentage} placeholder="Enter both tender costs" />
+              <small style={{ color:'var(--text-muted)' }}>(Cost put to tender − tendered cost) ÷ cost put to tender × 100</small>
             </div>
             <div className="form-group">
               <label className="form-label">Expenditure Sanction Amount (₹)</label>

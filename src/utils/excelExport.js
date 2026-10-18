@@ -51,12 +51,14 @@ export function exportProjectsToExcel(projects, options = {}) {
       case 'scheme': return p.scheme || '';
       case 'phase': return p.phase || '';
       case 'contractorName': return p.contractorName || '';
+      case 'dateOfTender': return p.dateOfTender || '';
       case 'workOrderDate': return p.workOrderDate || '';
       case 'completionDateContract': return p.dateOfCompletionContract || '';
       case 'actualCompletionDate': return p.actualDateOfCompletion || '';
       case 'daysDiff': return daysDiff;
       case 'sanctionedAmount': return n(p.sanctionedAmount);
       case 'tenderedCost': return n(p.tenderedCost);
+      case 'costPutToTender': return n(p.costPutToTender);
       case 'tenderPercentage': return p.tenderPercentage ?? '';
       case 'expenditureSanctionAmount': return n(p.expenditureSanctionAmount);
       case 'contingencyExpenditure': return n(p.contingencyExpenditure);
