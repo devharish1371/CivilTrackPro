@@ -117,6 +117,17 @@ export default function ProjectDetail() {
         </div>
       </div>
 
+      {/* Technical Sanction & Tender */}
+      <div className="card" style={{ marginBottom:16 }}>
+        <div className="card-header"><span className="card-title">Technical Sanction & Tender Details</span></div>
+        <div className="detail-grid">
+          <D label="Technical Sanction Amount" value={p.technicalSanctionAmount ? fmt(p.technicalSanctionAmount) : '—'} cls="amount" />
+          <D label="Technical Sanction No." value={p.technicalSanctionNo} />
+          <D label="Date of Tender" value={fmtDate(p.dateOfTender)} />
+          <D label="Cost Put to Tender" value={p.costPutToTender ? fmt(p.costPutToTender) : '—'} cls="amount" />
+        </div>
+      </div>
+
       {/* Timeline */}
       <div className="card" style={{ marginBottom:16 }}>
         <div className="card-header"><span className="card-title"><Calendar size={14} style={{ display:'inline', verticalAlign:'middle' }} /> Timeline</span></div>

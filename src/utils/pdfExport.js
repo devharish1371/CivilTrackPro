@@ -401,8 +401,16 @@ export function generateProjectDetailPDF(project) {
     ['GO Date',          fmtDate(p.goDate)],
   ]);
 
-  // ── 2. Financial ──────────────────────────────────────────────────────
-  section('2. FINANCIAL DETAILS', [
+  // ── 2. Technical Sanction & Tender ────────────────────────────────────
+  section('2. TECHNICAL SANCTION & TENDER', [
+    ['Technical Sanction Amount', p.technicalSanctionAmount ? fmt(p.technicalSanctionAmount) : '-'],
+    ['Technical Sanction No.', p.technicalSanctionNo],
+    ['Date of Tender', fmtDate(p.dateOfTender)],
+    ['Cost Put to Tender', p.costPutToTender ? fmt(p.costPutToTender) : '-'],
+  ]);
+
+  // ── 3. Financial ──────────────────────────────────────────────────────
+  section('3. FINANCIAL DETAILS', [
     ['Sanctioned Amount',    fmt(p.sanctionedAmount)],
     ['Tendered Cost',        fmt(p.tenderedCost)],
     ['Expenditure Incurred', fmt(p.expenditureIncurred)],
@@ -419,8 +427,8 @@ export function generateProjectDetailPDF(project) {
   doc.text(`Utilisation: ${pct}% of Sanctioned Amount`, 14, Y);
   Y += 8;
 
-  // ── 3. Timeline ───────────────────────────────────────────────────────
-  section('3. TIMELINE', [
+  // ── 4. Timeline ───────────────────────────────────────────────────────
+  section('4. TIMELINE', [
     ['Contractor',          p.contractorName],
     ['Work Order Date',     fmtDate(p.workOrderDate)],
     ['Contract Start Date', fmtDate(p.dateOfStartContract)],
@@ -432,16 +440,16 @@ export function generateProjectDetailPDF(project) {
     ['Status',              statusLabel(p.statusOfWork)],
   ]);
 
-  // ── 4. Guarantee & Personnel ──────────────────────────────────────────
-  section('4. GUARANTEE & PERSONNEL', [
+  // ── 5. Guarantee & Personnel ──────────────────────────────────────────
+  section('5. GUARANTEE & PERSONNEL', [
     ['Performance Guarantee', fmtDate(p.performanceGuaranteeDate)],
     ['Guarantee Expiry Date', fmtDate(p.expiryDate)],
     ['Junior Engineer',       p.juniorEngineer],
     ['Assistant Engineer',    p.assistantEngineer],
   ]);
 
-  // ── 5. Security Deposit ───────────────────────────────────────────────
-  section('5. SECURITY DEPOSIT', [
+  // ── 6. Security Deposit ───────────────────────────────────────────────
+  section('6. SECURITY DEPOSIT', [
     ['Security Amount',       fmt(p.securityAmount || 0)],
     ['Security Deducted On',  fmtDate(p.securityDepositDeductedDate)],
     ['Security Release Date', fmtDate(p.securityDepositReleaseDate)],
@@ -450,15 +458,15 @@ export function generateProjectDetailPDF(project) {
     ['Audit Register No.',    p.workAuditRegisterNo],
   ]);
 
-  // ── 6. Location ───────────────────────────────────────────────────────
+  // ── 7. Location ───────────────────────────────────────────────────────
   if (p.latitude && p.longitude && Number(p.latitude) !== 0) {
-    section('6. GEO-LOCATION', [
+    section('7. GEO-LOCATION', [
       ['Latitude',  p.latitude],
       ['Longitude', p.longitude],
     ]);
   }
 
-  // ── 7 & 8. Text blocks — with page-break protection ───────────────────
+  // ── 8 & 9. Text blocks — with page-break protection ───────────────────
   const writeTextBlock = (heading, text) => {
     const lines = doc.splitTextToSize(String(text || ''), MW);
     const blockH = lines.length * 5 + 14; // heading + lines + padding
@@ -479,8 +487,8 @@ export function generateProjectDetailPDF(project) {
     Y += 4;
   };
 
-  if (p.physicalParametersNotes) writeTextBlock('7. PHYSICAL PARAMETERS', p.physicalParametersNotes);
-  if (p.notes) writeTextBlock('8. NOTES / REMARKS', p.notes);
+  if (p.physicalParametersNotes) writeTextBlock('8. PHYSICAL PARAMETERS', p.physicalParametersNotes);
+  if (p.notes) writeTextBlock('9. NOTES / REMARKS', p.notes);
 
   addFooter(doc, p.projectName || 'Project Detail');
   return doc;

@@ -10,6 +10,7 @@ import { Save, ArrowLeft, MapPin, IndianRupee, AlertTriangle, Calendar, Users, F
 const empty = {
   projectName:'', yearOfSanction:new Date().getFullYear(), constituency:'', villagePanchayat:'', scheme:'',
   goDate:'', goNumber:'',
+  technicalSanctionAmount:'', technicalSanctionNo:'', dateOfTender:'', costPutToTender:'',
   sanctionedAmount:'', tenderedCost:'', contractorName:'', workOrderDate:'',
   dateOfStartContract:'', dateOfCompletionContract:'', actualDateOfStart:'',
   actualDateOfCompletion:'', performanceGuaranteeDate:'', expiryDate:'',
@@ -112,6 +113,7 @@ export default function ProjectForm() {
     
     const data = normalizeProject({ ...dataToSave,
       sanctionedAmount:Number(form.sanctionedAmount)||0, tenderedCost:Number(form.tenderedCost)||0,
+      technicalSanctionAmount:Number(form.technicalSanctionAmount)||0, costPutToTender:Number(form.costPutToTender)||0,
       expenditureIncurred:Number(form.expenditureIncurred)||0, progress:Number(form.progress)||0,
       yearOfSanction:Number(form.yearOfSanction)||new Date().getFullYear(),
       deductions:Number(form.deductions)||0,
@@ -230,7 +232,30 @@ export default function ProjectForm() {
           </div>
         </div>
 
-        {/* 2. Timeline (includes Contractor) */}
+        {/* 2. Technical Sanction & Tender */}
+        <div className="card" style={{ marginBottom:16 }}>
+          <div className="card-header"><span className="card-title">Technical Sanction & Tender Details</span></div>
+          <div className="form-grid">
+            <div className="form-group">
+              <label className="form-label">Technical Sanction Amount (₹)</label>
+              <input className="form-input" type="number" min="0" value={form.technicalSanctionAmount ?? ''} onChange={e => set('technicalSanctionAmount', e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Technical Sanction No.</label>
+              <input className="form-input" value={form.technicalSanctionNo || ''} onChange={e => set('technicalSanctionNo', e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Date of Tender</label>
+              <input className="form-input" type="date" value={form.dateOfTender || ''} onChange={e => set('dateOfTender', e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Cost Put to Tender (₹)</label>
+              <input className="form-input" type="number" min="0" value={form.costPutToTender ?? ''} onChange={e => set('costPutToTender', e.target.value)} />
+            </div>
+          </div>
+        </div>
+
+        {/* 3. Timeline (includes Contractor) */}
         <div className="card" style={{ marginBottom:16 }}>
           <div className="card-header"><span className="card-title"><Calendar size={14} style={{ display:'inline', verticalAlign:'middle' }} /> Timeline</span></div>
           <div className="form-grid">
@@ -260,7 +285,7 @@ export default function ProjectForm() {
           </div>
         </div>
 
-        {/* 3. Guarantee & Personnel */}
+        {/* 4. Guarantee & Personnel */}
         <div className="card" style={{ marginBottom:16 }}>
           <div className="card-header"><span className="card-title"><Users size={14} style={{ display:'inline', verticalAlign:'middle' }} /> Guarantee & Personnel</span></div>
           <div className="form-grid">
@@ -297,7 +322,7 @@ export default function ProjectForm() {
           </div>
         </div>
 
-        {/* 4. Financial Details */}
+        {/* 5. Financial Details */}
         <div className="card" style={{ marginBottom:16 }}>
           <div className="card-header"><span className="card-title"><IndianRupee size={14} style={{ display:'inline', verticalAlign:'middle' }} /> Financial Details</span></div>
           
@@ -360,7 +385,7 @@ export default function ProjectForm() {
           )}
         </div>
 
-        {/* 5. Status */}
+        {/* 6. Status */}
         <div className="card" style={{ marginBottom:16 }}>
           <div className="card-header"><span className="card-title">Status</span></div>
           <div className="form-grid">
@@ -382,7 +407,7 @@ export default function ProjectForm() {
           </div>
         </div>
 
-        {/* 6. Security Deposit */}
+        {/* 7. Security Deposit */}
         <div className="card" style={{ marginBottom:16 }}>
           <div className="card-header"><span className="card-title">Security Deposit</span></div>
           <div className="form-grid">
@@ -401,7 +426,7 @@ export default function ProjectForm() {
           </div>
         </div>
 
-        {/* 7. Physical Parameters */}
+        {/* 8. Physical Parameters */}
         <div className="card" style={{ marginBottom:16 }}>
           <div className="card-header"><span className="card-title"><FileText size={14} style={{ display:'inline', verticalAlign:'middle' }} /> Physical Parameters</span></div>
           <div className="form-group">
@@ -409,7 +434,7 @@ export default function ProjectForm() {
           </div>
         </div>
 
-        {/* 7.5. Utilisation Certificate (UC) */}
+        {/* 9. Utilisation Certificate (UC) */}
         <div className="card" style={{ marginBottom:16 }}>
           <div className="card-header"><span className="card-title"><FileText size={14} style={{ display:'inline', verticalAlign:'middle' }} /> Utilisation Certificate (UC)</span></div>
           <div className="form-grid">
@@ -433,7 +458,7 @@ export default function ProjectForm() {
           </div>
         </div>
 
-        {/* 8. Geo-Tagging */}
+        {/* 10. Geo-Tagging */}
         <div className="card" style={{ marginBottom:16 }}>
           <div className="card-header">
             <span className="card-title"><MapPin size={14} style={{ display:'inline', verticalAlign:'middle' }} /> Geo-Tagging</span>
@@ -452,7 +477,7 @@ export default function ProjectForm() {
           )}
         </div>
 
-        {/* 9. Notes/Remarks */}
+        {/* 11. Notes/Remarks */}
         <div className="card" style={{ marginBottom:16 }}>
           <div className="form-group"><label className="form-label">Notes / Remarks</label><textarea className="form-textarea" value={form.notes} onChange={e => set('notes', e.target.value)} placeholder="Additional notes..." /></div>
         </div>

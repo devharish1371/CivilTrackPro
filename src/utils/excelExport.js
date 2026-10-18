@@ -93,6 +93,8 @@ export function exportProjectsToExcel(projects, options = {}) {
       'S.No': i+1, 'Project Name': p.projectName, 'Category': p.category||'', 'Phase': p.phase||'', 'Year': p.yearOfSanction,
       'Constituency': p.constituency, 'Village Panchayat': p.villagePanchayat||'', 'Scheme': p.scheme,
       'GO Number': p.goNumber||'', 'GO Date': p.goDate||'',
+      'Technical Sanction Amount (₹)': n(p.technicalSanctionAmount), 'Technical Sanction No.': p.technicalSanctionNo||'',
+      'Date of Tender': p.dateOfTender||'', 'Cost Put to Tender (₹)': n(p.costPutToTender),
       'Sanctioned (₹)': n(p.sanctionedAmount), 'Tendered Cost (₹)': n(p.tenderedCost),
       'Contractor': p.contractorName, 'Work Order Date': p.workOrderDate||'',
       'Start (Contract)': p.dateOfStartContract||'', 'Completion (Contract)': p.dateOfCompletionContract||'',
