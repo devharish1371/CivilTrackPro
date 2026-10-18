@@ -5,7 +5,7 @@ import { downloadKML } from '../utils/kmlExport';
 import { ArrowLeft, Edit, Trash2, FileText, Share2, Calendar, IndianRupee, Users, AlertTriangle, Lock, Unlock, MapPin, ExternalLink } from 'lucide-react';
 import { useState } from 'react';
 import { verifyMasterPassword, formatMasterPasswordError } from '../utils/appAuth';
-import { getUcSentStatus, getSecurityDepositReleaseStatus, getContractCompletionDate, getTotalExpenditure, getBalanceAmount } from '../utils/projectStatus';
+import { getUcSentStatus, getSecurityDepositReleaseStatus, getContractCompletionDate, getTotalExpenditure, getBalanceAmount, getTenderPercentage } from '../utils/projectStatus';
 
 const fmt = (n) => new Intl.NumberFormat('en-IN', { style:'currency', currency:'INR', maximumFractionDigits:0 }).format(n);
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }) : '—';
@@ -26,6 +26,7 @@ export default function ProjectDetail() {
 
   const totalExpenditure = getTotalExpenditure(p);
   const balance = getBalanceAmount(p);
+  const tenderPercentage = getTenderPercentage(p);
   const now = new Date();
   const securityDepositReleased = getSecurityDepositReleaseStatus(p);
   const expiryDays = p.expiryDate ? Math.ceil((new Date(p.expiryDate) - now)/86400000) : null;
@@ -159,7 +160,7 @@ export default function ProjectDetail() {
         <div className="detail-grid">
           <D label="Sanctioned Amount" value={fmt(p.sanctionedAmount)} cls="amount" />
           <D label="Tendered Cost" value={fmt(p.tenderedCost)} cls="amount" />
-          <D label="Tender Percentage" value={p.tenderPercentage !== '' && p.tenderPercentage != null ? `${p.tenderPercentage}%` : '—'} />
+          <D label="Tender Percentage" value={tenderPercentage === '' ? '—' : `${tenderPercentage}%`} />
           <D label="Expenditure Sanction Amount" value={fmt(p.expenditureSanctionAmount||0)} cls="amount" />
           <D label="Expenditure on Work" value={fmt(p.expenditureIncurred||0)} cls="highlight" />
           <D label="Contingency Expenditure" value={fmt(p.contingencyExpenditure||0)} cls="highlight" />

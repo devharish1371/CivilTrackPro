@@ -1,4 +1,4 @@
-import { getTotalExpenditure, getBalanceAmount } from './projectStatus.js';
+import { getTotalExpenditure, getBalanceAmount, getTenderPercentage } from './projectStatus.js';
 
 const SHEETS_API = 'https://sheets.googleapis.com/v4/spreadsheets';
 let accessToken = null;
@@ -128,7 +128,7 @@ function projectToRow(p) {
     p.mBookNumber||'', p.workAuditRegisterNo||'',
     p.latitude||'', p.longitude||'', p.isLocked?'TRUE':'FALSE', p.notes||'', p.securityDepositReleased || (p.securityDepositReleaseDate ? 'Yes' : 'No'), p.extendedCompletionDate||'',
     p.technicalSanctionAmount||0, p.technicalSanctionNo||'', p.dateOfTender||'', p.costPutToTender||0,
-    p.tenderPercentage === '' || p.tenderPercentage == null ? '' : Number(p.tenderPercentage),
+    getTenderPercentage(p),
     p.expenditureSanctionAmount||0, p.contingencyExpenditure||0, getTotalExpenditure(p), getBalanceAmount(p)
   ];
 }

@@ -1,6 +1,6 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { getTotalExpenditure, getBalanceAmount } from './projectStatus';
+import { getTotalExpenditure, getBalanceAmount, getTenderPercentage } from './projectStatus';
 
 // ─── Formatters ────────────────────────────────────────────────────────────
 const fmt = (n) => {
@@ -91,7 +91,7 @@ function getProjectRowValue(p, colId) {
     case 'sanctionedAmount': return fmtL(p.sanctionedAmount);
     case 'tenderedCost': return fmtL(p.tenderedCost);
     case 'costPutToTender': return fmtL(p.costPutToTender);
-    case 'tenderPercentage': return p.tenderPercentage === '' || p.tenderPercentage == null ? '-' : `${p.tenderPercentage}%`;
+    case 'tenderPercentage': return getTenderPercentage(p) === '' ? '-' : `${getTenderPercentage(p)}%`;
     case 'expenditureSanctionAmount': return fmtL(p.expenditureSanctionAmount);
     case 'variation': return variation;
     case 'expenditureIncurred': return fmtL(p.expenditureIncurred);
@@ -422,7 +422,7 @@ export function generateProjectDetailPDF(project) {
   section('3. FINANCIAL DETAILS', [
     ['Sanctioned Amount',    fmt(p.sanctionedAmount)],
     ['Tendered Cost',        fmt(p.tenderedCost)],
-    ['Tender Percentage',    p.tenderPercentage === '' || p.tenderPercentage == null ? '-' : `${p.tenderPercentage}%`],
+    ['Tender Percentage',    getTenderPercentage(p) === '' ? '-' : `${getTenderPercentage(p)}%`],
     ['Expenditure Sanction', fmt(p.expenditureSanctionAmount || 0)],
     ['Expenditure on Work',  fmt(p.expenditureIncurred || 0)],
     ['Contingency Expenditure', fmt(p.contingencyExpenditure || 0)],

@@ -29,7 +29,8 @@ export function getTenderPercentage(project) {
   const tender = Number(tenderedCost);
   if (!Number.isFinite(base) || base <= 0 || !Number.isFinite(tender) || tender <= 0) return '';
 
-  return Number((((base - tender) / base) * 100).toFixed(2));
+  // A tender above the base is positive; a tender below it is negative.
+  return Number((((tender - base) / base) * 100).toFixed(2));
 }
 
 // Keep the original contract date for records, but use a valid later extension

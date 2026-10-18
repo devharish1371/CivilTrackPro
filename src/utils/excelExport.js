@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import { getUcSentStatus, getSecurityDepositReleaseStatus, getTotalExpenditure, getBalanceAmount } from './projectStatus';
+import { getUcSentStatus, getSecurityDepositReleaseStatus, getTotalExpenditure, getBalanceAmount, getTenderPercentage } from './projectStatus';
 import { REPORT_COLUMNS } from './pdfExport';
 
 const n = (v) => Number(v) || 0;
@@ -59,7 +59,7 @@ export function exportProjectsToExcel(projects, options = {}) {
       case 'sanctionedAmount': return n(p.sanctionedAmount);
       case 'tenderedCost': return n(p.tenderedCost);
       case 'costPutToTender': return n(p.costPutToTender);
-      case 'tenderPercentage': return p.tenderPercentage ?? '';
+      case 'tenderPercentage': return getTenderPercentage(p);
       case 'expenditureSanctionAmount': return n(p.expenditureSanctionAmount);
       case 'contingencyExpenditure': return n(p.contingencyExpenditure);
       case 'variation': return variation;
@@ -101,7 +101,7 @@ export function exportProjectsToExcel(projects, options = {}) {
       'Technical Sanction Amount (₹)': n(p.technicalSanctionAmount), 'Technical Sanction No.': p.technicalSanctionNo||'',
       'Date of Tender': p.dateOfTender||'', 'Cost Put to Tender (₹)': n(p.costPutToTender),
       'Sanctioned (₹)': n(p.sanctionedAmount), 'Tendered Cost (₹)': n(p.tenderedCost),
-      'Tender Percentage (%)': p.tenderPercentage ?? '', 'Expenditure Sanction Amount (₹)': n(p.expenditureSanctionAmount),
+      'Tender Percentage (%)': getTenderPercentage(p), 'Expenditure Sanction Amount (₹)': n(p.expenditureSanctionAmount),
       'Contractor': p.contractorName, 'Work Order Date': p.workOrderDate||'',
       'Start (Contract)': p.dateOfStartContract||'', 'Completion (Contract)': p.dateOfCompletionContract||'',
       'Actual Start': p.actualDateOfStart||'', 'Actual Completion': p.actualDateOfCompletion||'',

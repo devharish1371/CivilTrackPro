@@ -11,7 +11,7 @@ import {
   savePDF,
 } from '../utils/pdfExport';
 import { exportProjectsToExcel } from '../utils/excelExport';
-import { getTotalExpenditure } from '../utils/projectStatus';
+import { getTotalExpenditure, getTenderPercentage } from '../utils/projectStatus';
 import { matchesTenderDate, matchesTenderPercentage } from '../utils/reportFilters';
 import { downloadKML } from '../utils/kmlExport';
 import { FileText, Download, Printer, MapPin, CheckCircle, IndianRupee, SlidersHorizontal, Calendar, X } from 'lucide-react';
@@ -165,6 +165,7 @@ export default function Reports() {
     if (tenderPctFilters.status && p.statusOfWork !== tenderPctFilters.status) return false;
     return true;
   });
+  const projectsWithoutTenderPercentage = projects.filter(p => getTenderPercentage(p) === '').length;
 
   /* ── Handlers: standard ─────────────────────────────── */
   const handlePDF     = () => setExportModal({ isOpen: true, type: 'standard', format: 'pdf' });
@@ -401,7 +402,6 @@ export default function Reports() {
                 All statuses are included unless filtered below.
               </span>
             </div>
-
             <div className="filter-bar" style={{ marginBottom: 0 }}>
               <div className="form-group">
                 <label className="form-label">Min Tendered Cost (₹)</label>
@@ -584,9 +584,14 @@ export default function Reports() {
             <div className="report-info-banner" style={{ '--banner-color': 'var(--amber)', '--banner-glow': 'var(--amber-glow)' }}>
               <SlidersHorizontal size={14} style={{ flexShrink: 0 }} />
               <span>
-                Enter a positive number. For example, <strong>Above 3</strong> includes +3% and higher; <strong>Below 3</strong> includes −3% and lower.
+                Percentage = (Tendered Cost − Cost Put to Tender) ÷ Cost Put to Tender × 100. Enter a positive number: <strong>Above 3</strong> includes +3% and higher; <strong>Below 3</strong> includes −3% and lower.
               </span>
             </div>
+            {projectsWithoutTenderPercentage > 0 && (
+              <div style={{ marginBottom: 16, fontSize: 12, color: 'var(--text-secondary)' }}>
+                {projectsWithoutTenderPercentage} project{projectsWithoutTenderPercentage === 1 ? '' : 's'} without valid Cost Put to Tender and Tendered Cost values are excluded from this filter.
+              </div>
+            )}
             <div className="filter-bar" style={{ marginBottom: 0 }}>
               <div className="form-group">
                 <label className="form-label">Direction</label>

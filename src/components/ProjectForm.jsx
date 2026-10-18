@@ -349,7 +349,7 @@ function ProjectFormContent({ id }) {
             <div className="form-group">
               <label className="form-label">Tender Percentage (%)</label>
               <input className="form-input" readOnly value={tenderPercentage} placeholder="Enter both tender costs" />
-              <small style={{ color:'var(--text-muted)' }}>(Cost put to tender − tendered cost) ÷ cost put to tender × 100</small>
+              <small style={{ color:'var(--text-muted)' }}>(Tendered cost − cost put to tender) ÷ cost put to tender × 100</small>
             </div>
             <div className="form-group">
               <label className="form-label">Expenditure Sanction Amount (₹)</label>
