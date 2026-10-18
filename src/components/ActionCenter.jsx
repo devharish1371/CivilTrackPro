@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProjects } from '../context/ProjectContext';
-import { getUcSentStatus } from '../utils/projectStatus';
+import { getUcSentStatus, getContractCompletionDate } from '../utils/projectStatus';
 import { AlertTriangle, ArrowUpRight, CalendarClock, CheckCircle2, ChevronLeft, ChevronRight, CircleAlert, Edit, Eye, FileWarning, ListChecks, MapPin, ShieldAlert, WalletCards } from 'lucide-react';
 
 const DAY_MS = 86400000;
@@ -45,7 +45,7 @@ function buildActions(projects, today) {
   const actions = [];
 
   projects.forEach(project => {
-    const completionDate = toDate(project.dateOfCompletionContract);
+    const completionDate = toDate(getContractCompletionDate(project));
     const completionDays = completionDate ? daysFromToday(completionDate, today) : null;
     const isCompleted = project.statusOfWork === 'completed';
 

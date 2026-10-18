@@ -57,6 +57,7 @@ export async function importProjectsFromExcel(file, existingProjects, existingCo
               expenditureIncurred: Number(row['Expenditure (₹)']) || 0,
               deductions: Number(row['Deductions (₹)']) || 0,
               extensionOfTime: row['Extension'] === 'None' ? '' : (row['Extension'] || ''),
+              extendedCompletionDate: row['Extended Completion Date'] || '',
               statusOfWork: mappedStatus,
               progress: Number(row['Progress (%)']) || 0,
               juniorEngineer: row['JE'] || '',

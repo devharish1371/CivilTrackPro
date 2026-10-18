@@ -4,7 +4,7 @@ import { db, auth } from '../utils/firebase';
 import { doc, onSnapshot, setDoc, enableNetwork, getDocFromServer } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { isSessionUnlocked } from '../components/SessionGate';
-import { normalizeProject, normalizeProjects, getSecurityDepositReleaseStatus } from '../utils/projectStatus';
+import { normalizeProject, normalizeProjects, getSecurityDepositReleaseStatus, getContractCompletionDate } from '../utils/projectStatus';
 
 const FIRESTORE_DOC = doc(db, 'civil_dashboard', 'master_data');
 const SERVER_CHECK_TIMEOUT_MS = 10000;
@@ -387,8 +387,9 @@ export function ProjectProvider({ children }) {
           date: p.expiryDate
         });
       }
-      if (p.dateOfCompletionContract && p.statusOfWork !== 'completed') {
-        const d = Math.ceil((new Date(p.dateOfCompletionContract) - now) / 86400000);
+      const contractCompletionDate = getContractCompletionDate(p);
+      if (contractCompletionDate && p.statusOfWork !== 'completed') {
+        const d = Math.ceil((new Date(contractCompletionDate) - now) / 86400000);
         if (d < 0) alerts.push({
           ...baseAlert,
           id: p.id+'_cont',
@@ -396,7 +397,7 @@ export function ProjectProvider({ children }) {
           title:'Contract Period Expired',
           delayText: `Overdue ${Math.abs(d)} days`,
           message:`${p.projectName} — overdue ${Math.abs(d)} days`,
-          date: p.dateOfCompletionContract
+          date: contractCompletionDate
         });
         else if (d <= 30) alerts.push({
           ...baseAlert,
@@ -405,7 +406,7 @@ export function ProjectProvider({ children }) {
           title:'Contract Ending Soon',
           delayText: `${d} days left`,
           message:`${p.projectName} — ${d} days left`,
-          date: p.dateOfCompletionContract
+          date: contractCompletionDate
         });
       }
       if (p.securityDepositReleaseDate && getSecurityDepositReleaseStatus(p) !== 'Yes') {

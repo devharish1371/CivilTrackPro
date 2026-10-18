@@ -14,7 +14,7 @@ const empty = {
   dateOfStartContract:'', dateOfCompletionContract:'', actualDateOfStart:'',
   actualDateOfCompletion:'', performanceGuaranteeDate:'', expiryDate:'',
   expenditureIncurred:'', deductions:'',
-  extensionOfTime:'', statusOfWork:'yet_to_start', progress:0,
+  extensionOfTime:'', extendedCompletionDate:'', statusOfWork:'yet_to_start', progress:0,
   juniorEngineer:'', assistantEngineer:'',
   ucSent: 'No', ucSentDate:'', securityDepositReleased:'No', securityDepositReleaseDate:'', securityDepositDeductedDate:'', securityAmount:'',
   mBookNumber:'', workAuditRegisterNo:'', category:'', phase:'',
@@ -59,6 +59,7 @@ export default function ProjectForm() {
 
     const startContract = d('dateOfStartContract');
     const completionContract = d('dateOfCompletionContract');
+    const extendedCompletion = d('extendedCompletionDate');
     const actualStart = d('actualDateOfStart');
     const actualCompletion = d('actualDateOfCompletion');
     const workOrder = d('workOrderDate');
@@ -67,6 +68,7 @@ export default function ProjectForm() {
     if (goDate && workOrder && workOrder < goDate) warnings.push('Work Order Date is before GO Date');
     if (workOrder && startContract && startContract < workOrder) warnings.push('Contract Start Date is before Work Order Date');
     if (startContract && completionContract && completionContract < startContract) warnings.push('Contract Completion Date is before Contract Start Date');
+    if (extendedCompletion && completionContract && extendedCompletion <= completionContract) warnings.push('Extended Completion Date must be after Contract Completion Date');
     if (actualStart && actualCompletion && actualCompletion < actualStart) warnings.push('Actual Completion is before Actual Start Date');
     if (startContract && actualStart && actualStart < startContract) warnings.push('Actual Start is before Contract Start Date');
 
@@ -84,7 +86,7 @@ export default function ProjectForm() {
   useEffect(() => {
     setDateWarnings(validateDates(form));
   }, [form.goDate, form.workOrderDate, form.dateOfStartContract, form.dateOfCompletionContract,
-      form.actualDateOfStart, form.actualDateOfCompletion, form.securityDepositDeductedDate,
+      form.extendedCompletionDate, form.actualDateOfStart, form.actualDateOfCompletion, form.securityDepositDeductedDate,
       form.securityDepositReleaseDate, form.performanceGuaranteeDate, form.expiryDate]);
 
   const validate = () => {
@@ -93,6 +95,8 @@ export default function ProjectForm() {
     if (!form.constituency) e.constituency = 'Required';
     if (!form.scheme) e.scheme = 'Required';
     if (!form.sanctionedAmount || Number(form.sanctionedAmount) <= 0) e.sanctionedAmount = 'Enter valid amount';
+    if (form.extendedCompletionDate && !form.dateOfCompletionContract) e.extendedCompletionDate = 'Enter the original contract completion date first';
+    if (form.extendedCompletionDate && form.dateOfCompletionContract && form.extendedCompletionDate <= form.dateOfCompletionContract) e.extendedCompletionDate = 'Extended date must be after the original completion date';
     setErrors(e);
     return !Object.keys(e).length;
   };
@@ -244,8 +248,14 @@ export default function ProjectForm() {
             <div className="form-group"><label className="form-label">Actual Start</label><input className="form-input" type="date" value={form.actualDateOfStart} onChange={e => set('actualDateOfStart', e.target.value)} /></div>
             <div className="form-group"><label className="form-label">Actual Completion</label><input className="form-input" type="date" value={form.actualDateOfCompletion} onChange={e => set('actualDateOfCompletion', e.target.value)} /></div>
             <div className="form-group">
-              <label className="form-label">Extension of Time</label>
-              <input className="form-input" value={form.extensionOfTime} onChange={e => set('extensionOfTime', e.target.value)} placeholder="e.g. 3 months" />
+              <label className="form-label">Extension of Time (Revised Completion Date)</label>
+              <input className="form-input" type="date" value={form.extendedCompletionDate || ''} min={form.dateOfCompletionContract || undefined} onChange={e => set('extendedCompletionDate', e.target.value)} />
+              {errors.extendedCompletionDate && <span style={{ color:'var(--rose)', fontSize:11 }}>{errors.extendedCompletionDate}</span>}
+              <small style={{ color:'var(--text-muted)' }}>Contract alerts use this date after saving.</small>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Extension Note (Optional)</label>
+              <input className="form-input" value={form.extensionOfTime || ''} onChange={e => set('extensionOfTime', e.target.value)} placeholder="e.g. 3 months" />
             </div>
           </div>
         </div>

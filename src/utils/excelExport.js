@@ -102,6 +102,7 @@ export function exportProjectsToExcel(projects, options = {}) {
       'Utilised (₹)': n(p.expenditureIncurred) + n(p.deductions),
       'Balance (₹)': n(p.sanctionedAmount) - n(p.expenditureIncurred) - n(p.deductions),
       'Extension': p.extensionOfTime||'None',
+      'Extended Completion Date': p.extendedCompletionDate||'',
       'Status': p.statusOfWork==='completed'?'Completed':p.statusOfWork==='in_progress'?'In Progress':'Yet to Start',
       'Progress (%)': p.progress, 'JE': p.juniorEngineer, 'AE': p.assistantEngineer,
       'UC Sent': getUcSentStatus(p), 'UC Sent Date': p.ucSentDate||'', 'SD Released': getSecurityDepositReleaseStatus(p), 'Security Deducted': p.securityDepositDeductedDate||'', 'Security Release': p.securityDepositReleaseDate||'',

@@ -5,7 +5,7 @@ import { downloadKML } from '../utils/kmlExport';
 import { ArrowLeft, Edit, Trash2, FileText, Share2, Calendar, IndianRupee, Users, AlertTriangle, Lock, Unlock, MapPin, ExternalLink, Image as ImageIcon, Paperclip, Download } from 'lucide-react';
 import { useState } from 'react';
 import { verifyMasterPassword, formatMasterPasswordError } from '../utils/appAuth';
-import { getUcSentStatus, getSecurityDepositReleaseStatus } from '../utils/projectStatus';
+import { getUcSentStatus, getSecurityDepositReleaseStatus, getContractCompletionDate } from '../utils/projectStatus';
 
 const fmt = (n) => new Intl.NumberFormat('en-IN', { style:'currency', currency:'INR', maximumFractionDigits:0 }).format(n);
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }) : '—';
@@ -26,7 +26,8 @@ export default function ProjectDetail() {
   const now = new Date();
   const securityDepositReleased = getSecurityDepositReleaseStatus(p);
   const expiryDays = p.expiryDate ? Math.ceil((new Date(p.expiryDate) - now)/86400000) : null;
-  const contractDays = p.dateOfCompletionContract && p.statusOfWork !== 'completed' ? Math.ceil((new Date(p.dateOfCompletionContract) - now)/86400000) : null;
+  const contractCompletionDate = getContractCompletionDate(p);
+  const contractDays = contractCompletionDate && p.statusOfWork !== 'completed' ? Math.ceil((new Date(contractCompletionDate) - now)/86400000) : null;
   const securityDays = securityDepositReleased !== 'Yes' && p.securityDepositReleaseDate
     ? Math.ceil((new Date(p.securityDepositReleaseDate) - now)/86400000)
     : null;
@@ -124,9 +125,10 @@ export default function ProjectDetail() {
           <D label="Work Order Date" value={fmtDate(p.workOrderDate)} />
           <D label="Start (Contract)" value={fmtDate(p.dateOfStartContract)} />
           <D label="Completion (Contract)" value={fmtDate(p.dateOfCompletionContract)} />
+          <D label="Extended Completion Date" value={fmtDate(p.extendedCompletionDate)} />
           <D label="Actual Start" value={fmtDate(p.actualDateOfStart)} />
           <D label="Actual Completion" value={fmtDate(p.actualDateOfCompletion)} />
-          <D label="Extension of Time" value={p.extensionOfTime || 'None'} />
+          <D label="Extension Note" value={p.extensionOfTime || 'None'} />
         </div>
       </div>
 

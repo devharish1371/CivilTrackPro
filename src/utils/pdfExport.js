@@ -427,7 +427,8 @@ export function generateProjectDetailPDF(project) {
     ['Contract Completion', fmtDate(p.dateOfCompletionContract)],
     ['Actual Start Date',   fmtDate(p.actualDateOfStart)],
     ['Actual Completion',   fmtDate(p.actualDateOfCompletion)],
-    ['Extension of Time',   p.extensionOfTime || 'None'],
+    ['Extended Completion', fmtDate(p.extendedCompletionDate)],
+    ['Extension Note',      p.extensionOfTime || 'None'],
     ['Status',              statusLabel(p.statusOfWork)],
   ]);
 
