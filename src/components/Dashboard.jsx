@@ -168,7 +168,7 @@ export default function Dashboard() {
               {optsPhase.map(p => <option key={p} value={p}>{p}</option>)}
             </select>
           </div>
-          {hasFilters && <button className="btn btn-danger btn-sm" onClick={clearFilters} style={{ alignSelf:'flex-end' }}><X size={14} /> Clear</button>}
+          {hasFilters && <button className="btn btn-danger btn-sm" onClick={clearFilters} style={{ alignSelf:'flex-end' }}><X size={14} /> Reset Filters</button>}
         </div>
       )}
 

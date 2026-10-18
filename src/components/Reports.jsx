@@ -10,7 +10,7 @@ import {
 } from '../utils/pdfExport';
 import { exportProjectsToExcel } from '../utils/excelExport';
 import { downloadKML } from '../utils/kmlExport';
-import { FileText, Download, Printer, MapPin, CheckCircle, IndianRupee, SlidersHorizontal, Calendar } from 'lucide-react';
+import { FileText, Download, Printer, MapPin, CheckCircle, IndianRupee, SlidersHorizontal, Calendar, X } from 'lucide-react';
 import ExportModal from './ExportModal';
 
 /* ─── tiny helpers ─────────────────────────────────────────────── */
@@ -254,6 +254,9 @@ export default function Reports() {
                   <option value="">All</option>{constituencies.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
                 </select>
               </div>
+              <button className="btn btn-danger btn-sm" onClick={() => setFilters({ year: '', scheme: '', status: '', constituency: '' })} style={{ alignSelf: 'flex-end' }} title="Reset filters">
+                <X size={14} /> Reset
+              </button>
             </div>
           </div>
 
@@ -310,6 +313,9 @@ export default function Reports() {
                   <option value="">All</option>{constituencies.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
                 </select>
               </div>
+              <button className="btn btn-danger btn-sm" onClick={() => setDateFilters({ fromDate: '', toDate: '', scheme: '', constituency: '' })} style={{ alignSelf: 'flex-end' }} title="Reset filters">
+                <X size={14} /> Reset
+              </button>
             </div>
 
             {completedFiltered.length > 0 && (
@@ -380,6 +386,9 @@ export default function Reports() {
                   <option value="">All</option>{constituencies.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
                 </select>
               </div>
+              <button className="btn btn-danger btn-sm" onClick={() => setCostFilters({ minCost: '', maxCost: '', scheme: '', constituency: '', status: '' })} style={{ alignSelf: 'flex-end' }} title="Reset filters">
+                <X size={14} /> Reset
+              </button>
             </div>
 
             {costFiltered.length > 0 && (
@@ -445,6 +454,9 @@ export default function Reports() {
                   <option value="">All</option>{constituencies.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
                 </select>
               </div>
+              <button className="btn btn-danger btn-sm" onClick={() => setWoFilters({ fromDate: '', toDate: '', scheme: '', constituency: '' })} style={{ alignSelf: 'flex-end' }} title="Reset filters">
+                <X size={14} /> Reset
+              </button>
             </div>
 
             {woFiltered.length > 0 && (

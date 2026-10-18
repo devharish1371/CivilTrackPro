@@ -119,11 +119,9 @@ export default function GrantManager() {
             {uniqueConstituencies.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
-        {(filterYear || filterScheme || filterPhase || filterConstituency) && (
-          <button className="btn btn-danger btn-sm" onClick={clearFilters} style={{ alignSelf: 'flex-end' }}>
-            <X size={14} /> Clear
-          </button>
-        )}
+        <button className="btn btn-danger btn-sm" onClick={clearFilters} style={{ alignSelf: 'flex-end' }} title="Reset all filters">
+          <X size={14} /> Reset Filters
+        </button>
       </div>
 
       {editing && (

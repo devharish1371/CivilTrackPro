@@ -41,11 +41,14 @@ export default function ProjectList() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const defaultFilters = { year:'', scheme:'', category:'', phase:'', status:'', constituency:'', villagePanchayat:'', search:'', engineer:'', contractor:'', geoTagged: false, ucSent: '' };
+
   const [filters, setFilters] = useState(() => {
-    const defaultFilters = { year:'', scheme:'', category:'', phase:'', status:'', constituency:'', villagePanchayat:'', search:'', engineer:'', contractor:'', geoTagged: false, ucSent: '' };
+    // If navigated from Dashboard with filters, use those (they will be saved to sessionStorage)
     if (location.state && location.state.filters) {
       return { ...defaultFilters, ...location.state.filters };
     }
+    // Otherwise restore from sessionStorage so filters survive page navigation
     const saved = sessionStorage.getItem('ct-project-filters');
     if (saved) {
       try { return { ...defaultFilters, ...JSON.parse(saved) }; } catch (e) {}
@@ -53,6 +56,7 @@ export default function ProjectList() {
     return defaultFilters;
   });
 
+  // Persist filters to sessionStorage whenever they change
   useEffect(() => {
     sessionStorage.setItem('ct-project-filters', JSON.stringify(filters));
   }, [filters]);
@@ -132,7 +136,11 @@ export default function ProjectList() {
     }
   };
 
-  const clearFilters = () => setFilters({ year:'', scheme:'', category:'', phase:'', status:'', constituency:'', villagePanchayat:'', search:'', engineer:'', contractor:'', geoTagged: false, ucSent: '' });
+  const clearFilters = () => {
+    const reset = { year:'', scheme:'', category:'', phase:'', status:'', constituency:'', villagePanchayat:'', search:'', engineer:'', contractor:'', geoTagged: false, ucSent: '' };
+    setFilters(reset);
+    sessionStorage.setItem('ct-project-filters', JSON.stringify(reset));
+  };
   const hasFilters = Object.values(filters).some(v => v);
 
   return (
@@ -140,7 +148,9 @@ export default function ProjectList() {
       <div className="page-header">
         <div><h1>Projects</h1><p>{filtered.length} of {projects.length} projects</p></div>
         <div className="btn-group">
-          <button className="btn btn-secondary btn-sm" onClick={() => setShowFilters(!showFilters)}><Filter size={14} /> Filters</button>
+          <button className={`btn btn-sm ${showFilters ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setShowFilters(!showFilters)}>
+            <Filter size={14} /> Filters {hasFilters && <span style={{ background:'var(--rose)', color:'#fff', padding:'2px 6px', borderRadius:10, fontSize:10, marginLeft:4 }}>Active</span>}
+          </button>
           <button className="btn btn-secondary btn-sm" onClick={() => exportProjectsToExcel(filtered, { grants })}><Download size={14} /> Excel</button>
           <button className="btn btn-secondary btn-sm" onClick={() => setPdfModal(true)}><FileText size={14} /> PDF</button>
           <button className="btn btn-secondary btn-sm" onClick={() => sharePDF(generateProjectListPDF(filtered, filters, selectedColumns),'Report.pdf')}><Share2 size={14} /> Share</button>
@@ -224,7 +234,7 @@ export default function ProjectList() {
               <option value="No">No</option>
             </select>
           </div>
-          {hasFilters && <button className="btn btn-danger btn-sm" onClick={clearFilters} style={{ alignSelf:'flex-end' }}><X size={14} /> Clear</button>}
+          <button className="btn btn-danger btn-sm" onClick={clearFilters} style={{ alignSelf:'flex-end' }} title="Reset all filters"><X size={14} /> Reset Filters</button>
         </div>
       )}
 
