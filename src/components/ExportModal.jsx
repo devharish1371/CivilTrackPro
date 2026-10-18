@@ -1,18 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { X, Check } from 'lucide-react';
 import { REPORT_COLUMNS, DEFAULT_COLUMNS } from '../utils/pdfExport';
 
-export default function ExportModal({ isOpen, onClose, onExport, reportType, exportFormat = 'pdf' }) {
-  const [selected, setSelected] = useState([]);
-
-  useEffect(() => {
-    if (isOpen && reportType) {
-      // Default to the predefined columns for this report type
-      setSelected(DEFAULT_COLUMNS[reportType] || []);
-    }
-  }, [isOpen, reportType]);
-
+export default function ExportModal({ isOpen, ...props }) {
   if (!isOpen) return null;
+  return <ExportModalContent key={props.reportType} {...props} />;
+}
+
+function ExportModalContent({ onClose, onExport, reportType, exportFormat = 'pdf' }) {
+  const [selected, setSelected] = useState(() => DEFAULT_COLUMNS[reportType] || []);
 
   const handleToggle = (id) => {
     setSelected(prev => 

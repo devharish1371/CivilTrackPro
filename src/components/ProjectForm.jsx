@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useProjects } from '../context/ProjectContext';
+import { useProjects } from '../context/projectStore';
 import { statusOptions } from '../data/sampleData';
 import { getEngineerDesignation, isAssistantEngineer, isJuniorEngineer } from '../utils/engineers';
 import { normalizeProject, getSecurityDepositReleaseStatus, getTotalExpenditure, getBalanceAmount } from '../utils/projectStatus';
@@ -23,17 +23,60 @@ const empty = {
 };
 
 const fmt = (n) => new Intl.NumberFormat('en-IN', { style:'currency', currency:'INR', maximumFractionDigits:0 }).format(n);
+const FieldError = ({ errors, field }) => errors[field]
+  ? <span style={{ color:'var(--rose)', fontSize:11 }}>{errors[field]}</span>
+  : null;
+
+function validateDates(formData) {
+  const warnings = [];
+  const d = (key) => formData[key] ? new Date(formData[key]) : null;
+
+  const startContract = d('dateOfStartContract');
+  const completionContract = d('dateOfCompletionContract');
+  const extendedCompletion = d('extendedCompletionDate');
+  const actualStart = d('actualDateOfStart');
+  const actualCompletion = d('actualDateOfCompletion');
+  const workOrder = d('workOrderDate');
+  const goDate = d('goDate');
+
+  if (goDate && workOrder && workOrder < goDate) warnings.push('Work Order Date is before GO Date');
+  if (workOrder && startContract && startContract < workOrder) warnings.push('Contract Start Date is before Work Order Date');
+  if (startContract && completionContract && completionContract < startContract) warnings.push('Contract Completion Date is before Contract Start Date');
+  if (extendedCompletion && completionContract && extendedCompletion <= completionContract) warnings.push('Extended Completion Date must be after Contract Completion Date');
+  if (actualStart && actualCompletion && actualCompletion < actualStart) warnings.push('Actual Completion is before Actual Start Date');
+  if (startContract && actualStart && actualStart < startContract) warnings.push('Actual Start is before Contract Start Date');
+
+  const secDeducted = d('securityDepositDeductedDate');
+  const secRelease = d('securityDepositReleaseDate');
+  if (secDeducted && secRelease && secRelease < secDeducted) warnings.push('Security Release Date is before Deducted Date');
+
+  const perfGuarantee = d('performanceGuaranteeDate');
+  const expiry = d('expiryDate');
+  if (perfGuarantee && expiry && expiry < perfGuarantee) warnings.push('Expiry Date is before Performance Guarantee Date');
+
+  return warnings;
+}
 
 export default function ProjectForm() {
   const { id } = useParams();
+  return <ProjectFormContent key={id || 'new'} id={id} />;
+}
+
+function ProjectFormContent({ id }) {
   const isEdit = Boolean(id);
   const { projects, contractors, engineers, schemes, constituencies, panchayats, grants, categories, dispatch } = useProjects();
   const navigate = useNavigate();
-  const [form, setForm] = useState(() => ({ ...empty, tempId: isEdit ? '' : uuidv4() }));
+  const existingProject = isEdit ? projects.find(p => p.id === id) : null;
+  const [form, setForm] = useState(() => {
+    if (existingProject) {
+      const normalized = normalizeProject(existingProject);
+      return { ...normalized, securityDepositReleased: getSecurityDepositReleaseStatus(normalized), physicalParametersNotes: existingProject.physicalParametersNotes || '' };
+    }
+    return { ...empty, tempId: isEdit ? '' : uuidv4() };
+  });
   const [errors, setErrors] = useState({});
   const [toast, setToast] = useState('');
-  const [dateWarnings, setDateWarnings] = useState([]);
-  const show = (msg) => { setToast(msg); setTimeout(() => setToast(''), 2500); };
+  const dateWarnings = validateDates(form);
 
   const jeList = engineers.filter(e => isJuniorEngineer(getEngineerDesignation(e)));
   const aeList = engineers.filter(e => isAssistantEngineer(getEngineerDesignation(e)));
@@ -41,54 +84,10 @@ export default function ProjectForm() {
   const hasSavedAssistantEngineer = form.assistantEngineer && !aeList.some(e => e.name === form.assistantEngineer);
 
   useEffect(() => {
-    if (isEdit) {
-      const ex = projects.find(p => p.id === id);
-      if (ex) {
-        if (ex.isLocked) { navigate('/projects'); return; }
-        const normalized = normalizeProject(ex);
-        setForm({ ...normalized, securityDepositReleased: getSecurityDepositReleaseStatus(normalized), physicalParametersNotes: ex.physicalParametersNotes || '' });
-      } else navigate('/projects');
-    }
-  }, [id, isEdit]);
+    if (isEdit && (!existingProject || existingProject.isLocked)) navigate('/projects');
+  }, [isEdit, existingProject, navigate]);
 
   const set = (f, v) => { setForm(x => ({...x, [f]:v})); if (errors[f]) setErrors(e => ({...e, [f]:''})); };
-
-  // Date validation
-  const validateDates = (formData) => {
-    const warnings = [];
-    const d = (key) => formData[key] ? new Date(formData[key]) : null;
-
-    const startContract = d('dateOfStartContract');
-    const completionContract = d('dateOfCompletionContract');
-    const extendedCompletion = d('extendedCompletionDate');
-    const actualStart = d('actualDateOfStart');
-    const actualCompletion = d('actualDateOfCompletion');
-    const workOrder = d('workOrderDate');
-    const goDate = d('goDate');
-
-    if (goDate && workOrder && workOrder < goDate) warnings.push('Work Order Date is before GO Date');
-    if (workOrder && startContract && startContract < workOrder) warnings.push('Contract Start Date is before Work Order Date');
-    if (startContract && completionContract && completionContract < startContract) warnings.push('Contract Completion Date is before Contract Start Date');
-    if (extendedCompletion && completionContract && extendedCompletion <= completionContract) warnings.push('Extended Completion Date must be after Contract Completion Date');
-    if (actualStart && actualCompletion && actualCompletion < actualStart) warnings.push('Actual Completion is before Actual Start Date');
-    if (startContract && actualStart && actualStart < startContract) warnings.push('Actual Start is before Contract Start Date');
-
-    const secDeducted = d('securityDepositDeductedDate');
-    const secRelease = d('securityDepositReleaseDate');
-    if (secDeducted && secRelease && secRelease < secDeducted) warnings.push('Security Release Date is before Deducted Date');
-
-    const perfGuarantee = d('performanceGuaranteeDate');
-    const expiry = d('expiryDate');
-    if (perfGuarantee && expiry && expiry < perfGuarantee) warnings.push('Expiry Date is before Performance Guarantee Date');
-
-    return warnings;
-  };
-
-  useEffect(() => {
-    setDateWarnings(validateDates(form));
-  }, [form.goDate, form.workOrderDate, form.dateOfStartContract, form.dateOfCompletionContract,
-      form.extendedCompletionDate, form.actualDateOfStart, form.actualDateOfCompletion, form.securityDepositDeductedDate,
-      form.securityDepositReleaseDate, form.performanceGuaranteeDate, form.expiryDate]);
 
   const validate = () => {
     const e = {};
@@ -145,8 +144,6 @@ export default function ProjectForm() {
   const schemeProjectTotal = projects.filter(p => p.scheme === form.scheme && p.id !== id).reduce((sum, p) => sum + (p.sanctionedAmount || 0), 0);
   const schemeAvailable = schemeGrantTotal - schemeProjectTotal - sanctioned;
 
-  const E = ({f}) => errors[f] ? <span style={{ color:'var(--rose)', fontSize:11 }}>{errors[f]}</span> : null;
-
   return (
     <div>
       <div className="page-header">
@@ -177,7 +174,7 @@ export default function ProjectForm() {
             <div className="form-group full-width">
               <label className="form-label">Project Name *</label>
               <input className="form-input" value={form.projectName} onChange={e => set('projectName', e.target.value)} placeholder="e.g. Construction of Bridge over River" />
-              <E f="projectName" />
+              <FieldError errors={errors} field="projectName" />
             </div>
             <div className="form-group">
               <label className="form-label">Year of Sanction</label>
@@ -189,7 +186,7 @@ export default function ProjectForm() {
               <datalist id="constituency-list">
                 {constituencies.map(c => <option key={c.id} value={c.name} />)}
               </datalist>
-              <E f="constituency" />
+              <FieldError errors={errors} field="constituency" />
             </div>
             <div className="form-group">
               <label className="form-label">Village Panchayat</label>
@@ -202,7 +199,7 @@ export default function ProjectForm() {
               <label className="form-label">Scheme *</label>
               <select className="form-select" value={form.scheme} onChange={e => set('scheme', e.target.value)}>
                 <option value="">Select</option>{schemes.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
-              </select><E f="scheme" />
+              </select><FieldError errors={errors} field="scheme" />
             </div>
             <div className="form-group">
               <label className="form-label">Category</label>
@@ -265,7 +262,7 @@ export default function ProjectForm() {
               <datalist id="contractor-list">
                 {contractors.map(c => <option key={c.id} value={c.name} />)}
               </datalist>
-              <E f="contractorName" />
+              <FieldError errors={errors} field="contractorName" />
             </div>
             <div className="form-group"><label className="form-label">Work Order Date</label><input className="form-input" type="date" value={form.workOrderDate} onChange={e => set('workOrderDate', e.target.value)} /></div>
             <div className="form-group"><label className="form-label">Start Date (Contract)</label><input className="form-input" type="date" value={form.dateOfStartContract} onChange={e => set('dateOfStartContract', e.target.value)} /></div>
@@ -343,7 +340,7 @@ export default function ProjectForm() {
           <div className="form-grid">
             <div className="form-group">
               <label className="form-label">Sanctioned Amount (₹) *</label>
-              <input className="form-input" type="number" value={form.sanctionedAmount} onChange={e => set('sanctionedAmount', e.target.value)} /><E f="sanctionedAmount" />
+              <input className="form-input" type="number" value={form.sanctionedAmount} onChange={e => set('sanctionedAmount', e.target.value)} /><FieldError errors={errors} field="sanctionedAmount" />
             </div>
             <div className="form-group">
               <label className="form-label">Tendered Cost (₹)</label>

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useProjects } from '../context/ProjectContext';
+import { useProjects } from '../context/projectStore';
 import { generateAlertsPDF, savePDF, sharePDF } from '../utils/pdfExport';
 import { AlertTriangle, Clock, ShieldAlert, ChevronRight, FileText, Share2, Filter, X, Info } from 'lucide-react';
 

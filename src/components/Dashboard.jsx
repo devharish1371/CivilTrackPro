@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useProjects } from '../context/ProjectContext';
+import { useProjects } from '../context/projectStore';
 import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Building2, IndianRupee, TrendingUp, AlertTriangle, Clock, CheckCircle, MapPin, Filter, X, FileText } from 'lucide-react';
@@ -7,16 +7,54 @@ import { getUcSentStatus, getTotalExpenditure } from '../utils/projectStatus';
 
 const COLORS = ['#3a9e7e', '#c07a2a', '#6674a8', '#c9a84c', '#3d6ea8', '#b84455', '#4a5878'];
 const fmt = (n) => { if (n >= 10000000) return `₹${(n/10000000).toFixed(2)} Cr`; if (n >= 100000) return `₹${(n/100000).toFixed(2)} L`; return `₹${n.toLocaleString('en-IN')}`; };
+const Tip = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div style={{ background:'#131c31', border:'1px solid rgba(255,255,255,0.1)', borderRadius:8, padding:'10px 14px', fontSize:12 }}>
+      <p style={{ fontWeight:600, marginBottom:4 }}>{label || payload[0]?.name}</p>
+      {payload.map((p,i) => <p key={i} style={{ color:p.color }}>{p.name}: {typeof p.value==='number' && p.value>1000 ? fmt(p.value) : p.value}</p>)}
+    </div>
+  );
+};
+
+function getOpts(key, fType, projects, grants, filters) {
+  const set = new Set();
+  projects.filter(p => {
+    if (fType !== 'year' && filters.year && p.yearOfSanction !== Number(filters.year)) return false;
+    if (fType !== 'scheme' && filters.scheme && p.scheme !== filters.scheme) return false;
+    if (fType !== 'constituency' && filters.constituency && p.constituency !== filters.constituency) return false;
+    if (fType !== 'phase' && filters.phase && p.phase !== filters.phase) return false;
+    return true;
+  }).forEach(p => {
+    const val = key === 'year' ? p.yearOfSanction : p[key];
+    if (val) set.add(val);
+  });
+
+  grants.filter(g => {
+    if (fType !== 'year' && filters.year && g.year !== Number(filters.year)) return false;
+    if (fType !== 'scheme' && filters.scheme && g.scheme !== filters.scheme) return false;
+    if (fType !== 'constituency' && filters.constituency && g.constituency !== filters.constituency) return false;
+    if (fType !== 'phase' && filters.phase && g.phase !== filters.phase) return false;
+    return true;
+  }).forEach(g => {
+    const val = key === 'year' ? g.year : g[key];
+    if (val) set.add(val);
+  });
+
+  const arr = Array.from(set);
+  if (key === 'year') return arr.sort((a,b)=>b-a);
+  return arr.sort();
+}
 
 export default function Dashboard() {
-  const { projects, grants, getAlerts, schemes, constituencies } = useProjects();
+  const { projects, grants, getAlerts } = useProjects();
   const navigate = useNavigate();
   const alerts = getAlerts();
 
   const [filters, setFilters] = useState(() => {
     const saved = sessionStorage.getItem('ct-dashboard-filters');
     if (saved) {
-      try { return { constituency: '', scheme: '', phase: '', year: '', ...JSON.parse(saved) }; } catch (e) {}
+      try { return { constituency: '', scheme: '', phase: '', year: '', ...JSON.parse(saved) }; } catch { return { constituency: '', scheme: '', phase: '', year: '' }; }
     }
     return { constituency: '', scheme: '', phase: '', year: '' };
   });
@@ -52,39 +90,10 @@ export default function Dashboard() {
     });
   }, [grants, filters]);
 
-  const getOpts = (key, fType) => {
-    const set = new Set();
-    projects.filter(p => {
-      if (fType !== 'year' && filters.year && p.yearOfSanction !== Number(filters.year)) return false;
-      if (fType !== 'scheme' && filters.scheme && p.scheme !== filters.scheme) return false;
-      if (fType !== 'constituency' && filters.constituency && p.constituency !== filters.constituency) return false;
-      if (fType !== 'phase' && filters.phase && p.phase !== filters.phase) return false;
-      return true;
-    }).forEach(p => {
-      const val = key === 'year' ? p.yearOfSanction : p[key];
-      if (val) set.add(val);
-    });
-    
-    grants.filter(g => {
-      if (fType !== 'year' && filters.year && g.year !== Number(filters.year)) return false;
-      if (fType !== 'scheme' && filters.scheme && g.scheme !== filters.scheme) return false;
-      if (fType !== 'constituency' && filters.constituency && g.constituency !== filters.constituency) return false;
-      if (fType !== 'phase' && filters.phase && g.phase !== filters.phase) return false;
-      return true;
-    }).forEach(g => {
-      const val = key === 'year' ? g.year : g[key];
-      if (val) set.add(val);
-    });
-    
-    const arr = Array.from(set);
-    if (key === 'year') return arr.sort((a,b)=>b-a);
-    return arr.sort();
-  };
-
-  const optsYear = useMemo(() => getOpts('year', 'year'), [projects, grants, filters.scheme, filters.constituency, filters.phase]);
-  const optsConstituency = useMemo(() => getOpts('constituency', 'constituency'), [projects, grants, filters.scheme, filters.phase, filters.year]);
-  const optsScheme = useMemo(() => getOpts('scheme', 'scheme'), [projects, grants, filters.constituency, filters.phase, filters.year]);
-  const optsPhase = useMemo(() => getOpts('phase', 'phase'), [projects, grants, filters.constituency, filters.scheme, filters.year]);
+  const optsYear = useMemo(() => getOpts('year', 'year', projects, grants, filters), [projects, grants, filters]);
+  const optsConstituency = useMemo(() => getOpts('constituency', 'constituency', projects, grants, filters), [projects, grants, filters]);
+  const optsScheme = useMemo(() => getOpts('scheme', 'scheme', projects, grants, filters), [projects, grants, filters]);
+  const optsPhase = useMemo(() => getOpts('phase', 'phase', projects, grants, filters), [projects, grants, filters]);
 
   const totalSanctioned = filteredProjects.reduce((s,p) => s + (p.sanctionedAmount||0), 0);
   const totalExpenditure = filteredProjects.reduce((s,p) => s + getTotalExpenditure(p), 0);
@@ -134,16 +143,6 @@ export default function Dashboard() {
     sessionStorage.setItem('ct-dashboard-filters', JSON.stringify(reset));
   };
   const hasFilters = Object.values(filters).some(v => v);
-
-  const Tip = ({ active, payload, label }) => {
-    if (!active || !payload?.length) return null;
-    return (
-      <div style={{ background:'#131c31', border:'1px solid rgba(255,255,255,0.1)', borderRadius:8, padding:'10px 14px', fontSize:12 }}>
-        <p style={{ fontWeight:600, marginBottom:4 }}>{label || payload[0]?.name}</p>
-        {payload.map((p,i) => <p key={i} style={{ color:p.color }}>{p.name}: {typeof p.value==='number' && p.value>1000 ? fmt(p.value) : p.value}</p>)}
-      </div>
-    );
-  };
 
   return (
     <div>

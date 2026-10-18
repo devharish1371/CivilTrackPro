@@ -1,14 +1,17 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useProjects } from '../context/ProjectContext';
+import { useProjects } from '../context/projectStore';
 import { generateProjectDetailPDF, savePDF, sharePDF } from '../utils/pdfExport';
 import { downloadKML } from '../utils/kmlExport';
-import { ArrowLeft, Edit, Trash2, FileText, Share2, Calendar, IndianRupee, Users, AlertTriangle, Lock, Unlock, MapPin, ExternalLink, Image as ImageIcon, Paperclip, Download } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, FileText, Share2, Calendar, IndianRupee, Users, AlertTriangle, Lock, Unlock, MapPin, ExternalLink } from 'lucide-react';
 import { useState } from 'react';
 import { verifyMasterPassword, formatMasterPasswordError } from '../utils/appAuth';
 import { getUcSentStatus, getSecurityDepositReleaseStatus, getContractCompletionDate, getTotalExpenditure, getBalanceAmount } from '../utils/projectStatus';
 
 const fmt = (n) => new Intl.NumberFormat('en-IN', { style:'currency', currency:'INR', maximumFractionDigits:0 }).format(n);
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }) : '—';
+const D = ({label, value, cls}) => (
+  <div className="detail-item"><label>{label}</label><div className={`value ${cls||''}`}>{value || '—'}</div></div>
+);
 
 export default function ProjectDetail() {
   const { id } = useParams();
@@ -49,10 +52,6 @@ export default function ProjectDetail() {
     dispatch({ type:'UPDATE_PROJECT', payload:{...p, isLocked: !p.isLocked } });
     setLockModal(false);
   };
-
-  const D = ({label, value, cls}) => (
-    <div className="detail-item"><label>{label}</label><div className={`value ${cls||''}`}>{value || '—'}</div></div>
-  );
 
   return (
     <div>

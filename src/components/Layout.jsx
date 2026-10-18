@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { useProjects } from '../context/ProjectContext';
-import { lockSession } from './SessionGate';
+import { useProjects } from '../context/projectStore';
+import { lockSession } from '../utils/sessionAuth';
 import { LayoutDashboard, FolderKanban, PlusCircle, FileText, Bell, Menu, X, Building2, HardHat, Users, Settings, Cloud, CloudOff, Target, Map, MapPin, Banknote, Tags, LogOut, Sun, Moon, ListChecks, Columns3, Lock } from 'lucide-react';
 
 const navItems = [
@@ -32,10 +32,12 @@ const pageTitles = {
 };
 
 export default function Layout({ children }) {
-  const [open, setOpen] = useState(false);
+  const [openPath, setOpenPath] = useState(null);
   const [theme, setTheme] = useState(() => localStorage.getItem('ct-theme') || 'dark');
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const loc = useLocation();
+  const open = openPath === loc.pathname;
+  const setOpen = (value) => setOpenPath(value ? loc.pathname : null);
   const { getAlerts, firebaseConnected } = useProjects();
   const alertCount = getAlerts().length;
   const title = pageTitles[loc.pathname] || (loc.pathname.includes('/edit') ? 'Edit Project' : 'Project Detail');
@@ -56,10 +58,6 @@ export default function Layout({ children }) {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('ct-theme', theme);
   }, [theme]);
-
-  useEffect(() => {
-    setOpen(false);
-  }, [loc.pathname]);
 
   useEffect(() => {
     if (window.innerWidth > 1024) return undefined;

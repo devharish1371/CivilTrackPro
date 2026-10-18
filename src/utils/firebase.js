@@ -35,7 +35,7 @@ const db = initializeFirestore(app, {
 let analytics;
 try {
   analytics = getAnalytics(app);
-} catch (e) {
+} catch {
   console.log("Firebase Analytics could not be initialized");
 }
 

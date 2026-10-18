@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useProjects } from '../context/ProjectContext';
+import { useProjects } from '../context/projectStore';
 import { getUcSentStatus, getContractCompletionDate, getTotalExpenditure } from '../utils/projectStatus';
 import { AlertTriangle, ArrowUpRight, CalendarClock, CheckCircle2, ChevronLeft, ChevronRight, CircleAlert, Edit, Eye, FileWarning, ListChecks, MapPin, ShieldAlert, WalletCards } from 'lucide-react';
 

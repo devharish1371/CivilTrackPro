@@ -1,9 +1,10 @@
-import { createContext, useContext, useReducer, useEffect, useCallback, useState, useRef } from 'react';
+import { useReducer, useEffect, useCallback, useState, useRef } from 'react';
 import { sampleProjects, sampleContractors, sampleEngineers, sampleSchemes, sampleConstituencies, sampleGrants, sampleCategories, samplePanchayats } from '../data/sampleData';
 import { db, auth } from '../utils/firebase';
 import { doc, onSnapshot, setDoc, enableNetwork, getDocFromServer } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
-import { isSessionUnlocked } from '../components/SessionGate';
+import { isSessionUnlocked } from '../utils/sessionAuth';
+import { ProjectContext } from './projectStore';
 import { normalizeProject, normalizeProjects, getSecurityDepositReleaseStatus, getContractCompletionDate, getTotalExpenditure } from '../utils/projectStatus';
 
 const FIRESTORE_DOC = doc(db, 'civil_dashboard', 'master_data');
@@ -148,7 +149,6 @@ async function writeToFirestore(payload, { waitForServer = false } = {}) {
   return writeChain;
 }
 
-const ProjectContext = createContext();
 const KEYS = { 
   projects: 'ct_projects', contractors: 'ct_contractors', engineers: 'ct_engineers', 
   schemes: 'ct_schemes', constituencies: 'ct_constituencies', grants: 'ct_grants', categories: 'ct_categories',
@@ -306,7 +306,7 @@ export function ProjectProvider({ children }) {
       console.error('Force push failed:', e);
       const message = formatFirestoreError(e);
       setFirebaseSyncError(message);
-      throw new Error(message);
+      throw new Error(message, { cause: e });
     } finally {
       isLocalPush.current = false;
     }
@@ -441,10 +441,4 @@ export function ProjectProvider({ children }) {
       {children}
     </ProjectContext.Provider>
   );
-}
-
-export function useProjects() {
-  const ctx = useContext(ProjectContext);
-  if (!ctx) throw new Error('useProjects must be used inside ProjectProvider');
-  return ctx;
 }

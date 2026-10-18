@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
-import { useProjects } from '../context/ProjectContext';
-import { Cloud, CloudOff, Upload, Download, Plus, RefreshCw, AlertTriangle, CheckCircle, Info, FileStack, FileSpreadsheet, Trash2, Database, CloudUpload } from 'lucide-react';
+import { useProjects } from '../context/projectStore';
+import { Upload, Download, AlertTriangle, CheckCircle, Info, FileSpreadsheet, Trash2, Database, CloudUpload } from 'lucide-react';
 import { exportProjectsToExcel } from '../utils/excelExport';
 import { importProjectsFromExcel } from '../utils/excelImport';
 import { FIREBASE_AUTH_EMAIL } from '../utils/firebase';
@@ -16,7 +16,7 @@ service cloud.firestore {
 }`;
 
 export default function Settings() {
-  const { projects, contractors, engineers, schemes, constituencies, panchayats, grants, categories, dispatch, firebaseConnected, firestoreDocExists, firebaseSyncError, forcePush } = useProjects();
+  const { projects, contractors, engineers, schemes, constituencies, panchayats, grants, dispatch, firebaseConnected, firestoreDocExists, firebaseSyncError, forcePush } = useProjects();
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -37,7 +37,7 @@ export default function Settings() {
     if (!file) return;
     setLoading(true); setError('');
     try {
-      const data = await importProjectsFromExcel(file, projects, contractors, engineers, schemes, constituencies, panchayats, grants);
+      const data = await importProjectsFromExcel(file, projects);
       
       const updateEntity = (existing, imported) => {
         const updated = [...existing];

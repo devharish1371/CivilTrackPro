@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useProjects } from '../context/ProjectContext';
+import { useProjects } from '../context/projectStore';
 import { v4 as uuidv4 } from 'uuid';
 import { Plus, Edit, Trash2, X, Save, Download } from 'lucide-react';
 import { generateGrantsListPDF } from '../utils/pdfExport';

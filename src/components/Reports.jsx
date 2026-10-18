@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useProjects } from '../context/ProjectContext';
+import { useProjects } from '../context/projectStore';
 import { statusOptions } from '../data/sampleData';
 import {
   generateProjectListPDF,

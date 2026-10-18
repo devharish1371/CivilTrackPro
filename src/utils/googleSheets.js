@@ -11,7 +11,7 @@ export function initGoogleAuth(clientId, callback) {
     console.warn('Google Identity Services not loaded');
     return null;
   }
-  return google.accounts.oauth2.initTokenClient({
+  return window.google.accounts.oauth2.initTokenClient({
     client_id: clientId,
     scope: 'https://www.googleapis.com/auth/spreadsheets',
     callback: (resp) => {
@@ -22,7 +22,7 @@ export function initGoogleAuth(clientId, callback) {
 
 export function signOut() {
   if (accessToken) {
-    google.accounts.oauth2.revoke(accessToken);
+    window.google.accounts.oauth2.revoke(accessToken);
     accessToken = null;
   }
 }

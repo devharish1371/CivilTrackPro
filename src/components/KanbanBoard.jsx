@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react';
-import { useProjects } from '../context/ProjectContext';
+import { useProjects } from '../context/projectStore';
 import { useNavigate } from 'react-router-dom';
 import { statusOptions } from '../data/sampleData';
-import { Eye, Edit, MessageSquare, AlertCircle } from 'lucide-react';
+import { Eye } from 'lucide-react';
 
 export default function KanbanBoard() {
   const { projects, dispatch } = useProjects();

@@ -1,15 +1,14 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useProjects } from '../context/ProjectContext';
+import { useProjects } from '../context/projectStore';
 import { verifyMasterPassword, formatMasterPasswordError } from '../utils/appAuth';
 import { statusOptions } from '../data/sampleData';
 import { exportProjectsToExcel } from '../utils/excelExport';
-import { generateProjectListPDF, generateProjectDetailPDF, savePDF, sharePDF } from '../utils/pdfExport';
+import { generateProjectListPDF, savePDF, sharePDF } from '../utils/pdfExport';
 import { downloadKML } from '../utils/kmlExport';
 import { getUcSentStatus, getTotalExpenditure } from '../utils/projectStatus';
 import { Eye, Edit, Trash2, Download, FileText, Share2, Filter, X, Lock, Unlock, MapPin, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 
-const fmt = (n) => new Intl.NumberFormat('en-IN', { style:'currency', currency:'INR', maximumFractionDigits:0 }).format(n);
 const fmtLakhs = (value) => {
   const amount = Number(value) || 0;
   return `${amount < 0 ? '-' : ''}₹${(Math.abs(amount) / 100000).toFixed(2)} L`;
@@ -40,7 +39,7 @@ const ALL_COLUMNS = [
 ];
 
 export default function ProjectList() {
-  const { projects, contractors, engineers, schemes, constituencies, panchayats, grants, dispatch } = useProjects();
+  const { projects, schemes, constituencies, panchayats, grants, dispatch } = useProjects();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -54,7 +53,7 @@ export default function ProjectList() {
     // Otherwise restore from sessionStorage so filters survive page navigation
     const saved = sessionStorage.getItem('ct-project-filters');
     if (saved) {
-      try { return { ...defaultFilters, ...JSON.parse(saved) }; } catch (e) {}
+      try { return { ...defaultFilters, ...JSON.parse(saved) }; } catch { return defaultFilters; }
     }
     return defaultFilters;
   });
@@ -66,6 +65,10 @@ export default function ProjectList() {
   
   const [showFilters, setShowFilters] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const updateFilters = (next) => {
+    setCurrentPage(1);
+    setFilters(next);
+  };
   const itemsPerPage = 25;
 
   const [lockModal, setLockModal] = useState(null); // { projectId, action:'lock'|'unlock' }
@@ -103,15 +106,12 @@ export default function ProjectList() {
     });
   }, [projects, filters]);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [filters, projects.length]);
-
-  const paginatedProjects = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return filtered.slice(start, start + itemsPerPage);
-  }, [filtered, currentPage]);
   const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const activePage = Math.min(currentPage, Math.max(1, totalPages));
+  const paginatedProjects = useMemo(() => {
+    const start = (activePage - 1) * itemsPerPage;
+    return filtered.slice(start, start + itemsPerPage);
+  }, [filtered, activePage]);
 
   const handleDelete = (id, name) => { if (confirm(`Delete "${name}"?`)) dispatch({ type:'DELETE_PROJECT', payload:id }); };
 
@@ -141,7 +141,7 @@ export default function ProjectList() {
 
   const clearFilters = () => {
     const reset = { year:'', scheme:'', category:'', phase:'', status:'', constituency:'', villagePanchayat:'', search:'', engineer:'', contractor:'', geoTagged: false, ucSent: '' };
-    setFilters(reset);
+    updateFilters(reset);
     sessionStorage.setItem('ct-project-filters', JSON.stringify(reset));
   };
   const hasFilters = Object.values(filters).some(v => v);
@@ -168,30 +168,30 @@ export default function ProjectList() {
             <label className="form-label">Search</label>
             <div style={{ position:'relative' }}>
               <Search size={14} style={{ position:'absolute', left:10, top:10, color:'var(--text-muted)' }} />
-              <input className="form-input" style={{ paddingLeft:30 }} placeholder="Name, GO, M-Book..." value={filters.search} onChange={e => setFilters(f => ({...f, search:e.target.value}))} />
+              <input className="form-input" style={{ paddingLeft:30 }} placeholder="Name, GO, M-Book..." value={filters.search} onChange={e => updateFilters(f => ({...f, search:e.target.value}))} />
             </div>
           </div>
           <div className="form-group">
             <label className="form-label">Year</label>
-            <select className="form-select" value={filters.year} onChange={e => setFilters(f => ({...f, year:e.target.value}))}>
+            <select className="form-select" value={filters.year} onChange={e => updateFilters(f => ({...f, year:e.target.value}))}>
               <option value="">All</option>{years.map(y => <option key={y} value={y}>{y}</option>)}
             </select>
           </div>
           <div className="form-group">
             <label className="form-label">Scheme</label>
-            <select className="form-select" value={filters.scheme} onChange={e => setFilters(f => ({...f, scheme:e.target.value}))}>
+            <select className="form-select" value={filters.scheme} onChange={e => updateFilters(f => ({...f, scheme:e.target.value}))}>
               <option value="">All</option>{schemes.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
             </select>
           </div>
           <div className="form-group">
             <label className="form-label">Category</label>
-            <select className="form-select" value={filters.category} onChange={e => setFilters(f => ({...f, category:e.target.value}))}>
+            <select className="form-select" value={filters.category} onChange={e => updateFilters(f => ({...f, category:e.target.value}))}>
               <option value="">All</option>{uniqueCategories.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div className="form-group">
             <label className="form-label">Phase</label>
-            <select className="form-select" value={filters.phase} onChange={e => setFilters(f => ({...f, phase:e.target.value}))}>
+            <select className="form-select" value={filters.phase} onChange={e => updateFilters(f => ({...f, phase:e.target.value}))}>
               <option value="">All</option>
               <option value="Phase 1">Phase 1</option>
               <option value="Phase 2">Phase 2</option>
@@ -201,37 +201,37 @@ export default function ProjectList() {
           </div>
           <div className="form-group">
             <label className="form-label">Status</label>
-            <select className="form-select" value={filters.status} onChange={e => setFilters(f => ({...f, status:e.target.value}))}>
+            <select className="form-select" value={filters.status} onChange={e => updateFilters(f => ({...f, status:e.target.value}))}>
               <option value="">All</option>{statusOptions.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
             </select>
           </div>
           <div className="form-group">
             <label className="form-label">Constituency</label>
-            <select className="form-select" value={filters.constituency} onChange={e => setFilters(f => ({...f, constituency:e.target.value}))}>
+            <select className="form-select" value={filters.constituency} onChange={e => updateFilters(f => ({...f, constituency:e.target.value}))}>
               <option value="">All</option>{constituencies.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
             </select>
           </div>
           <div className="form-group">
             <label className="form-label">Village Panchayat</label>
-            <select className="form-select" value={filters.villagePanchayat} onChange={e => setFilters(f => ({...f, villagePanchayat:e.target.value}))}>
+            <select className="form-select" value={filters.villagePanchayat} onChange={e => updateFilters(f => ({...f, villagePanchayat:e.target.value}))}>
               <option value="">All</option>{panchayats.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
             </select>
           </div>
           <div className="form-group">
             <label className="form-label">Engineer</label>
-            <select className="form-select" value={filters.engineer} onChange={e => setFilters(f => ({...f, engineer:e.target.value}))}>
+            <select className="form-select" value={filters.engineer} onChange={e => updateFilters(f => ({...f, engineer:e.target.value}))}>
               <option value="">All</option>{uniqueEngineers.map(e => <option key={e} value={e}>{e}</option>)}
             </select>
           </div>
           <div className="form-group">
             <label className="form-label">Contractor</label>
-            <select className="form-select" value={filters.contractor} onChange={e => setFilters(f => ({...f, contractor:e.target.value}))}>
+            <select className="form-select" value={filters.contractor} onChange={e => updateFilters(f => ({...f, contractor:e.target.value}))}>
               <option value="">All</option>{uniqueContractors.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div className="form-group">
             <label className="form-label">UC Sent</label>
-            <select className="form-select" value={filters.ucSent} onChange={e => setFilters(f => ({...f, ucSent:e.target.value}))}>
+            <select className="form-select" value={filters.ucSent} onChange={e => updateFilters(f => ({...f, ucSent:e.target.value}))}>
               <option value="">All</option>
               <option value="Yes">Yes</option>
               <option value="No">No</option>
@@ -326,14 +326,14 @@ export default function ProjectList() {
       {totalPages > 1 && (
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, padding: '0 8px', flexWrap: 'wrap', gap: 12 }}>
           <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-            Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filtered.length)} of {filtered.length} entries
+            Showing {(activePage - 1) * itemsPerPage + 1} to {Math.min(activePage * itemsPerPage, filtered.length)} of {filtered.length} entries
           </div>
           <div className="btn-group">
-            <button className="btn btn-secondary btn-sm btn-icon" onClick={() => setCurrentPage(1)} disabled={currentPage === 1} title="First Page"><ChevronsLeft size={16} /></button>
-            <button className="btn btn-secondary btn-sm btn-icon" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} title="Previous Page"><ChevronLeft size={16} /></button>
-            <span style={{ display: 'inline-flex', alignItems: 'center', padding: '0 12px', fontSize: 13, fontWeight: 500 }}>Page {currentPage} of {totalPages}</span>
-            <button className="btn btn-secondary btn-sm btn-icon" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} title="Next Page"><ChevronRight size={16} /></button>
-            <button className="btn btn-secondary btn-sm btn-icon" onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} title="Last Page"><ChevronsRight size={16} /></button>
+            <button className="btn btn-secondary btn-sm btn-icon" onClick={() => setCurrentPage(1)} disabled={activePage === 1} title="First Page"><ChevronsLeft size={16} /></button>
+            <button className="btn btn-secondary btn-sm btn-icon" onClick={() => setCurrentPage(Math.max(1, activePage - 1))} disabled={activePage === 1} title="Previous Page"><ChevronLeft size={16} /></button>
+            <span style={{ display: 'inline-flex', alignItems: 'center', padding: '0 12px', fontSize: 13, fontWeight: 500 }}>Page {activePage} of {totalPages}</span>
+            <button className="btn btn-secondary btn-sm btn-icon" onClick={() => setCurrentPage(Math.min(totalPages, activePage + 1))} disabled={activePage === totalPages} title="Next Page"><ChevronRight size={16} /></button>
+            <button className="btn btn-secondary btn-sm btn-icon" onClick={() => setCurrentPage(totalPages)} disabled={activePage === totalPages} title="Last Page"><ChevronsRight size={16} /></button>
           </div>
         </div>
       )}

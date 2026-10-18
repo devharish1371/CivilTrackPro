@@ -2,7 +2,7 @@ import * as XLSX from 'xlsx';
 import { v4 as uuidv4 } from 'uuid';
 import { normalizeProject } from './projectStatus';
 
-export async function importProjectsFromExcel(file, existingProjects, existingContractors, existingEngineers, existingSchemes, existingConstituencies, existingPanchayats, existingGrants) {
+export async function importProjectsFromExcel(file, existingProjects) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {

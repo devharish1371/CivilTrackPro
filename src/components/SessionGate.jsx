@@ -1,31 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Building2, Lock, Eye, EyeOff, LogIn } from 'lucide-react';
-import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
-import { auth, FIREBASE_AUTH_EMAIL } from '../utils/firebase';
-
-const SESSION_KEY = 'ct_session_unlocked';
-
-export function isSessionUnlocked() {
-  return sessionStorage.getItem(SESSION_KEY) === 'true';
-}
-
-export function unlockSession() {
-  sessionStorage.setItem(SESSION_KEY, 'true');
-}
-
-export async function lockSession() {
-  sessionStorage.removeItem(SESSION_KEY);
-  try {
-    await signOut(auth);
-  } catch {
-    // ignore sign-out errors during lock
-  }
-}
-
-export async function signInWithAppPassword(password) {
-  await signInWithEmailAndPassword(auth, FIREBASE_AUTH_EMAIL, password);
-  unlockSession();
-}
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '../utils/firebase';
+import { clearSessionUnlock, isSessionUnlocked, signInWithAppPassword } from '../utils/sessionAuth';
 
 function formatAuthError(error) {
   if (error?.code === 'auth/invalid-credential' || error?.code === 'auth/wrong-password' || error?.code === 'auth/user-not-found') {
@@ -57,7 +34,7 @@ export default function SessionGate({ children }) {
       } else {
         setUnlocked(false);
         if (sessionOpen && !user) {
-          sessionStorage.removeItem(SESSION_KEY);
+          clearSessionUnlock();
         }
       }
       setChecking(false);

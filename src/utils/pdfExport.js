@@ -553,8 +553,6 @@ export function generateAlertsPDF(alerts, filters = {}) {
         // Bold text only — no color fill
         data.cell.styles.fontStyle = 'bold';
         data.cell.styles.textColor = [0, 0, 0];
-        // Add ** prefix to distinguish visually without ink
-        data.cell.raw = data.cell.raw; // keep as-is; bold + all-caps is enough
       }
       if (data.section === 'body' && data.column.index === 4) {
         const v = String(data.cell.raw || '').toLowerCase();

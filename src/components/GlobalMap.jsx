@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useProjects } from '../context/ProjectContext';
+import { useProjects } from '../context/projectStore';
 import { MapContainer, TileLayer, Marker, Popup, Tooltip, useMap } from 'react-leaflet';
 import { useNavigate } from 'react-router-dom';
 import { ExternalLink, Filter, MapPin, X } from 'lucide-react';
@@ -63,45 +63,41 @@ export default function GlobalMap() {
     return projects.filter(p => p.latitude && p.longitude && Number(p.latitude) !== 0);
   }, [projects]);
 
+  const combinationExists = !filters.constituency || !filters.scheme || geoProjects.some(
+    p => p.constituency === filters.constituency && p.scheme === filters.scheme
+  );
+  const activeFilters = {
+    constituency: combinationExists && geoProjects.some(p => p.constituency === filters.constituency) ? filters.constituency : '',
+    scheme: combinationExists && geoProjects.some(p => p.scheme === filters.scheme) ? filters.scheme : '',
+  };
+
   const constituencyOptions = useMemo(() => {
     return [...new Set(
       geoProjects
-        .filter(p => !filters.scheme || p.scheme === filters.scheme)
+        .filter(p => !activeFilters.scheme || p.scheme === activeFilters.scheme)
         .map(p => p.constituency)
         .filter(Boolean)
     )].sort();
-  }, [geoProjects, filters.scheme]);
+  }, [geoProjects, activeFilters.scheme]);
 
   const schemeOptions = useMemo(() => {
     return [...new Set(
       geoProjects
-        .filter(p => !filters.constituency || p.constituency === filters.constituency)
+        .filter(p => !activeFilters.constituency || p.constituency === activeFilters.constituency)
         .map(p => p.scheme)
         .filter(Boolean)
     )].sort();
-  }, [geoProjects, filters.constituency]);
-
-  useEffect(() => {
-    if (filters.constituency && !constituencyOptions.includes(filters.constituency)) {
-      setFilters(f => ({ ...f, constituency: '' }));
-    }
-  }, [filters.constituency, constituencyOptions]);
-
-  useEffect(() => {
-    if (filters.scheme && !schemeOptions.includes(filters.scheme)) {
-      setFilters(f => ({ ...f, scheme: '' }));
-    }
-  }, [filters.scheme, schemeOptions]);
+  }, [geoProjects, activeFilters.constituency]);
 
   const filteredProjects = useMemo(() => {
     return geoProjects.filter(p => {
-      if (filters.constituency && p.constituency !== filters.constituency) return false;
-      if (filters.scheme && p.scheme !== filters.scheme) return false;
+      if (activeFilters.constituency && p.constituency !== activeFilters.constituency) return false;
+      if (activeFilters.scheme && p.scheme !== activeFilters.scheme) return false;
       return true;
     });
-  }, [geoProjects, filters]);
+  }, [geoProjects, activeFilters.constituency, activeFilters.scheme]);
 
-  const hasActiveFilters = Boolean(filters.constituency || filters.scheme);
+  const hasActiveFilters = Boolean(activeFilters.constituency || activeFilters.scheme);
 
   const center = useMemo(() => {
     const source = filteredProjects.length > 0 ? filteredProjects : geoProjects;
@@ -142,8 +138,8 @@ export default function GlobalMap() {
             <label className="form-label">Constituency</label>
             <select
               className="form-select"
-              value={filters.constituency}
-              onChange={e => setFilters(f => ({ ...f, constituency: e.target.value }))}
+              value={activeFilters.constituency}
+              onChange={e => setFilters({ ...activeFilters, constituency: e.target.value })}
             >
               <option value="">All Constituencies</option>
               {constituencyOptions.map(name => <option key={name} value={name}>{name}</option>)}
@@ -153,8 +149,8 @@ export default function GlobalMap() {
             <label className="form-label">Scheme</label>
             <select
               className="form-select"
-              value={filters.scheme}
-              onChange={e => setFilters(f => ({ ...f, scheme: e.target.value }))}
+              value={activeFilters.scheme}
+              onChange={e => setFilters({ ...activeFilters, scheme: e.target.value })}
             >
               <option value="">All Schemes</option>
               {schemeOptions.map(name => <option key={name} value={name}>{name}</option>)}
@@ -182,7 +178,7 @@ export default function GlobalMap() {
             <MapViewportController
               center={center}
               zoom={zoom}
-              watchKey={`${filteredProjects.length}-${filters.constituency}-${filters.scheme}`}
+              watchKey={`${filteredProjects.length}-${activeFilters.constituency}-${activeFilters.scheme}`}
             />
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
